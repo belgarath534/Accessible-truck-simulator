@@ -4,10 +4,10 @@
 workflows:
   truck-sim-testflight:
     name: Truck Sim TestFlight
-    # Paid pay-as-you-go Mac: starts right away instead of waiting in the free line.
-    # The 45 minute cap keeps a stuck build from costing much (a normal build is a few minutes).
+    # The 45 minute cap keeps a stuck build from using up build minutes (a normal build is a few minutes).
+    # mac_mini_m4 is not available on the current Codemagic plan.
     max_build_duration: 45
-    instance_type: mac_mini_m4
+    instance_type: mac_mini_m2
     integrations:
       app_store_connect: Accessible Backrooms
     environment:
