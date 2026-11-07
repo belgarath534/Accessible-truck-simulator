@@ -22,7 +22,7 @@ workflows:
       vars:
         BUNDLE_ID: com.accessibletrucksim.TruckSim
         PROFILE_NAME: Truck Sim App Store
-      xcode: latest
+      xcode: 27.1  # same as The Last Signal; "latest" is not available on this plan
     scripts:
       - name: Run the driving simulation tests
         script: |
