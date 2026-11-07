@@ -43,7 +43,8 @@ public struct Phrases {
         return text + "."
     }
 
-    public func roadAhead(_ c: UpcomingCurve?, remaining: Double? = nil, timeLeft: Double? = nil) -> String {
+    public func roadAhead(_ c: UpcomingCurve?, remaining: Double? = nil, timeLeft: Double? = nil,
+                          truckStop: Double? = nil) -> String {
         var text = ""
         if let remaining {
             text = remaining > 0 ? "\(units.distance(remaining)) to the drop-off. " : "You're at the drop-off. "
@@ -51,8 +52,9 @@ public struct Phrases {
         if let timeLeft {
             text += timeLeft > 0 ? "\(duration(timeLeft, roundToMinutes: timeLeft >= 120)) left. " : "You're late. "
         }
-        guard let c else { return text + "Straight road ahead." }
-        return text + "Next: " + curve(c)
+        let stop = truckStop.map { " " + roadAheadTruckStop($0) } ?? ""
+        guard let c else { return text + "Straight road ahead." + stop }
+        return text + "Next: " + curve(c) + stop
     }
 
     public func duration(_ seconds: Double, roundToMinutes: Bool = false) -> String {
@@ -77,6 +79,41 @@ public struct Phrases {
     }
 
     public let atDestination = "You're at the drop-off. Stop now."
+
+    // MARK: Fuel and truck stops
+
+    public func fuelLow(fraction: Double, nextStop: Double?, urgent: Bool) -> String {
+        var text = urgent ? "Fuel very low, \(Int((fraction * 100).rounded())) percent!" : "Fuel low, a quarter tank."
+        if let nextStop { text += " Next truck stop in \(units.distance(nextStop)). Signal right before it and slow down to pull in." }
+        return text
+    }
+
+    public func truckStopAhead(_ distance: Double) -> String {
+        "Truck stop in \(units.distance(distance)). To fill up, signal right and slow below \(units.speed(DrivingSession.truckStopExitSpeed)) before you reach it."
+    }
+
+    public let pulledIntoTruckStop = "Pulling into the truck stop. Stop at the pump to fill up."
+
+    public func missedTruckStop(tooFast: Bool) -> String {
+        tooFast ? "Too fast to take the truck stop exit. You missed it." : "You passed the truck stop."
+    }
+
+    public let refuelStarted = "Filling up."
+
+    public func refueled(liters: Double, cost: Int) -> String {
+        let amount = units == .metric ? "\(Int(liters.rounded())) liters" : String(format: "%.0f gallons", liters * 0.264_17)
+        return "Filled up: \(amount) for \(Phrases.money(cost)). Back on the road when you're ready."
+    }
+
+    public let leftTruckStop = "Back on the road."
+
+    public func towed(cost: Int, fuelCost: Int) -> String {
+        "A tow truck took you to the next truck stop and put in a quarter tank. Tow \(Phrases.money(cost)), fuel \(Phrases.money(fuelCost)). That took 5 minutes. Start the engine to go on."
+    }
+
+    public func roadAheadTruckStop(_ distance: Double) -> String {
+        "Next truck stop in \(units.distance(distance))."
+    }
 
     public func onShoulder(_ side: Side) -> String {
         "On the \(side.rawValue) shoulder. Steer \(side == .left ? "right" : "left") to get back on the road."
@@ -139,7 +176,8 @@ public struct Phrases {
             line.amount < 0 ? "\(line.label): minus \(Phrases.money(-line.amount))."
                             : "\(line.label): \(Phrases.money(line.amount))."
         }
-        return (lines + ["You earned \(Phrases.money(p.total))."]).joined(separator: " ")
+        let total = p.total >= 0 ? "You earned \(Phrases.money(p.total))." : "This drive cost you \(Phrases.money(-p.total))."
+        return (lines + [total]).joined(separator: " ")
     }
 
     /// The trip status shown in the pause menu.
@@ -198,7 +236,7 @@ public struct Phrases {
             parts.append("gear \(d.gear)")
             parts.append("\(Int((d.rpm / 50).rounded() * 50)) RPM")
         }
-        parts.append("fuel \(Int((d.fuelFraction * 100).rounded())) percent")
+        parts.append("fuel \(Int((d.fuelFraction * 100).rounded())) percent, about \(units.distance(d.range)) left")
         let temp = units == .metric ? "\(Int(d.engineTempC.rounded())) degrees" : "\(Int((d.engineTempC * 9 / 5 + 32).rounded())) degrees"
         parts.append("engine temperature \(temp)")
         if case let .on(side) = d.signal { parts.append("\(side.rawValue) signal on") }

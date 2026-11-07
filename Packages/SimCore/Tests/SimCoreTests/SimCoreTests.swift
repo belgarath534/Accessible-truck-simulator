@@ -102,7 +102,7 @@ final class DrivingSessionTests: XCTestCase {
         startEngine(s)
         _ = drive(s, seconds: 60, input: DrivingInput(throttle: 1))
         XCTAssertLessThan(s.truck.fuelLiters, s.spec.fuelCapacityLiters)
-        XCTAssertGreaterThan(s.truck.fuelLiters, s.spec.fuelCapacityLiters - 5)
+        XCTAssertGreaterThan(s.truck.fuelLiters, s.spec.fuelCapacityLiters - 30)
     }
 }
 
@@ -521,5 +521,103 @@ final class UpgradeTests: XCTestCase {
         career.buyUpgrade(.brakes, for: .starter)
         let loaded = try JSONDecoder().decode(CareerState.self, from: JSONEncoder().encode(career))
         XCTAssertEqual(loaded.upgradeLevels(for: .starter)[.brakes], 1)
+    }
+}
+
+final class FuelTests: XCTestCase {
+    private let road = Road(segments: [.straight(20_000)], loops: true, truckStops: [3_000, 12_000])
+
+    private func drive(_ s: DrivingSession, until stop: (DrivingSession) -> Bool, maxSeconds: Double = 1_000,
+                       input: (DrivingSession) -> DrivingInput) -> [SimEvent] {
+        var events: [SimEvent] = []
+        var t = 0.0
+        while !stop(s) && t < maxSeconds {
+            events += s.step(dt: 1.0 / 60, input: input(s))
+            t += 1.0 / 60
+        }
+        return events
+    }
+
+    func testFullTankLastsAboutAnHour() {
+        let s = DrivingSession(road: Road(segments: [.straight(200_000)]))
+        XCTAssertEqual(s.range, s.spec.fuelCapacityLiters / (0.12 / 22), accuracy: 1)
+        XCTAssertGreaterThan(s.range, 50_000)
+        XCTAssertLessThan(s.range, 120_000)
+    }
+
+    func testPullInAndRefuel() {
+        let s = DrivingSession(road: road, startingFuel: 100)
+        _ = s.perform(.toggleEngine)
+        _ = s.perform(.signal(.right))
+        var events = drive(s, until: { $0.isAtTruckStop }) { s in
+            // Cruise at about 40 km/h toward the truck stop.
+            DrivingInput(throttle: s.truck.speed < 11 ? 0.5 : 0, steer: -s.truck.lateralOffset)
+        }
+        XCTAssertTrue(events.contains(.truckStopAhead(distance: events.compactMap { if case let .truckStopAhead(d) = $0 { return d }; return nil }.first ?? -1)))
+        XCTAssertTrue(events.contains(.pulledIntoTruckStop))
+        events = drive(s, until: { !$0.isAtTruckStop && $0.truck.fuelLiters > 300 }) { _ in DrivingInput(brake: 1) }
+        XCTAssertTrue(events.contains(.refuelStarted))
+        guard let refuel = events.compactMap({ e -> (Double, Int)? in if case let .refueled(l, c) = e { return (l, c) }; return nil }).first
+        else { return XCTFail("no refuel: \(events)") }
+        XCTAssertEqual(s.truck.fuelLiters, s.spec.fuelCapacityLiters, accuracy: 1)
+        XCTAssertEqual(refuel.1, Int((refuel.0 * DrivingSession.truckStopFuelPrice).rounded()))
+        XCTAssertEqual(s.stats.fuelCost, refuel.1)
+    }
+
+    func testTooFastMissesTheExit() {
+        let s = DrivingSession(road: road, startingFuel: 100)
+        _ = s.perform(.toggleEngine)
+        _ = s.perform(.signal(.right))
+        let events = drive(s, until: { $0.truck.position > 3_200 }) { s in
+            DrivingInput(throttle: 1, steer: -s.truck.lateralOffset)
+        }
+        XCTAssertTrue(events.contains(.missedTruckStop(tooFast: true)))
+        XCTAssertFalse(s.isAtTruckStop)
+    }
+
+    func testOutOfFuelGetsTowed() {
+        let s = DrivingSession(road: road, startingFuel: 0.5)
+        _ = s.perform(.toggleEngine)
+        let events = drive(s, until: { $0.stats.tows > 0 }) { s in
+            DrivingInput(throttle: s.truck.engine == .running ? 1 : 0, steer: -s.truck.lateralOffset)
+        }
+        XCTAssertTrue(events.contains(.outOfFuel))
+        XCTAssertEqual(s.stats.tows, 1)
+        XCTAssertEqual(s.truck.position, 3_000, accuracy: 1, "towed to the next truck stop")
+        XCTAssertEqual(s.truck.fuelLiters, s.spec.fuelCapacityLiters * 0.25, accuracy: 0.1)
+        let payout = Payout.freeDrive(s.stats)
+        XCTAssertTrue(payout.lines.contains { $0.label == "Tow truck" && $0.amount == -DrivingSession.towFee })
+    }
+
+    func testFuelWarnings() {
+        let s = DrivingSession(road: road, startingFuel: 0.26 * TruckSpec.starter.fuelCapacityLiters)
+        _ = s.perform(.toggleEngine)
+        let events = drive(s, until: { $0.truck.fuelLiters < 0.09 * $0.spec.fuelCapacityLiters }, maxSeconds: 3_000) { s in
+            DrivingInput(throttle: 1, steer: -s.truck.lateralOffset)
+        }
+        XCTAssertTrue(events.contains { if case .fuelLow(_, _, false) = $0 { return true }; return false })
+        XCTAssertTrue(events.contains { if case .fuelLow(_, _, true) = $0 { return true }; return false })
+    }
+
+    func testCareerFuelAndYard() throws {
+        var career = CareerState(seed: 4)
+        XCTAssertEqual(career.fuelLiters(for: .starter), TruckSpec.starter.fuelCapacityLiters)
+        career.setFuel(100, for: .starter)
+        XCTAssertEqual(career.yardFillCost(for: .starter), 900)
+        career.money = 1_000
+        XCTAssertTrue(career.fillAtYard(.starter))
+        XCTAssertEqual(career.money, 100)
+        career.setFuel(0, for: .starter)
+        XCTAssertFalse(career.fillAtYard(.starter), "only partly filled: not enough money")
+        XCTAssertEqual(career.fuelLiters(for: .starter), 100.0 / 3, accuracy: 0.5)
+        let loaded = try JSONDecoder().decode(CareerState.self, from: JSONEncoder().encode(career))
+        XCTAssertEqual(loaded.fuelLiters(for: .starter), career.fuelLiters(for: .starter), accuracy: 0.001)
+    }
+
+    func testPracticeLoopHasTruckStops() {
+        XCTAssertEqual(Road.practiceLoop.truckStops.count, 3)
+        for stop in Road.practiceLoop.truckStops {
+            XCTAssertEqual(Road.practiceLoop.curvature(at: stop), 0, "truck stops are on straights")
+        }
     }
 }

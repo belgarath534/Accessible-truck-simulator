@@ -96,6 +96,18 @@ public final class DrivingSession {
     // Lane geometry relative to lane centre.
     public static let rumbleOffset = 0.9
     public static let offRoadOffset = 2.6
+    /// Fuel burns this many times faster than a real truck, so a full tank lasts about an hour of driving.
+    public static let fuelGameScale = 18.0
+    /// Dollars per litre at truck stops.
+    public static let truckStopFuelPrice = 2.5
+    /// Pumps fill this many litres per second.
+    public static let pumpRate = 40.0
+    /// Fastest you can take a truck stop exit, m/s.
+    public static let truckStopExitSpeed = 50 / 3.6
+    public static let towFee = 400
+    /// The tow takes time: added to the driving time (matters for deadlines).
+    public static let towSeconds = 300.0
+
     /// Below this speed (m/s), leaving the lane with an assist on means the shoulder, not a crash.
     public static let shoulderSafeSpeed = 25 / 3.6
 
@@ -110,17 +122,37 @@ public final class DrivingSession {
     private var wasStopped = true
     private var announcedTimeWarnings: Set<Double> = []
     private var lastShoulderWarning: Double = -100
+
+    private enum TruckStopState: Equatable {
+        case driving
+        case pulledIn(index: Int)
+        case refueling(index: Int, liters: Double)
+    }
+    private var truckStopState = TruckStopState.driving
+    private var announcedStop: Int?
+    private var exitChecked: Int?
+    private var warnedQuarter = false
+    private var outOfFuelTimer: Double = 0
+
+    /// True while the truck is parked at a pump, filling up.
+    public var isRefueling: Bool { if case .refueling = truckStopState { return true }; return false }
+    /// True after taking a truck stop exit, until leaving the truck stop.
+    public var isAtTruckStop: Bool { truckStopState != .driving }
     private var announcedLate = false
 
     public init(spec: TruckSpec = .starter, road: Road = .practiceLoop, goal: TripGoal = .freeDrive,
-                cargoMassKg: Double = 0, timeLimit: Double? = nil, assist: SteeringAssist = .medium) {
+                cargoMassKg: Double = 0, timeLimit: Double? = nil, startingFuel: Double? = nil,
+                assist: SteeringAssist = .medium) {
         self.spec = spec
         self.road = road
         self.goal = goal
         self.cargoMassKg = cargoMassKg
         self.timeLimit = timeLimit
         self.assist = assist
-        self.truck = TruckState(fuelLiters: spec.fuelCapacityLiters)
+        self.truck = TruckState(fuelLiters: min(spec.fuelCapacityLiters, max(0, startingFuel ?? spec.fuelCapacityLiters)))
+        // A tank already under the warning levels shouldn't be announced as if it just dropped.
+        warnedQuarter = truck.fuelLiters / spec.fuelCapacityLiters < 0.25
+        fuelWarned = truck.fuelLiters / spec.fuelCapacityLiters < 0.1
     }
 
     // MARK: - Actions
@@ -149,7 +181,7 @@ public final class DrivingSession {
             return [.dashboard(dashboard)]
         case .speakRoadAhead:
             return [.roadAhead(road.nextCurve(after: truck.position, within: 3_000), remaining: remaining,
-                               timeLeft: timeLeft)]
+                               timeLeft: timeLeft, truckStop: road.nextTruckStop(after: truck.position)?.distance)]
         case .pause, .toggleRadio, .nextSong, .previousSong:
             return []
         }
@@ -164,9 +196,19 @@ public final class DrivingSession {
             engineTempC: truck.engineTempC,
             signal: truck.signal,
             engine: truck.engine,
-            speedLimit: road.speedLimit
+            speedLimit: road.speedLimit,
+            range: range
         )
     }
+
+    /// Litres per metre the truck burns: measured this trip once it has gone a little way, else a typical cruise.
+    public var fuelPerMetre: Double {
+        if stats.distance > 1_000 && stats.fuelUsedLiters > 0 { return stats.fuelUsedLiters / stats.distance }
+        return 0.12 / 22 // about 0.12 L/s at 80 km/h with the game's fuel scale
+    }
+
+    /// How far the fuel left will go, metres.
+    public var range: Double { truck.fuelLiters / fuelPerMetre }
 
     /// Seconds left before the delivery is late (negative once late), or nil without a deadline.
     public var timeLeft: Double? {
@@ -213,6 +255,8 @@ public final class DrivingSession {
         stepTemperatureAndFuel(dt: dt, events: &events)
         checkLane(events: &events)
         checkCurves(events: &events)
+        checkTruckStops(dt: dt, input: input, events: &events)
+        checkTow(dt: dt, events: &events)
         updateStats(dt: dt, events: events)
         checkTrip(events: &events)
         return events
@@ -222,7 +266,6 @@ public final class DrivingSession {
         if stats.drivingTime > 0 || truck.speed > 0.1 { stats.drivingTime += dt }
         stats.distance = truck.odometer
         stats.topSpeed = max(stats.topSpeed, truck.speed)
-        stats.fuelUsedLiters = spec.fuelCapacityLiters - truck.fuelLiters
         for event in events {
             switch event {
             case .crashed: stats.crashes += 1
@@ -425,16 +468,111 @@ public final class DrivingSession {
 
         guard running else { return }
         let powerKW = spec.torque(atRPM: truck.rpm) * truck.engineLoad * truck.rpm * 2 * .pi / 60 / 1000
-        let litersPerSecond = 0.0005 + powerKW * 0.252 / 3600
-        truck.fuelLiters = max(0, truck.fuelLiters - litersPerSecond * dt)
+        let litersPerSecond = (0.0005 + powerKW * 0.252 / 3600) * DrivingSession.fuelGameScale
+        let burned = min(truck.fuelLiters, litersPerSecond * dt)
+        truck.fuelLiters -= burned
+        stats.fuelUsedLiters += burned
+        let fraction = truck.fuelLiters / spec.fuelCapacityLiters
         if truck.fuelLiters <= 0 {
             truck.engine = .off
             events.append(.outOfFuel)
             events.append(.engineStopped)
-        } else if !fuelWarned && truck.fuelLiters / spec.fuelCapacityLiters < 0.1 {
+        } else if !fuelWarned && fraction < 0.1 {
             fuelWarned = true
-            events.append(.lowFuel)
+            warnedQuarter = true
+            events.append(.fuelLow(fraction: fraction, nextStop: road.nextTruckStop(after: truck.position)?.distance, urgent: true))
+        } else if !warnedQuarter && fraction < 0.25 {
+            warnedQuarter = true
+            events.append(.fuelLow(fraction: fraction, nextStop: road.nextTruckStop(after: truck.position)?.distance, urgent: false))
         }
+    }
+
+    // MARK: - Truck stops
+
+    private func checkTruckStops(dt: Double, input: DrivingInput, events: inout [SimEvent]) {
+        let fraction = truck.fuelLiters / spec.fuelCapacityLiters
+        switch truckStopState {
+        case .driving:
+            guard let next = road.nextTruckStop(after: truck.position) else { break }
+            // Heads-up when fuel is under half.
+            if next.distance < 1_500 && announcedStop != next.index && fraction < 0.5 && truck.speed > 2 {
+                announcedStop = next.index
+                events.append(.truckStopAhead(distance: next.distance))
+            }
+            // Taking the exit: right signal on while passing the truck stop, slowly enough.
+            if next.distance < 40 && exitChecked != next.index && truck.signal == .on(.right) {
+                exitChecked = next.index
+                if truck.speed <= DrivingSession.truckStopExitSpeed {
+                    truckStopState = .pulledIn(index: next.index)
+                    truck.signal = .off
+                    events.append(.pulledIntoTruckStop)
+                } else {
+                    events.append(.missedTruckStop(tooFast: true))
+                }
+            }
+            if next.distance > 200 && exitChecked == next.index { exitChecked = nil }
+            if next.distance > 2_000 && announcedStop == next.index { announcedStop = nil }
+
+        case let .pulledIn(index):
+            // Signed distance past the pump (negative = still before it), wrapped for looping roads.
+            var past = truck.position - road.truckStops[index]
+            if road.loops {
+                if past > road.totalLength / 2 { past -= road.totalLength }
+                if past < -road.totalLength / 2 { past += road.totalLength }
+            }
+            if truck.speed < 0.3 && past > -150 && past < 300 {
+                truckStopState = .refueling(index: index, liters: 0)
+                events.append(.refuelStarted)
+            } else if past >= 300 {
+                truckStopState = .driving
+                events.append(.leftTruckStop)
+            }
+
+        case let .refueling(index, liters):
+            let room = spec.fuelCapacityLiters - truck.fuelLiters
+            let add = min(room, DrivingSession.pumpRate * dt)
+            truck.fuelLiters += add
+            let total = liters + add
+            // Done when full, or when the driver drives off early.
+            if truck.fuelLiters >= spec.fuelCapacityLiters - 0.01 || input.throttle > 0.3 {
+                let cost = Int((total * DrivingSession.truckStopFuelPrice).rounded())
+                stats.fuelBoughtLiters += total
+                stats.fuelCost += cost
+                truckStopState = .pulledIn(index: index)
+                fuelWarned = truck.fuelLiters / spec.fuelCapacityLiters < 0.1
+                warnedQuarter = truck.fuelLiters / spec.fuelCapacityLiters < 0.25
+                events.append(.refueled(liters: total, cost: cost))
+                // Parked at the pump: count as moving on so the next stop isn't another refuel.
+                truckStopState = .driving
+                exitChecked = index
+            } else {
+                truckStopState = .refueling(index: index, liters: total)
+            }
+        }
+    }
+
+    /// Out of fuel and stopped: a tow truck takes you to the next truck stop and puts in a quarter tank.
+    private func checkTow(dt: Double, events: inout [SimEvent]) {
+        guard truck.fuelLiters <= 0, truck.speed < 0.3 else { outOfFuelTimer = 0; return }
+        outOfFuelTimer += dt
+        guard outOfFuelTimer > 3 else { return }
+        outOfFuelTimer = 0
+        if let next = road.nextTruckStop(after: truck.position) {
+            truck.position = road.normalized(truck.position + next.distance)
+            truck.odometer += next.distance
+        }
+        recover()
+        let liters = spec.fuelCapacityLiters * 0.25
+        truck.fuelLiters = liters
+        let fuelCost = Int((liters * DrivingSession.truckStopFuelPrice).rounded())
+        stats.tows += 1
+        stats.towCost += DrivingSession.towFee
+        stats.fuelBoughtLiters += liters
+        stats.fuelCost += fuelCost
+        stats.drivingTime += DrivingSession.towSeconds
+        fuelWarned = false
+        warnedQuarter = true
+        events.append(.towed(cost: DrivingSession.towFee, fuelCost: fuelCost))
     }
 
     private func checkLane(events: inout [SimEvent]) {

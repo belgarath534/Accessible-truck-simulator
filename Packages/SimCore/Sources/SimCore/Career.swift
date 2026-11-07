@@ -102,10 +102,32 @@ public struct Payout: Equatable, Sendable {
     public struct Line: Equatable, Sendable {
         public var label: String
         public var amount: Int
+        public init(label: String, amount: Int) { self.label = label; self.amount = amount }
     }
 
     public var lines: [Line]
-    public var total: Int { max(0, lines.reduce(0) { $0 + $1.amount }) }
+
+    public init(lines: [Line]) { self.lines = lines }
+    /// Can be negative: a drive with fuel or tow costs and no pay (practice) costs money.
+    public var total: Int { lines.reduce(0) { $0 + $1.amount } }
+
+    /// Fuel bought at truck stops and tows during a drive.
+    public static func expenses(_ stats: TripStats) -> [Line] {
+        var lines: [Line] = []
+        if stats.fuelCost > 0 {
+            lines.append(Line(label: "Fuel at truck stops", amount: -stats.fuelCost))
+        }
+        if stats.towCost > 0 {
+            lines.append(Line(label: "Tow truck\(stats.tows == 1 ? "" : ", \(stats.tows) times")", amount: -stats.towCost))
+        }
+        return lines
+    }
+
+    /// Practice pays nothing; this is only its costs, or nil if there were none.
+    public static func practice(_ stats: TripStats) -> Payout? {
+        let lines = expenses(stats)
+        return lines.isEmpty ? nil : Payout(lines: lines)
+    }
 
     /// Free Drive pays a small amount per kilometre: steady but slow money.
     public static let freeDriveRatePerKm = 35.0
@@ -113,12 +135,14 @@ public struct Payout: Equatable, Sendable {
     public static let repairCost = 150
 
     public static func freeDrive(_ stats: TripStats) -> Payout {
-        var lines = [Line(label: "Driving pay", amount: Int((stats.distance / 1_000 * freeDriveRatePerKm).rounded()))]
+        let pay = Int((stats.distance / 1_000 * freeDriveRatePerKm).rounded())
+        var lines = [Line(label: "Driving pay", amount: pay)]
         if stats.crashes > 0 {
+            // Repairs never cost more than the drive earned.
             lines.append(Line(label: "Repairs for \(stats.crashes) crash\(stats.crashes == 1 ? "" : "es")",
-                              amount: -repairCost * stats.crashes))
+                              amount: -min(pay, repairCost * stats.crashes)))
         }
-        return Payout(lines: lines)
+        return Payout(lines: lines + expenses(stats))
     }
 
     public static func delivery(_ job: DeliveryJob, summary: TripSummary) -> Payout {
@@ -148,7 +172,7 @@ public struct Payout: Equatable, Sendable {
         if summary.stopRating == .perfect {
             lines.append(Line(label: "Perfect stop bonus", amount: Int((Double(base) * 0.05).rounded())))
         }
-        return Payout(lines: lines)
+        return Payout(lines: lines + expenses(stats))
     }
 }
 
@@ -167,6 +191,11 @@ public struct CareerState: Codable, Equatable, Sendable {
     public var selectedTruck: String
     /// Upgrade levels per truck id.
     public var upgrades: [String: UpgradeLevels]
+    /// Litres in each truck's tank, by truck id (missing = full).
+    public var fuel: [String: Double]
+
+    /// Dollars per litre to fill up at your own yard (truck stops are cheaper).
+    public static let yardFuelPrice = 3.0
 
     public static let startingMoney = 500
 
@@ -181,11 +210,12 @@ public struct CareerState: Codable, Equatable, Sendable {
         ownedTrucks = [TruckSpec.starter.id]
         selectedTruck = TruckSpec.starter.id
         upgrades = [:]
+        fuel = [:]
     }
 
     // Saves from before the garage existed have no truck fields: give them the starter truck.
     enum CodingKeys: String, CodingKey {
-        case money, jobsCompleted, kilometersDriven, totalEarned, jobBoard, seed, ownedTrucks, selectedTruck, upgrades
+        case money, jobsCompleted, kilometersDriven, totalEarned, jobBoard, seed, ownedTrucks, selectedTruck, upgrades, fuel
     }
 
     public init(from decoder: Decoder) throws {
@@ -199,6 +229,34 @@ public struct CareerState: Codable, Equatable, Sendable {
         ownedTrucks = try c.decodeIfPresent([String].self, forKey: .ownedTrucks) ?? [TruckSpec.starter.id]
         selectedTruck = try c.decodeIfPresent(String.self, forKey: .selectedTruck) ?? TruckSpec.starter.id
         upgrades = try c.decodeIfPresent([String: UpgradeLevels].self, forKey: .upgrades) ?? [:]
+        fuel = try c.decodeIfPresent([String: Double].self, forKey: .fuel) ?? [:]
+    }
+
+    /// Litres in the selected truck's tank.
+    public func fuelLiters(for truck: TruckSpec) -> Double {
+        min(fuel[truck.id] ?? .infinity, truck.upgraded(upgradeLevels(for: truck)).fuelCapacityLiters)
+    }
+
+    public mutating func setFuel(_ liters: Double, for truck: TruckSpec) {
+        fuel[truck.id] = max(0, liters)
+    }
+
+    /// Cost to fill a truck at the yard.
+    public func yardFillCost(for truck: TruckSpec) -> Int {
+        let capacity = truck.upgraded(upgradeLevels(for: truck)).fuelCapacityLiters
+        return Int(((capacity - fuelLiters(for: truck)) * CareerState.yardFuelPrice).rounded())
+    }
+
+    /// Fills the tank at the yard. Returns false if there isn't enough money (fills what you can afford).
+    @discardableResult
+    public mutating func fillAtYard(_ truck: TruckSpec) -> Bool {
+        let capacity = truck.upgraded(upgradeLevels(for: truck)).fuelCapacityLiters
+        let current = fuelLiters(for: truck)
+        let affordable = Double(max(0, money)) / CareerState.yardFuelPrice
+        let liters = min(capacity - current, affordable)
+        money -= Int((liters * CareerState.yardFuelPrice).rounded())
+        fuel[truck.id] = current + liters
+        return current + liters >= capacity - 0.01
     }
 
     /// The truck being driven, with its upgrades.

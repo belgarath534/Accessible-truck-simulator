@@ -1,15 +1,13 @@
-New: truck upgrades! Headphones recommended.
+New: fuel and truck stops! Headphones recommended.
 
-• In the Garage, each truck you own has an Upgrades screen with four upgrades, three levels each:
-  - Engine: 12 percent more power per level, and the engine sounds bigger and deeper, with more turbo.
-  - Brakes: 10 percent stronger per level. Stop shorter, especially with heavy loads.
-  - Tires: 8 percent more grip in curves per level.
-  - Fuel tank: 25 percent bigger per level.
-• Upgrades belong to the truck you bought them for.
-• Hear the Engine in the Upgrades screen plays the upgraded sound.
-• Also new: the Garage with three trucks (Old Reliable, Workhorse and Road King), each with its own engine sound.
+• Fuel stays in your truck between drives, and a full tank lasts about an hour. The dashboard (two-finger double tap) says how far you can go.
+• Three truck stops on the loop. Under half a tank you'll hear one coming; the three-finger tap always says the distance to the next one.
+• To fill up: signal right before the truck stop and slow below 50 km/h (30 mph). Stop at the pump and listen to it fill. Press the gas to leave early.
+• Warnings at a quarter tank and 10 percent. Running out gets you towed to the next truck stop: a tow fee, a quarter tank, and 5 minutes lost.
+• Truck stops are cheaper than filling up at the yard in the Garage. Fuel costs come off your pay.
+• Also new: truck upgrades (engine, brakes, tires, fuel tank) and the Garage with three trucks.
 
 Please check:
-• Can you hear the engine upgrade?
-• Do the prices feel fair for what you earn from jobs?
-• Do the Garage and Upgrades screens read well with VoiceOver?
+• Is pulling into a truck stop easy to do by ear?
+• Does a tank last a good amount of time?
+• Are fuel prices fair compared with what jobs pay?

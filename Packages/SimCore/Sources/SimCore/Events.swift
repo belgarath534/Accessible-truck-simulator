@@ -73,9 +73,18 @@ public enum SimEvent: Equatable, Sendable {
     case onShoulder(Side)
     case crashed(CrashReason)
     case outOfFuel
-    case lowFuel
+    /// Fuel under a quarter (or under 10 percent when `urgent`), with the distance to the next truck stop.
+    case fuelLow(fraction: Double, nextStop: Double?, urgent: Bool)
+    case truckStopAhead(distance: Double)
+    case pulledIntoTruckStop
+    case missedTruckStop(tooFast: Bool)
+    case refuelStarted
+    case refueled(liters: Double, cost: Int)
+    case leftTruckStop
+    /// Out of fuel: towed to the next truck stop for a fee, with a little fuel put in.
+    case towed(cost: Int, fuelCost: Int)
     case dashboard(DashboardReading)
-    case roadAhead(UpcomingCurve?, remaining: Double?, timeLeft: Double?)
+    case roadAhead(UpcomingCurve?, remaining: Double?, timeLeft: Double?, truckStop: Double?)
     /// Delivery deadline reminders (5 minutes and 1 minute left).
     case timeLeft(seconds: Double)
     case lateForDelivery
@@ -100,4 +109,6 @@ public struct DashboardReading: Equatable, Sendable {
     public var signal: SignalState
     public var engine: EngineState
     public var speedLimit: Double // m/s
+    /// Roughly how far the fuel left will go, metres.
+    public var range: Double = 0
 }

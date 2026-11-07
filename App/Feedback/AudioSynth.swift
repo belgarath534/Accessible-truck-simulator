@@ -17,6 +17,8 @@ final class SynthState {
     var laneToneEnabled = true
     var signalOn = false
     var hornSeconds: Float = 0
+    /// Fuel pump running (truck stop).
+    var pumping = false
     var crashSeconds: Float = 0
     var shiftSeconds: Float = 0
     var volume: Float = 0.8
@@ -195,6 +197,7 @@ private final class FXVoice: Voice {
     let state: SynthState
     let sr: Float
     var signalPhase: Float = 0, hornA: Float = 0, hornB: Float = 0, clickOsc: Float = 0, lp: Float = 0
+    var pumpPhase: Float = 0, pumpLP: Float = 0
     var noise = Noise(seed: 0x0BAD_F00D)
 
     init(state: SynthState, sampleRate: Float) { self.state = state; sr = sampleRate }
@@ -227,6 +230,13 @@ private final class FXVoice: Voice {
                 let n = noise.next()
                 lp += (n - lp) * 0.2
                 s += (n - lp) * 0.25 * (state.shiftSeconds / 0.25)
+            }
+            if state.pumping {
+                // Fuel pump: an electric motor hum with liquid rushing.
+                pumpPhase += 118 / sr; if pumpPhase >= 1 { pumpPhase -= 1 }
+                let n = noise.next()
+                pumpLP += (n - pumpLP) * 0.05
+                s += (sinf(twoPi * pumpPhase) * 0.12 + sinf(twoPi * pumpPhase * 2) * 0.05 + pumpLP * 0.5) * 0.8
             }
             if state.crashSeconds > 0 {
                 state.crashSeconds -= dt

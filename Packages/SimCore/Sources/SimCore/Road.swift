@@ -71,10 +71,15 @@ public struct Road: Sendable {
     private var starts: [Double]
     public let totalLength: Double
 
-    public init(segments: [RoadSegment], loops: Bool = true, speedLimit: Double = 80 / 3.6) {
+    /// Positions (metres along the road) of truck stops with fuel pumps.
+    public var truckStops: [Double] = []
+
+    public init(segments: [RoadSegment], loops: Bool = true, speedLimit: Double = 80 / 3.6,
+                truckStops: [Double] = []) {
         self.segments = segments
         self.loops = loops
         self.speedLimit = speedLimit
+        self.truckStops = truckStops.sorted()
         var s = 0.0
         var starts: [Double] = []
         for seg in segments {
@@ -121,6 +126,22 @@ public struct Road: Sendable {
 
     /// The next curve starting within `lookahead` metres of `position`, if any.
     /// A curve the truck is already inside is not returned.
+    /// The next truck stop ahead: its index and the distance to it (metres). Wraps on looping roads.
+    public func nextTruckStop(after position: Double) -> (index: Int, distance: Double)? {
+        guard !truckStops.isEmpty else { return nil }
+        let s = normalized(position)
+        if let i = truckStops.firstIndex(where: { $0 >= s }) { return (i, truckStops[i] - s) }
+        guard loops else { return nil }
+        return (0, truckStops[0] + totalLength - s)
+    }
+
+    /// Puts truck stops in the middle of the given straight segments.
+    func withTruckStops(onSegments indices: [Int]) -> Road {
+        var r = self
+        r.truckStops = indices.map { starts[$0] + segments[$0].length / 2 }.sorted()
+        return r
+    }
+
     public func nextCurve(after position: Double, within lookahead: Double) -> UpcomingCurve? {
         guard !segments.isEmpty else { return nil }
         let s = normalized(position)
@@ -174,4 +195,5 @@ public extension Road {
         .left(radius: 800, length: 600),
         .straight(1_200),
     ])
+        .withTruckStops(onSegments: [6, 12, 20])
 }

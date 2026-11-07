@@ -34,6 +34,11 @@ public struct TripStats: Equatable, Sendable {
     public var topSpeed: Double = 0
     public var tooFastWarnings = 0
     public var fuelUsedLiters: Double = 0
+    /// Money spent during the drive: fuel at truck stops and tows.
+    public var fuelBoughtLiters: Double = 0
+    public var fuelCost: Int = 0
+    public var tows: Int = 0
+    public var towCost: Int = 0
 
     public init() {}
 

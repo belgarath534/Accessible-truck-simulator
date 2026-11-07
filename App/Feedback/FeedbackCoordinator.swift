@@ -139,12 +139,29 @@ final class FeedbackCoordinator {
             lastSpokenSpeedStep = 0
         case .outOfFuel:
             speech.speak("Out of fuel.", priority: .high)
-        case .lowFuel:
-            speech.speak("Fuel low.", priority: .normal)
+        case let .fuelLow(fraction, nextStop, urgent):
+            speech.speak(phrases.fuelLow(fraction: fraction, nextStop: nextStop, urgent: urgent), priority: urgent ? .high : .normal)
+            if urgent { haptics.tap(intensity: 0.9, sharpness: 0.6) }
+        case let .truckStopAhead(distance):
+            speech.speak(phrases.truckStopAhead(distance), priority: .normal)
+        case .pulledIntoTruckStop:
+            speech.speak(phrases.pulledIntoTruckStop, priority: .high)
+        case let .missedTruckStop(tooFast):
+            speech.speak(phrases.missedTruckStop(tooFast: tooFast), priority: .high)
+        case .refuelStarted:
+            speech.speak(phrases.refuelStarted, priority: .high)
+        case let .refueled(liters, cost):
+            speech.speak(phrases.refueled(liters: liters, cost: cost), priority: .high)
+            haptics.tap(intensity: 0.5, sharpness: 0.5)
+        case .leftTruckStop:
+            speech.speak(phrases.leftTruckStop, priority: .normal)
+        case let .towed(cost, fuelCost):
+            speech.speak(phrases.towed(cost: cost, fuelCost: fuelCost), priority: .high)
         case let .dashboard(reading):
             speech.speak(phrases.dashboard(reading), priority: .high)
-        case let .roadAhead(curve, remaining, timeLeft):
-            speech.speak(phrases.roadAhead(curve, remaining: remaining, timeLeft: timeLeft), priority: .high)
+        case let .roadAhead(curve, remaining, timeLeft, truckStop):
+            speech.speak(phrases.roadAhead(curve, remaining: remaining, timeLeft: timeLeft, truckStop: truckStop),
+                         priority: .high)
         case let .timeLeft(seconds):
             speech.speak(phrases.timeLeft(seconds), priority: .normal)
         case .lateForDelivery:
@@ -176,6 +193,7 @@ final class FeedbackCoordinator {
     func update(session: DrivingSession) {
         let truck = session.truck
         audio.update(truck: truck, spec: session.spec)
+        audio.state.pumping = session.isRefueling
         haptics.update(
             engineRunning: truck.engine == .running,
             rpmFraction: truck.rpm / session.spec.maxRPM,

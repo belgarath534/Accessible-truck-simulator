@@ -34,16 +34,24 @@ final class DrivingController: NSObject, ObservableObject {
         self.settings = settings
         self.career = career
         self.drive = drive
-        session = DrivingController.makeSession(drive, settings, career.truck)
+        session = DrivingController.makeSession(drive, settings, career.truck, fuel: career.fuelLiters)
         touch = TouchInterpreter(mode: settings.steeringMode, areaWidth: 800)
         feedback = FeedbackCoordinator(settings: settings)
         super.init()
         hardware.onAction = { [weak self] action in self?.perform(action) }
     }
 
-    private static func makeSession(_ drive: DriveMode, _ settings: AppSettings, _ truck: TruckSpec) -> DrivingSession {
-        DrivingSession(spec: truck, goal: drive.goal, cargoMassKg: drive.job?.cargo.massKg ?? 0,
+    private static func makeSession(_ drive: DriveMode, _ settings: AppSettings, _ truck: TruckSpec,
+                                    fuel: Double) -> DrivingSession {
+        DrivingSession(spec: truck, goal: drive.goal, startingFuel: fuel, cargoMassKg: drive.job?.cargo.massKg ?? 0,
                        timeLimit: drive.job?.timeLimit, assist: settings.assist)
+    }
+
+    /// Leaving or restarting a drive that didn't finish: keep the fuel level and charge any fuel or tow costs.
+    private func closeOutUnfinished() {
+        career.saveFuel(session.truck.fuelLiters)
+        let costs = Payout.expenses(session.stats)
+        if !costs.isEmpty { career.charge(Payout(lines: costs)) }
     }
 
     /// Free Drive's pay so far (nil for other drives).
@@ -121,16 +129,21 @@ final class DrivingController: NSObject, ObservableObject {
 
     /// Leaving mid-drive: Free Drive still pays for the distance; an unfinished job pays nothing.
     func quit() {
-        if drive == .freeDrive && finished == nil && session.stats.distance > 0 {
-            settle(TripSummary(goalName: goal.name, stats: session.stats, stopError: 0))
+        if finished == nil {
+            if drive == .freeDrive && session.stats.distance > 0 {
+                settle(TripSummary(goalName: goal.name, stats: session.stats, stopError: 0))
+            } else {
+                closeOutUnfinished()
+            }
         }
         stop()
     }
 
     private func settle(_ summary: TripSummary) {
         let result: Payout?
+        career.saveFuel(session.truck.fuelLiters)
         switch drive {
-        case .practice: result = nil
+        case .practice: result = Payout.practice(summary.stats)
         case .freeDrive: result = Payout.freeDrive(summary.stats)
         case let .job(job): result = Payout.delivery(job, summary: summary)
         }
@@ -139,7 +152,8 @@ final class DrivingController: NSObject, ObservableObject {
     }
 
     func restart() {
-        session = DrivingController.makeSession(drive, settings, career.truck)
+        if finished == nil { closeOutUnfinished() }
+        session = DrivingController.makeSession(drive, settings, career.truck, fuel: career.fuelLiters)
         payout = nil
         feedback.reset()
         touch.reset()

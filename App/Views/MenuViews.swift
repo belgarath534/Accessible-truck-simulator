@@ -17,7 +17,7 @@ struct MainMenuView: View {
                     if career.state.jobsCompleted > 0 {
                         Text("Jobs delivered: \(career.state.jobsCompleted)")
                     }
-                    Text("Driving: \(career.truck.name)")
+                    Text("Driving: \(career.truck.name). Fuel \(Int((career.fuelLiters / career.truck.fuelCapacityLiters * 100).rounded())) percent.")
                 }
                 Section {
                     NavigationLink {
@@ -138,6 +138,13 @@ struct ControlsHelpView: View {
                 Text("While driving a job, the three-finger tap tells you the distance and time left. You'll hear reminders at 5 minutes and 1 minute.")
                 Text("Free Drive pays a little for every kilometer. Pause and choose End Drive and Get Paid, or Quit to Main Menu, which also pays. Each crash costs a repair fee.")
             }
+            Section("Fuel and truck stops") {
+                Text("Fuel stays in your truck between drives. A full tank lasts about an hour of driving. The dashboard, two-finger double tap, says how far your fuel will take you.")
+                Text("There are three truck stops on the loop. When your fuel is under half you'll hear one coming, and the three-finger tap always tells you the distance to the next one.")
+                Text("To fill up: signal right before the truck stop and slow below 50 kilometers or 30 miles per hour as you reach it. Stop at the pump and wait while it fills. Press the gas to leave early.")
+                Text("You're warned at a quarter tank and at 10 percent. If you run out, a tow truck takes you to the next truck stop for a fee and puts in a quarter tank. That costs 5 minutes too.")
+                Text("Fuel at truck stops costs less than filling up at your yard in the Garage. Fuel and tow costs come off your pay.")
+            }
             Section("Keyboard and controller") {
                 Text("Keyboard: Up or W accelerate, Down or S brake, Left and Right or A and D steer. Left and right bracket for signals, I dashboard, G GPS, N engine, H horn, Escape pause, R radio on or off, comma and period for the previous or next song.")
                 Text("Controller: right trigger accelerate, left trigger brake, left stick steer, shoulder buttons for signals, A dashboard, X GPS, Y engine, B horn, Menu pause, D-pad up radio on or off, D-pad left and right to change songs.")
@@ -242,6 +249,18 @@ struct GarageView: View {
                 Section {
                     Text(phrases.truck(career.upgraded(truck)))
                     if career.state.owns(truck) {
+                        let capacity = career.upgraded(truck).fuelCapacityLiters
+                        let percent = Int((career.state.fuelLiters(for: truck) / capacity * 100).rounded())
+                        let fillCost = career.state.yardFillCost(for: truck)
+                        Text("Fuel: \(percent) percent.")
+                        if fillCost > 0 {
+                            Button("Fill Up at the Yard for \(Phrases.money(fillCost))") {
+                                let full = career.fillAtYard(truck)
+                                announce(full ? "Tank full. \(Phrases.money(career.money)) left in the bank."
+                                              : "Not enough money for a full tank. Filled what you could afford.")
+                            }
+                            .accessibilityHint("Truck stops on the road are cheaper.")
+                        }
                         NavigationLink("Upgrades") { UpgradesView(truck: truck) }
                             .accessibilityHint("Engine, brakes, tires and fuel tank for the \(truck.name).")
                     }

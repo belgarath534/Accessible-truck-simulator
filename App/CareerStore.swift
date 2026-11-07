@@ -63,6 +63,26 @@ final class CareerStore: ObservableObject {
     }
 
     var truck: TruckSpec { state.truck }
+    /// The selected truck without upgrades (used as the key for per-truck saves).
+    var baseTruck: TruckSpec { TruckSpec.withID(state.selectedTruck) }
+    var fuelLiters: Double { state.fuelLiters(for: baseTruck) }
+
+    func saveFuel(_ liters: Double) {
+        state.setFuel(liters, for: baseTruck)
+        save()
+    }
+
+    func fillAtYard(_ truck: TruckSpec) -> Bool {
+        let full = state.fillAtYard(truck)
+        save()
+        return full
+    }
+
+    /// Charges a drive's costs without pay (abandoned job, restarted drive, practice).
+    func charge(_ payout: Payout) {
+        state.record(payout, distance: 0)
+        save()
+    }
 
     func buy(_ truck: TruckSpec) -> CareerState.PurchaseResult {
         let result = state.buy(truck)
