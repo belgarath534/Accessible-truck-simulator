@@ -1,0 +1,97 @@
+# Accessible Truck Simulator on Codemagic, set up the same way as Dungeon Descent:
+# same App Store Connect key ("Accessible Backrooms") and same distribution certificate.
+# Start builds by hand in Codemagic. Every successful build goes to TestFlight.
+workflows:
+  truck-sim-testflight:
+    name: Truck Sim TestFlight
+    # Paid pay-as-you-go Mac: starts right away instead of waiting in the free line.
+    # The 45 minute cap keeps a stuck build from costing much (a normal build is a few minutes).
+    max_build_duration: 45
+    instance_type: mac_mini_m4
+    integrations:
+      app_store_connect: Accessible Backrooms
+    environment:
+      ios_signing:
+        certificates:
+          - Accessible Backrooms Distribution
+      vars:
+        BUNDLE_ID: com.accessibletrucksim.TruckSim
+        PROFILE_NAME: Truck Sim App Store
+      xcode: latest
+    scripts:
+      - name: Run the driving simulation tests
+        script: |
+          cd Packages/SimCore
+          swift test
+      - name: Set build number and make the Xcode project
+        script: |
+          set -e
+          sed -i '' "s/CURRENT_PROJECT_VERSION: \"[0-9]*\"/CURRENT_PROJECT_VERSION: \"$BUILD_NUMBER\"/" project.yml
+          grep CURRENT_PROJECT_VERSION project.yml
+          brew install xcodegen
+          xcodegen generate
+      - name: Get the App Store profile from Apple
+        script: |
+          # Uses the App Store Connect key from the integration above.
+          # Registers the bundle ID and creates the profile the first time; reuses them after that.
+          set -e
+          DEST="$HOME/Library/MobileDevice/Provisioning Profiles"
+          mkdir -p "$DEST"
+
+          BID=$(app-store-connect bundle-ids list --bundle-id-identifier "$BUNDLE_ID" --strict-match-identifier --platform IOS --json \
+            | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d[0]["id"] if d else "")')
+          if [ -z "$BID" ]; then
+            echo "Registering bundle ID $BUNDLE_ID with Apple"
+            BID=$(app-store-connect bundle-ids create "$BUNDLE_ID" --name "Truck Sim" --platform IOS --json \
+              | python3 -c 'import json,sys; print(json.load(sys.stdin)["id"])')
+          fi
+          echo "Bundle ID resource: $BID"
+
+          TMP=$(mktemp -d)
+          app-store-connect profiles list --type IOS_APP_STORE --state ACTIVE --name "$PROFILE_NAME" --save --profiles-dir "$TMP" || true
+          if ls "$TMP"/*.mobileprovision >/dev/null 2>&1; then
+            echo "Using the existing \"$PROFILE_NAME\" profile"
+            cp "$TMP"/*.mobileprovision "$DEST/"
+            exit 0
+          fi
+
+          # Find the Apple certificate that matches the distribution certificate Codemagic put in the keychain.
+          PEM=$(security find-certificate -a -c "Apple Distribution" -p || true)
+          [ -n "$PEM" ] || PEM=$(security find-certificate -a -c "iPhone Distribution" -p)
+          SERIAL=$(echo "$PEM" | openssl x509 -noout -serial | cut -d= -f2)
+          echo "Distribution certificate serial: $SERIAL"
+          CERT_ID=""
+          for TYPE in DISTRIBUTION IOS_DISTRIBUTION; do
+            CERT_ID=$(app-store-connect certificates list --type $TYPE --json | SERIAL="$SERIAL" python3 -c '
+          import json, os, sys
+          want = os.environ["SERIAL"].upper().lstrip("0")
+          for c in json.load(sys.stdin):
+              serial = (c.get("attributes") or c).get("serialNumber", "")
+              if serial.upper().lstrip("0") == want:
+                  print(c["id"]); break
+          ')
+            [ -n "$CERT_ID" ] && break
+          done
+          if [ -z "$CERT_ID" ]; then
+            echo "Could not find the Accessible Backrooms Distribution certificate on Apple"
+            exit 1
+          fi
+
+          echo "Creating the \"$PROFILE_NAME\" profile"
+          app-store-connect profiles create "$BID" --type IOS_APP_STORE --certificate-ids "$CERT_ID" \
+            --name "$PROFILE_NAME" --save --profiles-dir "$DEST"
+      - name: Use the App Store signing profile
+        script: |
+          xcode-project use-profiles --project TruckSim.xcodeproj
+      - name: Build signed IPA
+        script: |
+          xcode-project build-ipa \
+            --project TruckSim.xcodeproj \
+            --scheme TruckSim
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: false  # internal testers get every build anyway

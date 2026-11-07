@@ -21,5 +21,9 @@ audio, lane guidance beeps, spoken curve warnings and dashboard, and vibration. 
 ## Building without a Mac
 
 GitHub Actions (`.github/workflows/build.yml`) runs the tests on Linux and builds the app on a macOS runner.
-Every push uploads an unsigned `TruckSim-unsigned.ipa` artifact. To install on an iPhone, the workflow can also
-sign the app in Apple's cloud and upload it to TestFlight: see [docs/TESTFLIGHT.md](docs/TESTFLIGHT.md).
+Every push uploads an unsigned `TruckSim-unsigned.ipa` artifact (a quick compile check).
+
+## TestFlight
+
+Signed builds go through Codemagic (`codemagic.yaml`), set up the same way as Dungeon Descent: the
+"Accessible Backrooms" App Store Connect key and distribution certificate. See [docs/CODEMAGIC.md](docs/CODEMAGIC.md).
