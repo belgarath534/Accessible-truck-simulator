@@ -25,6 +25,12 @@ final class SynthState {
     var useSampledEngine = false
     /// A recorded starter sound exists, so the synthesized starter stays quiet too.
     var hasStartSample = false
+    // The truck's engine voice (see EngineSound in SimCore).
+    var pitch: Float = 1
+    var roughness: Float = 0.3
+    var turboAmount: Float = 0.3
+    var bark: Float = 0.2
+    var lope: Float = 0.1
 }
 
 private protocol Voice: AnyObject {
@@ -52,7 +58,8 @@ private func onePoleCoefficient(cutoff: Float, sampleRate: Float) -> Float {
 private final class EngineVoice: Voice {
     let state: SynthState
     let sr: Float
-    var phase: Float = 0, crank: Float = 0, turbo: Float = 0, starter: Float = 0
+    var phase: Float = 0, crank: Float = 0, halfCrank: Float = 0, turbo: Float = 0, starter: Float = 0
+    var cycleAmp: Float = 1
     var rpm: Float = 0, load: Float = 0, amp: Float = 0, lp: Float = 0, lp2: Float = 0
     var noise = Noise()
 
@@ -68,15 +75,23 @@ private final class EngineVoice: Voice {
             load += (state.load - load) * 0.0006
             amp += (targetAmp - amp) * (targetAmp > amp ? 0.002 : 0.00015)
 
-            let fire = max(rpm, 1) / 60 * state.cylinders / 2
-            phase += fire / sr; if phase >= 1 { phase -= 1 }
-            crank += max(rpm, 1) / 60 / sr; if crank >= 1 { crank -= 1 }
+            let fire = max(rpm, 1) / 60 * state.cylinders / 2 * state.pitch
+            phase += fire / sr
+            if phase >= 1 {
+                phase -= 1
+                // Rough engines fire unevenly: each combustion is a little louder or softer.
+                cycleAmp = 1 + state.roughness * noise.next() * 0.4
+            }
+            crank += max(rpm, 1) / 60 * state.pitch / sr; if crank >= 1 { crank -= 1 }
+            halfCrank += max(rpm, 1) / 120 * state.pitch / sr; if halfCrank >= 1 { halfCrank -= 1 }
 
             var body = sinf(twoPi * phase) * 0.45
             body += sinf(twoPi * 2 * phase) * 0.30
             body += sinf(twoPi * 3 * phase) * 0.18
             body += sinf(twoPi * 4 * phase) * (0.08 + 0.06 * load)
-            body += sinf(twoPi * crank) * 0.25
+            // Bigger (lower-pitched) engines carry more low rumble.
+            body += sinf(twoPi * crank) * 0.25 * (1.6 - 0.6 * state.pitch)
+            body *= cycleAmp
 
             // Combustion clatter: a noise burst at the start of every firing, brighter under load.
             let env = expf(-phase * 9)
@@ -84,12 +99,20 @@ private final class EngineVoice: Voice {
             let c = onePoleCoefficient(cutoff: cutoff, sampleRate: sr)
             lp += (noise.next() * env - lp) * c
             lp2 += (lp - lp2) * c
-            let knock = lp2 * (0.8 + 1.4 * load)
+            let knock = lp2 * (0.8 + 1.4 * load) * (0.4 + 1.2 * state.roughness) * cycleAmp
 
             turbo += (1_600 + rpm * 1.3) / sr; if turbo >= 1 { turbo -= 1 }
-            let whistle = sinf(twoPi * turbo) * 0.02 * load * (rpm / state.maxRPM)
+            let whistle = sinf(twoPi * turbo) * 0.06 * state.turboAmount * (0.3 + 0.7 * load) * (rpm / state.maxRPM)
 
             var s = body * (0.28 + 0.22 * load) + knock + whistle
+            // Lumpy idle: the sound rocks once every two crank turns near idle.
+            let nearIdle = max(0, 1 - (rpm - 600) / 500)
+            s *= 1 + state.lope * 0.4 * nearIdle * sinf(twoPi * halfCrank)
+            // Barking exhaust: drive the tone harder into soft saturation.
+            if state.bark > 0 {
+                let drive = 1 + state.bark * 2.5
+                s = tanhf(s * drive) / (0.6 + 0.4 * drive)
+            }
             if state.cranking {
                 starter += 110 / sr; if starter >= 1 { starter -= 1 }
                 s += (starter * 2 - 1) * 0.10 + noise.next() * 0.03
@@ -225,7 +248,12 @@ final class AudioSynth {
     private var sampled: SampledEngine?
     private var configObserver: NSObjectProtocol?
 
-    func start() {
+    func start(sound: EngineSound = .recorded) {
+        state.pitch = Float(sound.pitch)
+        state.roughness = Float(sound.roughness)
+        state.turboAmount = Float(sound.turbo)
+        state.bark = Float(sound.bark)
+        state.lope = Float(sound.lope)
         let session = AVAudioSession.sharedInstance()
         try? session.setCategory(.playback, mode: .default, options: [])
         try? session.setActive(true)
@@ -260,7 +288,7 @@ final class AudioSynth {
         laneNode = attach(lane)
         _ = attach(fx)
 
-        sampled = SampledEngine(engine: engine)
+        sampled = sound.recorded ? SampledEngine(engine: engine) : nil
         state.useSampledEngine = sampled != nil
         state.hasStartSample = sampled?.has("engine_start") ?? false
 
@@ -296,6 +324,16 @@ final class AudioSynth {
         laneNode?.pan = Float(max(-1, min(1, truck.lateralOffset / DrivingSession.rumbleOffset)))
         sampled?.update(rpm: state.rpm, load: state.load, running: state.engineRunning,
                         volume: state.muted ? 0 : state.volume)
+    }
+
+    /// Drives the engine sound directly (garage preview), without a simulation.
+    func setPreview(rpm: Float, load: Float, running: Bool, maxRPM: Float, cylinders: Float) {
+        state.rpm = rpm
+        state.load = load
+        state.engineRunning = running
+        state.maxRPM = maxRPM
+        state.cylinders = cylinders
+        sampled?.update(rpm: rpm, load: load, running: running, volume: state.muted ? 0 : state.volume)
     }
 
     func engineStarting() { sampled?.play("engine_start", volume: state.volume) }

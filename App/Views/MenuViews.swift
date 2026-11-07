@@ -17,6 +17,7 @@ struct MainMenuView: View {
                     if career.state.jobsCompleted > 0 {
                         Text("Jobs delivered: \(career.state.jobsCompleted)")
                     }
+                    Text("Driving: \(career.truck.name)")
                 }
                 Section {
                     NavigationLink {
@@ -28,6 +29,12 @@ struct MainMenuView: View {
                     Button("Free Drive") { drive = .freeDrive }
                         .font(.title2)
                         .accessibilityHint("Drive the loop as long as you like. Pays \(Phrases.money(Int(Payout.freeDriveRatePerKm))) per kilometer.")
+                    NavigationLink {
+                        GarageView()
+                    } label: {
+                        Text("Garage").font(.title2)
+                    }
+                    .accessibilityHint("Buy trucks, hear their engines and choose which one to drive.")
                     Button("Practice Drive") { drive = .practice }
                         .font(.title2)
                         .accessibilityHint("One lap of the country road, then stop at the drop-off. No pay.")
@@ -215,5 +222,65 @@ struct CreditsView: View {
             }
         }
         .navigationTitle("Credits")
+    }
+}
+
+struct GarageView: View {
+    @EnvironmentObject private var settings: AppSettings
+    @EnvironmentObject private var career: CareerStore
+    @StateObject private var preview = EnginePreview()
+    @State private var message: String?
+
+    private var phrases: Phrases { Phrases(units: settings.units) }
+
+    var body: some View {
+        List {
+            Section {
+                Text("Bank: \(Phrases.money(career.money))")
+            }
+            ForEach(TruckSpec.catalog, id: \.id) { truck in
+                Section {
+                    Text(phrases.truck(truck))
+                    if career.truck.id == truck.id {
+                        Text("You're driving this truck.").font(.headline)
+                    } else if career.state.owns(truck) {
+                        Button("Drive This Truck") {
+                            career.select(truck)
+                            announce("You're now driving the \(truck.name).")
+                        }
+                    } else {
+                        Button("Buy for \(Phrases.money(truck.price))") { buy(truck) }
+                            .accessibilityHint(career.money >= truck.price
+                                ? "You'll start driving it right away."
+                                : "You need \(Phrases.money(truck.price - career.money)) more.")
+                    }
+                    Button(preview.playingTruckID == truck.id ? "Stop Engine" : "Hear the Engine") {
+                        if preview.playingTruckID == truck.id { preview.stop() } else { preview.play(truck, volume: settings.volume) }
+                    }
+                } header: {
+                    Text(truck.price == 0 ? truck.name : "\(truck.name), \(Phrases.money(truck.price))")
+                }
+            }
+        }
+        .navigationTitle("Garage")
+        .onDisappear { preview.stop() }
+        .alert(message ?? "", isPresented: Binding(get: { message != nil }, set: { if !$0 { message = nil } })) {
+            Button("OK", role: .cancel) {}
+        }
+    }
+
+    private func buy(_ truck: TruckSpec) {
+        switch career.buy(truck) {
+        case .bought:
+            announce("You bought the \(truck.name) and you're driving it now. \(Phrases.money(career.money)) left in the bank.")
+        case .alreadyOwned:
+            career.select(truck)
+        case let .notEnoughMoney(short):
+            announce("Not enough money. You need \(Phrases.money(short)) more. Deliver jobs to earn it.")
+        }
+    }
+
+    private func announce(_ text: String) {
+        message = text
     }
 }

@@ -1,10 +1,13 @@
-Fixed: tilt steering now works however you hold the phone. Headphones recommended.
+New: the Garage! Buy trucks, each with its own engine sound. Headphones recommended.
 
-• Hold the phone sideways at any angle (upright, tilted back or flat) with the charging port on whichever side you like. Lower the right end to steer right, the left end to steer left. However you hold it when the drive starts counts as straight.
-• Easier steering (assist Low, Medium or High): steering moves the truck sideways and letting go stops the drift. Curves push you to the outside, so steer into them.
-• Leaving the road slowly puts you on the gravel shoulder with a warning. Only leaving it fast is a crash.
+• Garage on the main menu: three trucks. Hear the Engine plays each one: start, rev up and back down.
+  - Old Reliable (yours): steady six-cylinder.
+  - Workhorse ($6,000): rough old diesel, lumpy idle, no turbo. A bit less power, but grips better in curves.
+  - Road King ($18,000): deep V8 rumble with a loud turbo. Much more power, stronger brakes, bigger tank, faster top speed.
+• Buying a truck switches you to it. You can switch back to any truck you own.
+• The main menu says which truck you're driving.
 
 Please check:
-• Does tilting left and right steer the right way now, holding the phone the way you like?
-• How many crashes on a delivery?
-• Do curves feel too easy, too hard, or about right?
+• Do the three engines sound different and good? Which do you like best?
+• Can you feel the Road King's extra power with a heavy load?
+• Does the Garage read well with VoiceOver?

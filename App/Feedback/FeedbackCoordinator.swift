@@ -11,6 +11,8 @@ final class FeedbackCoordinator {
     private var onRumbleStrip = false
     private var lastSpokenSpeedStep: Int?
     private var wasMoving = false
+    /// The current truck's engine voice; set before start().
+    var engineSound: EngineSound = .recorded
 
     init(settings: AppSettings) {
         self.settings = settings
@@ -26,7 +28,7 @@ final class FeedbackCoordinator {
         speech.onSpeakingChanged = { speaking in
             DispatchQueue.main.async { MusicPlayer.shared.setDucked(speaking) }
         }
-        audio.start()
+        audio.start(sound: engineSound)
         haptics.start()
     }
 

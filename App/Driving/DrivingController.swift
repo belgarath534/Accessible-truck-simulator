@@ -34,15 +34,15 @@ final class DrivingController: NSObject, ObservableObject {
         self.settings = settings
         self.career = career
         self.drive = drive
-        session = DrivingController.makeSession(drive, settings)
+        session = DrivingController.makeSession(drive, settings, career.truck)
         touch = TouchInterpreter(mode: settings.steeringMode, areaWidth: 800)
         feedback = FeedbackCoordinator(settings: settings)
         super.init()
         hardware.onAction = { [weak self] action in self?.perform(action) }
     }
 
-    private static func makeSession(_ drive: DriveMode, _ settings: AppSettings) -> DrivingSession {
-        DrivingSession(goal: drive.goal, cargoMassKg: drive.job?.cargo.massKg ?? 0,
+    private static func makeSession(_ drive: DriveMode, _ settings: AppSettings, _ truck: TruckSpec) -> DrivingSession {
+        DrivingSession(spec: truck, goal: drive.goal, cargoMassKg: drive.job?.cargo.massKg ?? 0,
                        timeLimit: drive.job?.timeLimit, assist: settings.assist)
     }
 
@@ -58,6 +58,7 @@ final class DrivingController: NSObject, ObservableObject {
         tilt.rangeDegrees = settings.tiltRange
         tilt.invert = settings.invertTilt
         if settings.steeringMode == .tilt { tilt.start() }
+        feedback.engineSound = session.spec.sound
         feedback.start()
         hardware.start()
 
@@ -138,7 +139,7 @@ final class DrivingController: NSObject, ObservableObject {
     }
 
     func restart() {
-        session = DrivingController.makeSession(drive, settings)
+        session = DrivingController.makeSession(drive, settings, career.truck)
         payout = nil
         feedback.reset()
         touch.reset()

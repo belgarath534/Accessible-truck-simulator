@@ -62,6 +62,19 @@ final class CareerStore: ObservableObject {
         save()
     }
 
+    var truck: TruckSpec { state.truck }
+
+    func buy(_ truck: TruckSpec) -> CareerState.PurchaseResult {
+        let result = state.buy(truck)
+        save()
+        return result
+    }
+
+    func select(_ truck: TruckSpec) {
+        state.select(truck)
+        save()
+    }
+
     func refreshBoard() {
         state.refreshBoard()
         save()

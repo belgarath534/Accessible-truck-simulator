@@ -427,3 +427,58 @@ final class HandlingTests: XCTestCase {
         XCTAssertLessThan(simple, max(realistic, 1) + 1)
     }
 }
+
+final class GarageTests: XCTestCase {
+    func testCatalogIsOrderedAndDistinct() {
+        let trucks = TruckSpec.catalog
+        XCTAssertEqual(trucks.map(\.id), ["old_reliable", "workhorse", "road_king"])
+        XCTAssertEqual(trucks.first?.price, 0)
+        XCTAssertEqual(trucks.map(\.price), trucks.map(\.price).sorted())
+        XCTAssertGreaterThan(TruckSpec.roadKing.horsepower, TruckSpec.starter.horsepower)
+        XCTAssertLessThan(TruckSpec.workhorse.horsepower, TruckSpec.starter.horsepower)
+        XCTAssertNotEqual(TruckSpec.workhorse.sound, TruckSpec.roadKing.sound)
+        XCTAssertEqual(TruckSpec.withID("road_king").name, "Road King")
+        XCTAssertEqual(TruckSpec.withID("nonsense").id, "old_reliable")
+    }
+
+    func testRoadKingPullsHarder() {
+        func zeroToSixty(_ spec: TruckSpec) -> Double {
+            let s = DrivingSession(spec: spec, road: Road(segments: [.straight(90_000)]), cargoMassKg: 20_000)
+            _ = s.perform(.toggleEngine)
+            for _ in 0..<(60 * 2) { _ = s.step(dt: 1.0 / 60, input: .idle) }
+            var t = 0.0
+            while s.truck.speed < 60 / 3.6 && t < 300 { _ = s.step(dt: 1.0 / 60, input: DrivingInput(throttle: 1)); t += 1.0 / 60 }
+            return t
+        }
+        XCTAssertLessThan(zeroToSixty(.roadKing), zeroToSixty(.starter) * 0.85)
+    }
+
+    func testBuyingAndSelecting() {
+        var career = CareerState(seed: 1)
+        XCTAssertEqual(career.truck.id, "old_reliable")
+        XCTAssertEqual(career.buy(.workhorse), .notEnoughMoney(short: 6_000 - CareerState.startingMoney))
+        XCTAssertFalse(career.select(.workhorse))
+        career.money = 7_000
+        XCTAssertEqual(career.buy(.workhorse), .bought)
+        XCTAssertEqual(career.money, 1_000)
+        XCTAssertEqual(career.truck.id, "workhorse")
+        XCTAssertEqual(career.buy(.workhorse), .alreadyOwned)
+        XCTAssertTrue(career.select(.starter))
+        XCTAssertEqual(career.truck.id, "old_reliable")
+    }
+
+    func testOldSaveWithoutGarageLoads() throws {
+        var old = try JSONSerialization.jsonObject(with: JSONEncoder().encode(CareerState(seed: 3))) as! [String: Any]
+        old.removeValue(forKey: "ownedTrucks")
+        old.removeValue(forKey: "selectedTruck")
+        let loaded = try JSONDecoder().decode(CareerState.self, from: JSONSerialization.data(withJSONObject: old))
+        XCTAssertEqual(loaded.ownedTrucks, ["old_reliable"])
+        XCTAssertEqual(loaded.selectedTruck, "old_reliable")
+    }
+
+    func testTruckPhrase() {
+        let text = Phrases(units: .metric).truck(.roadKing)
+        XCTAssertTrue(text.hasPrefix("Road King. "), text)
+        XCTAssertTrue(text.contains("top speed 100 kilometers per hour"), text)
+    }
+}

@@ -11,6 +11,15 @@ public struct TruckSpec: Equatable, Sendable {
 
     public var name: String
 
+    // Shop
+    /// Stable identifier used in save files.
+    public var id = "old_reliable"
+    /// Price in the garage (0 = the starter truck).
+    public var price = 0
+    /// One or two sentences for the garage.
+    public var summary = ""
+    public var sound = EngineSound.recorded
+
     // Mass
     public var massKg: Double
 
@@ -126,4 +135,93 @@ public extension TruckSpec {
         fuelCapacityLiters: 400,
         speedLimiter: 90 / 3.6
     )
+}
+
+/// How a truck's engine sounds. Each truck has its own voice; the synthesizer shapes it from these settings.
+public struct EngineSound: Equatable, Sendable {
+    /// Use the recorded engine loops when they're in the app (falls back to the synthesizer).
+    public var recorded: Bool
+    /// Below 1 sounds bigger and deeper, above 1 smaller and buzzier.
+    public var pitch: Double
+    /// 0 smooth ... 1 rough, clattery old diesel (combustion noise and uneven firing).
+    public var roughness: Double
+    /// 0 no turbo ... 1 loud turbo whistle.
+    public var turbo: Double
+    /// 0 clean ... 1 barking exhaust (harder, more saturated tone).
+    public var bark: Double
+    /// 0 steady idle ... 1 lumpy, rocking idle.
+    public var lope: Double
+
+    public init(recorded: Bool = false, pitch: Double = 1, roughness: Double = 0.3, turbo: Double = 0.3,
+                bark: Double = 0.2, lope: Double = 0.1) {
+        self.recorded = recorded
+        self.pitch = pitch
+        self.roughness = roughness
+        self.turbo = turbo
+        self.bark = bark
+        self.lope = lope
+    }
+
+    public static let recorded = EngineSound(recorded: true)
+}
+
+public extension TruckSpec {
+    /// An older truck: less power and top speed, but planted in curves. Rough, clattery, no turbo.
+    static let workhorse: TruckSpec = {
+        var t = TruckSpec.starter
+        t.name = "Workhorse"
+        t.id = "workhorse"
+        t.price = 6_000
+        t.summary = "An old, tough truck. A bit less power, but it grips the road better in curves. Rough, clattery diesel with a lumpy idle and no turbo."
+        t.torqueCurve = [
+            .init(rpm: 600, torque: 1_100), .init(rpm: 1_000, torque: 1_600), .init(rpm: 1_300, torque: 1_650),
+            .init(rpm: 1_800, torque: 1_300), .init(rpm: 2_100, torque: 900),
+        ]
+        t.steeringLatAccel = 3.5
+        t.maxBrakeDecel = 4.2
+        t.fuelCapacityLiters = 350
+        t.speedLimiter = 85 / 3.6
+        t.cylinders = 6
+        t.sound = EngineSound(pitch: 1.1, roughness: 0.9, turbo: 0, bark: 0.45, lope: 0.7)
+        return t
+    }()
+
+    /// The big rig: lots of power, strong brakes, a big tank. Deep V8 rumble with a loud turbo.
+    static let roadKing: TruckSpec = {
+        var t = TruckSpec.starter
+        t.name = "Road King"
+        t.id = "road_king"
+        t.price = 18_000
+        t.summary = "The big rig. Much more power, stronger brakes and a bigger fuel tank, even with heavy loads. Deep V8 rumble with a loud turbo whistle."
+        t.massKg = 17_500
+        t.torqueCurve = [
+            .init(rpm: 600, torque: 1_500), .init(rpm: 1_000, torque: 2_500), .init(rpm: 1_400, torque: 2_700),
+            .init(rpm: 1_800, torque: 2_300), .init(rpm: 2_100, torque: 1_700),
+        ]
+        t.cylinders = 8
+        t.tractionLimitAccel = 2.8
+        t.maxBrakeDecel = 5.0
+        t.steeringLatAccel = 3.2
+        t.fuelCapacityLiters = 600
+        t.speedLimiter = 100 / 3.6
+        t.sound = EngineSound(pitch: 0.82, roughness: 0.35, turbo: 1, bark: 0.6, lope: 0.35)
+        return t
+    }()
+
+    /// Every truck in the garage, cheapest first.
+    static let catalog: [TruckSpec] = [{
+        var t = TruckSpec.starter
+        t.summary = "Your first truck. Steady six-cylinder with a little turbo: nothing fancy, never lets you down."
+        return t
+    }(), .workhorse, .roadKing]
+
+    /// Peak engine power, horsepower.
+    var horsepower: Int {
+        let watts = torqueCurve.map { $0.torque * $0.rpm * 2 * .pi / 60 }.max() ?? 0
+        return Int((watts / 745.7 / 10).rounded()) * 10
+    }
+
+    static func withID(_ id: String) -> TruckSpec {
+        catalog.first { $0.id == id } ?? .starter
+    }
 }

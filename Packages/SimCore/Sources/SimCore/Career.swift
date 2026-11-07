@@ -162,6 +162,9 @@ public struct CareerState: Codable, Equatable, Sendable {
     public var totalEarned: Int
     public var jobBoard: [DeliveryJob]
     public var seed: UInt64
+    /// Garage: ids of trucks the player owns, and the one they drive.
+    public var ownedTrucks: [String]
+    public var selectedTruck: String
 
     public static let startingMoney = 500
 
@@ -173,6 +176,50 @@ public struct CareerState: Codable, Equatable, Sendable {
         self.seed = seed
         var rng = SeededRandom(seed: seed)
         jobBoard = JobBoard.makeBoard(using: &rng)
+        ownedTrucks = [TruckSpec.starter.id]
+        selectedTruck = TruckSpec.starter.id
+    }
+
+    // Saves from before the garage existed have no truck fields: give them the starter truck.
+    enum CodingKeys: String, CodingKey {
+        case money, jobsCompleted, kilometersDriven, totalEarned, jobBoard, seed, ownedTrucks, selectedTruck
+    }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        money = try c.decode(Int.self, forKey: .money)
+        jobsCompleted = try c.decode(Int.self, forKey: .jobsCompleted)
+        kilometersDriven = try c.decode(Double.self, forKey: .kilometersDriven)
+        totalEarned = try c.decode(Int.self, forKey: .totalEarned)
+        jobBoard = try c.decode([DeliveryJob].self, forKey: .jobBoard)
+        seed = try c.decode(UInt64.self, forKey: .seed)
+        ownedTrucks = try c.decodeIfPresent([String].self, forKey: .ownedTrucks) ?? [TruckSpec.starter.id]
+        selectedTruck = try c.decodeIfPresent(String.self, forKey: .selectedTruck) ?? TruckSpec.starter.id
+    }
+
+    public var truck: TruckSpec { TruckSpec.withID(selectedTruck) }
+
+    public func owns(_ truck: TruckSpec) -> Bool { ownedTrucks.contains(truck.id) }
+
+    public enum PurchaseResult: Equatable, Sendable { case bought, alreadyOwned, notEnoughMoney(short: Int) }
+
+    /// Buys a truck (and starts driving it).
+    @discardableResult
+    public mutating func buy(_ truck: TruckSpec) -> PurchaseResult {
+        if owns(truck) { return .alreadyOwned }
+        guard money >= truck.price else { return .notEnoughMoney(short: truck.price - money) }
+        money -= truck.price
+        ownedTrucks.append(truck.id)
+        selectedTruck = truck.id
+        return .bought
+    }
+
+    /// Picks an owned truck to drive. Returns false if it isn't owned.
+    @discardableResult
+    public mutating func select(_ truck: TruckSpec) -> Bool {
+        guard owns(truck) else { return false }
+        selectedTruck = truck.id
+        return true
     }
 
     /// Adds a drive's earnings and distance.

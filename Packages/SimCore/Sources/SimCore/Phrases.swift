@@ -128,6 +128,12 @@ public struct Phrases {
 
     public let lateForDelivery = "You're late. The pay drops a little for every minute."
 
+    /// A truck's details for the garage.
+    public func truck(_ t: TruckSpec) -> String {
+        let tank = units == .metric ? "\(Int(t.fuelCapacityLiters)) liter tank" : "\(Int((t.fuelCapacityLiters * 0.264_17).rounded())) gallon tank"
+        return "\(t.name). \(t.horsepower) horsepower, top speed \(units.speed(t.speedLimiter)) \(units.speedUnitSpoken), \(tank). \(t.summary)"
+    }
+
     public func payout(_ p: Payout) -> String {
         let lines = p.lines.map { line in
             line.amount < 0 ? "\(line.label): minus \(Phrases.money(-line.amount))."
