@@ -222,6 +222,9 @@ public struct CareerState: Codable, Equatable, Sendable {
     public var fuel: [String: Double]
     /// The town the truck is parked in (map town id).
     public var currentTown: String
+    /// Your hired drivers, and drivers looking for work.
+    public var drivers: [Driver]
+    public var candidates: [Driver]
     public static let homeTown = "millbrook"
 
     /// Dollars per litre to fill up at your own yard (truck stops are cheaper).
@@ -242,11 +245,13 @@ public struct CareerState: Codable, Equatable, Sendable {
         selectedTruck = TruckSpec.starter.id
         upgrades = [:]
         fuel = [:]
+        drivers = []
+        candidates = Company.candidates(using: &rng)
     }
 
     // Saves from before the garage existed have no truck fields: give them the starter truck.
     enum CodingKeys: String, CodingKey {
-        case money, jobsCompleted, kilometersDriven, totalEarned, jobBoard, seed, ownedTrucks, selectedTruck, upgrades, fuel, currentTown
+        case money, jobsCompleted, kilometersDriven, totalEarned, jobBoard, seed, ownedTrucks, selectedTruck, upgrades, fuel, currentTown, drivers, candidates
     }
 
     public init(from decoder: Decoder) throws {
@@ -262,6 +267,13 @@ public struct CareerState: Codable, Equatable, Sendable {
         upgrades = try c.decodeIfPresent([String: UpgradeLevels].self, forKey: .upgrades) ?? [:]
         fuel = try c.decodeIfPresent([String: Double].self, forKey: .fuel) ?? [:]
         currentTown = try c.decodeIfPresent(String.self, forKey: .currentTown) ?? CareerState.homeTown
+        drivers = try c.decodeIfPresent([Driver].self, forKey: .drivers) ?? []
+        if let saved = try c.decodeIfPresent([Driver].self, forKey: .candidates), !saved.isEmpty {
+            candidates = saved
+        } else {
+            var rng = SeededRandom(seed: seed &+ 99)
+            candidates = Company.candidates(using: &rng)
+        }
         // Jobs saved before the map (or from another town) are replaced with jobs from here.
         if jobBoard.contains(where: { $0.origin != currentTown }) { refreshBoard() }
     }
@@ -332,6 +344,12 @@ public struct CareerState: Codable, Equatable, Sendable {
     @discardableResult
     public mutating func select(_ truck: TruckSpec) -> Bool {
         guard owns(truck) else { return false }
+        // If a driver has that truck, they swap to the one you were driving.
+        if let i = drivers.firstIndex(where: { $0.truckID == truck.id }) {
+            _ = updateDrivers()
+            drivers[i].truckID = selectedTruck
+            drivers[i].progress = 0
+        }
         selectedTruck = truck.id
         return true
     }

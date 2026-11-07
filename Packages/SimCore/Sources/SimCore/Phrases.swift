@@ -169,6 +169,20 @@ public struct Phrases {
         "Leaving \(name). Speed limit \(units.speed(speedLimit))."
     }
 
+    // MARK: Company
+
+    public func driver(_ d: Driver) -> String {
+        "\(d.name), \(d.stars). About \(Phrases.money(d.hourlyEarnings)) an hour, one delivery every \(Int(d.minutesPerJob)) minutes."
+    }
+
+    /// "While you were away: Sam Hayes delivered 4 jobs and earned $1,200. ..."
+    public static func driverReports(_ reports: [DriverReport]) -> String? {
+        guard !reports.isEmpty else { return nil }
+        let parts = reports.map { "\($0.name) delivered \($0.jobs) job\($0.jobs == 1 ? "" : "s") and earned \(Phrases.money($0.earned))" }
+        let total = reports.reduce(0) { $0 + $1.earned }
+        return "Your drivers: " + parts.joined(separator: ". ") + (reports.count > 1 ? ". Total \(Phrases.money(total))." : ".")
+    }
+
     // MARK: Police
 
     public func policeChase(speed: Double, limit: Double) -> String {

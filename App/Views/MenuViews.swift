@@ -6,6 +6,14 @@ struct MainMenuView: View {
     @EnvironmentObject private var career: CareerStore
     @State private var drive: DriveMode?
     @State private var showingJobs = false
+    @State private var driverReport: String?
+    @Environment(\.scenePhase) private var scenePhase
+
+    /// Pays out the drivers' work since last time and tells the player about it.
+    private func reportDrivers() {
+        guard drive == nil, let report = career.collectDriverEarnings() else { return }
+        driverReport = report
+    }
 
     var body: some View {
         NavigationStack {
@@ -31,6 +39,12 @@ struct MainMenuView: View {
                         .font(.title2)
                         .accessibilityHint("Roam the map from \(career.state.currentTownName) as long as you like. Pays \(Phrases.money(Int(Payout.freeDriveRatePerKm))) per kilometer.")
                     NavigationLink {
+                        CompanyView()
+                    } label: {
+                        Text("Company").font(.title2)
+                    }
+                    .accessibilityHint("Hire drivers who deliver for you, even while the game is closed.")
+                    NavigationLink {
                         GarageView()
                     } label: {
                         Text("Garage").font(.title2)
@@ -50,7 +64,14 @@ struct MainMenuView: View {
             }
             .navigationTitle("Truck Sim")
         }
-        .onAppear { if settings.menuMusic { MusicPlayer.shared.playMenu() } }
+        .onAppear {
+            if settings.menuMusic { MusicPlayer.shared.playMenu() }
+            reportDrivers()
+        }
+        .onChange(of: scenePhase) { _, phase in if phase == .active { reportDrivers() } }
+        .alert(driverReport ?? "", isPresented: Binding(get: { driverReport != nil }, set: { if !$0 { driverReport = nil } })) {
+            Button("OK", role: .cancel) {}
+        }
         .onChange(of: settings.menuMusic) { _, on in
             if on { MusicPlayer.shared.playMenu() } else if MusicPlayer.shared.mode == .menu { MusicPlayer.shared.stop() }
         }
@@ -277,6 +298,9 @@ struct GarageView: View {
                         NavigationLink("Upgrades") { UpgradesView(truck: truck) }
                             .accessibilityHint("Engine, brakes, tires and fuel tank for the \(truck.name).")
                     }
+                    if let driver = career.driver(using: truck) {
+                        Text("\(driver.name) drives this truck for your company.")
+                    }
                     if career.truck.id == truck.id {
                         Text("You're driving this truck.").font(.headline)
                     } else if career.state.owns(truck) {
@@ -369,6 +393,85 @@ struct UpgradesView: View {
             message = "Buy the \(truck.name) first."
         case let .notEnoughMoney(short):
             message = "Not enough money. You need \(Phrases.money(short)) more."
+        }
+    }
+}
+
+struct CompanyView: View {
+    @EnvironmentObject private var career: CareerStore
+    @State private var message: String?
+    @State private var confirmFire: Driver?
+
+    var body: some View {
+        let phrases = Phrases(units: .metric)
+        List {
+            Section {
+                Text("Bank: \(Phrases.money(career.money))")
+                Text("Drivers deliver jobs in your trucks and earn money for the company, even while the game is closed, for up to 8 hours at a time. Each driver needs a truck other than the one you drive.")
+            }
+            Section("Your drivers") {
+                if career.state.drivers.isEmpty {
+                    Text("No drivers yet. Hire one below.")
+                }
+                ForEach(career.state.drivers) { driver in
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(phrases.driver(driver))
+                        if let truckID = driver.truckID {
+                            Text("Driving the \(TruckSpec.withID(truckID).name). \(driver.jobsDone) jobs delivered, \(Phrases.money(driver.earned)) earned.")
+                        } else {
+                            Text("Waiting for a truck. \(driver.jobsDone) jobs delivered, \(Phrases.money(driver.earned)) earned.")
+                        }
+                    }
+                    .accessibilityElement(children: .combine)
+                    ForEach(career.state.freeTrucks, id: \.id) { truck in
+                        Button("Give \(driver.name) the \(truck.name)") { career.assign(driver, to: truck) }
+                    }
+                    if driver.truckID != nil {
+                        Button("Park \(driver.name)'s truck") { career.assign(driver, to: nil) }
+                            .accessibilityHint("They stop working until you give them a truck again.")
+                    }
+                    Button("Let \(driver.name) go", role: .destructive) { confirmFire = driver }
+                }
+            }
+            Section {
+                ForEach(career.state.candidates) { candidate in
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(phrases.driver(candidate))
+                        Button("Hire for \(Phrases.money(candidate.hireFee))") { hire(candidate) }
+                    }
+                }
+            } header: {
+                Text("Drivers looking for work")
+            } footer: {
+                Text("Better drivers cost more to hire but deliver faster. You still earn the most by driving yourself.")
+            }
+        }
+        .navigationTitle("Company")
+        .alert(message ?? "", isPresented: Binding(get: { message != nil }, set: { if !$0 { message = nil } })) {
+            Button("OK", role: .cancel) {}
+        }
+        .confirmationDialog("Let \(confirmFire?.name ?? "this driver") go? The hiring fee isn't refunded.",
+                            isPresented: Binding(get: { confirmFire != nil }, set: { if !$0 { confirmFire = nil } }),
+                            titleVisibility: .visible) {
+            Button("Let Them Go", role: .destructive) {
+                if let d = confirmFire { career.fire(d) }
+                confirmFire = nil
+            }
+        }
+    }
+
+    private func hire(_ candidate: Driver) {
+        switch career.hire(candidate) {
+        case .hired:
+            if let hired = career.state.drivers.last, let truckID = hired.truckID {
+                message = "You hired \(candidate.name). They're out on the road in the \(TruckSpec.withID(truckID).name)."
+            } else {
+                message = "You hired \(candidate.name). Give them a truck to start: buy another truck in the Garage."
+            }
+        case let .notEnoughMoney(short):
+            message = "Not enough money. You need \(Phrases.money(short)) more."
+        case .notACandidate:
+            break
         }
     }
 }

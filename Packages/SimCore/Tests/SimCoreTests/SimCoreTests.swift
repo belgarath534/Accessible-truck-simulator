@@ -807,3 +807,80 @@ final class PoliceTests: XCTestCase {
         XCTAssertTrue(road.policeSpots.contains { $0 < townZoneLength }, "a cop inside Ridgeport")
     }
 }
+
+final class CompanyTests: XCTestCase {
+    let start = Date(timeIntervalSince1970: 1_000_000)
+
+    private func careerWithTwoTrucks() -> CareerState {
+        var c = CareerState(seed: 11)
+        c.money = 50_000
+        c.buy(.workhorse)
+        c.select(.starter)
+        return c
+    }
+
+    func testHireAndEarnOverTime() {
+        var c = careerWithTwoTrucks()
+        let candidate = c.candidates.first { $0.skill == 2 }!
+        XCTAssertEqual(c.hire(candidate, now: start), .hired)
+        XCTAssertEqual(c.money, 50_000 - 6_000 - 4_000)
+        XCTAssertEqual(c.drivers.count, 1)
+        XCTAssertEqual(c.drivers[0].truckID, "workhorse", "gets the free truck")
+        XCTAssertEqual(c.candidates.count, 3, "a new candidate takes their place")
+
+        // 1 hour later: 25-minute jobs -> 2 done, 10 minutes into the third.
+        let reports = c.updateDrivers(now: start.addingTimeInterval(3_600))
+        XCTAssertEqual(reports, [DriverReport(name: candidate.name, jobs: 2, earned: 750)])
+        XCTAssertEqual(c.money, 40_000 + 750)
+        XCTAssertEqual(c.drivers[0].progress, 600, accuracy: 0.001)
+        // 15 more minutes finishes the third job.
+        XCTAssertEqual(c.updateDrivers(now: start.addingTimeInterval(4_500)).first?.jobs, 1)
+    }
+
+    func testAwayTimeIsCapped() {
+        var c = careerWithTwoTrucks()
+        c.hire(c.candidates.first { $0.skill == 1 }!, now: start)
+        let reports = c.updateDrivers(now: start.addingTimeInterval(3 * 24 * 3_600))
+        XCTAssertEqual(reports.first?.jobs, 16, "8 hours of 30-minute jobs, not 3 days")
+    }
+
+    func testDriversNeedATruck() {
+        var c = CareerState(seed: 3)
+        c.money = 20_000
+        let candidate = c.candidates[0]
+        XCTAssertEqual(c.hire(candidate, now: start), .hired)
+        XCTAssertNil(c.drivers[0].truckID, "your only truck is the one you drive")
+        XCTAssertEqual(c.updateDrivers(now: start.addingTimeInterval(7_200)), [])
+        XCTAssertFalse(c.assign(c.drivers[0].id, to: .starter, now: start), "can't take your truck")
+    }
+
+    func testNotEnoughMoneyToHire() {
+        var c = CareerState(seed: 4)
+        let pricey = c.candidates.first { $0.skill == 3 }!
+        XCTAssertEqual(c.hire(pricey), .notEnoughMoney(short: 9_000 - CareerState.startingMoney))
+    }
+
+    func testSwitchingToADriversTruckSwapsTrucks() {
+        var c = careerWithTwoTrucks()
+        c.hire(c.candidates[0], now: start)
+        XCTAssertEqual(c.drivers[0].truckID, "workhorse")
+        XCTAssertTrue(c.select(.workhorse))
+        XCTAssertEqual(c.selectedTruck, "workhorse")
+        XCTAssertEqual(c.drivers[0].truckID, "old_reliable", "the driver takes the truck you left")
+    }
+
+    func testFiringAndSaving() throws {
+        var c = careerWithTwoTrucks()
+        c.hire(c.candidates[0], now: start)
+        let loaded = try JSONDecoder().decode(CareerState.self, from: JSONEncoder().encode(c))
+        XCTAssertEqual(loaded.drivers, c.drivers)
+        c.fire(c.drivers[0].id, now: start)
+        XCTAssertTrue(c.drivers.isEmpty)
+    }
+
+    func testReportPhrase() {
+        let text = Phrases.driverReports([DriverReport(name: "Sam Hayes", jobs: 4, earned: 1_200)])
+        XCTAssertEqual(text, "Your drivers: Sam Hayes delivered 4 jobs and earned $1,200.")
+        XCTAssertNil(Phrases.driverReports([]))
+    }
+}

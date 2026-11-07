@@ -1,11 +1,12 @@
-New: police, speeding tickets and a new air horn. Headphones recommended.
+New: hire drivers for your company! Headphones recommended.
 
-• Police park in every town and along the interstate and country roads. Not every spot has a cop every time. You'll hear a police radio crackle when you pass one.
-• Go more than 8 km/h (5 mph) over the limit near a cop and you'll hear the siren and "Pull over". Slow down and stop for your ticket: $100 plus $25 for every km/h over. Don't stop within 25 seconds and the fine is much bigger.
-• Tickets come off your pay. The dashboard (two-finger double tap) says the speed limit where you are.
-• New air horn (two-finger swipe up) on every truck.
+• Company on the main menu: hire drivers (1, 2 or 3 stars). Better drivers cost more but deliver faster.
+• Each driver needs a truck other than the one you drive. Hiring gives them a free truck automatically, and you can choose which truck in the Company screen.
+• Drivers earn money even while the game is closed, for up to 8 hours at a time. When you come back to the main menu you'll hear what they delivered and earned.
+• If you switch to a truck a driver is using, the driver swaps to the truck you were driving.
+• Also new: police and speeding tickets, and the new air horn.
 
 Please check:
-• Can you hear the police radio when you pass a cop?
-• Is the siren clear? Is the fine fair?
-• How does the new horn sound?
+• Is hiring and giving trucks easy with VoiceOver?
+• Does the "while you were away" report make sense?
+• Do drivers earn too much or too little?

@@ -104,6 +104,33 @@ final class CareerStore: ObservableObject {
         save()
     }
 
+    // MARK: Company
+
+    /// Counts the drivers' work up to now and returns what to tell the player (nil if nothing new).
+    func collectDriverEarnings() -> String? {
+        let reports = state.updateDrivers()
+        save()
+        return Phrases.driverReports(reports)
+    }
+
+    func hire(_ candidate: Driver) -> CareerState.HireResult {
+        let result = state.hire(candidate)
+        save()
+        return result
+    }
+
+    func assign(_ driver: Driver, to truck: TruckSpec?) {
+        state.assign(driver.id, to: truck)
+        save()
+    }
+
+    func fire(_ driver: Driver) {
+        state.fire(driver.id)
+        save()
+    }
+
+    func driver(using truck: TruckSpec) -> Driver? { state.drivers.first { $0.truckID == truck.id } }
+
     func move(to town: String) {
         state.move(to: town)
         save()
