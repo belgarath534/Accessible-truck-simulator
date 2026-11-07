@@ -1,4 +1,5 @@
 import Foundation
+import UIKit
 import SimCore
 
 /// Turns simulation events and state into sound, speech and vibration.
@@ -31,19 +32,25 @@ final class FeedbackCoordinator {
         haptics.stop()
     }
 
+    func phrasesForUI() -> Phrases { phrases }
+
     func setPaused(_ paused: Bool) {
         audio.state.muted = paused
         if paused { haptics.update(engineRunning: false, rpmFraction: 0, load: 0, onRumbleStrip: false) }
-        speech.speak(paused ? "Paused." : "Resumed.", priority: .high)
+        // With VoiceOver on, VoiceOver reads the pause menu itself; don't talk over it.
+        if !UIAccessibility.isVoiceOverRunning || !paused {
+            speech.speak(paused ? "Paused." : "Resumed.", priority: .high)
+        }
     }
 
     func reset() {
+        audio.state.muted = false
         onRumbleStrip = false
         lastSpokenSpeedStep = nil
         audio.setRumble(nil)
     }
 
-    func announceIntro(mode: TouchSteeringMode) {
+    func announceIntro(mode: TouchSteeringMode, goal: TripGoal) {
         let controls: String
         switch mode {
         case .tilt:
@@ -51,8 +58,14 @@ final class FeedbackCoordinator {
         case .joystick:
             controls = "Put one finger anywhere. Slide up to accelerate, down to brake, left or right to steer. Lift your finger to coast."
         }
+        let trip: String
+        if let distance = goal.distance {
+            trip = "\(goal.name): \(settings.units.distance(distance)) to the drop-off. Stop there to finish."
+        } else {
+            trip = "Free Drive: no destination, drive as long as you like."
+        }
         speech.speak(
-            "Practice loop. Engine off. \(controls) Three-finger double tap starts the engine. Two-finger double tap reads the dashboard. Two-finger swipe down pauses.",
+            "\(trip) Engine off. \(controls) Three-finger double tap starts the engine. Two-finger double tap reads the dashboard. Two-finger swipe down pauses.",
             priority: .high
         )
     }
@@ -99,8 +112,28 @@ final class FeedbackCoordinator {
             speech.speak("Fuel low.", priority: .normal)
         case let .dashboard(reading):
             speech.speak(phrases.dashboard(reading), priority: .high)
-        case let .roadAhead(curve):
-            speech.speak(phrases.roadAhead(curve), priority: .high)
+        case let .roadAhead(curve, remaining):
+            speech.speak(phrases.roadAhead(curve, remaining: remaining), priority: .high)
+        case let .tripProgress(remaining):
+            speech.speak(phrases.tripProgress(remaining: remaining), priority: .normal)
+        case let .destinationAhead(distance):
+            speech.speak(phrases.destinationAhead(distance), priority: .high)
+            haptics.tap(intensity: 0.7, sharpness: 0.5)
+        case .atDestination:
+            speech.speak(phrases.atDestination, priority: .high)
+            haptics.tap(intensity: 1, sharpness: 0.5)
+        case let .stoppedShort(remaining):
+            speech.speak(phrases.stoppedShort(remaining), priority: .normal)
+        case let .arrived(summary):
+            audio.state.muted = true
+            haptics.update(engineRunning: false, rpmFraction: 0, load: 0, onRumbleStrip: false)
+            haptics.tap(intensity: 1, sharpness: 0.2)
+            // VoiceOver reads the results screen itself; without it, the game reads them out.
+            if UIAccessibility.isVoiceOverRunning {
+                speech.speak("Delivered!", priority: .high)
+            } else {
+                speech.speak(phrases.arrived(summary), priority: .high)
+            }
         }
     }
 

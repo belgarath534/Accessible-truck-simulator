@@ -6,8 +6,13 @@ import UIKit
 /// Runs one driving session: the game loop, input from every source, and feedback.
 final class DrivingController: NSObject, ObservableObject {
     @Published private(set) var isPaused = false
+    /// Set when the trip is finished; the results screen shows it.
+    @Published private(set) var finished: TripSummary?
+    /// Trip status for the pause menu, refreshed when pausing.
+    @Published private(set) var tripStatus = ""
 
     let settings: AppSettings
+    let goal: TripGoal
     private(set) var session: DrivingSession
     let touch: TouchInterpreter
     private let tilt = TiltSteering()
@@ -21,9 +26,10 @@ final class DrivingController: NSObject, ObservableObject {
 
     weak var view: DrivingTouchView?
 
-    init(settings: AppSettings) {
+    init(settings: AppSettings, goal: TripGoal) {
         self.settings = settings
-        session = DrivingSession(assist: settings.assist)
+        self.goal = goal
+        session = DrivingSession(goal: goal, assist: settings.assist)
         touch = TouchInterpreter(mode: settings.steeringMode, areaWidth: 800)
         feedback = FeedbackCoordinator(settings: settings)
         super.init()
@@ -46,7 +52,7 @@ final class DrivingController: NSObject, ObservableObject {
         displayLink = link
         lastTime = 0
         UIApplication.shared.isIdleTimerDisabled = true
-        feedback.announceIntro(mode: settings.steeringMode)
+        feedback.announceIntro(mode: settings.steeringMode, goal: goal)
     }
 
     func stop() {
@@ -59,7 +65,8 @@ final class DrivingController: NSObject, ObservableObject {
     }
 
     func pause() {
-        guard !isPaused else { return }
+        guard !isPaused, finished == nil else { return }
+        tripStatus = feedback.phrasesForUI().tripStatus(goal: goal, stats: session.stats, remaining: session.remaining)
         isPaused = true
         touch.reset()
         feedback.setPaused(true)
@@ -79,15 +86,32 @@ final class DrivingController: NSObject, ObservableObject {
     }
 
     func restart() {
-        session = DrivingSession(assist: settings.assist)
+        session = DrivingSession(goal: goal, assist: settings.assist)
         feedback.reset()
-        resume()
+        touch.reset()
+        tilt.recenter()
+        if finished != nil {
+            finished = nil
+            lastTime = 0
+            accumulator = 0
+            feedback.announceIntro(mode: settings.steeringMode, goal: goal)
+            focusDrivingView()
+        } else {
+            resume()
+        }
+    }
+
+    private func focusDrivingView() {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
+            guard let view = self?.view else { return }
+            UIAccessibility.post(notification: .screenChanged, argument: view)
+        }
     }
 
     // MARK: Input
 
     func touchesChanged(_ phase: UITouch.Phase, _ touches: Set<UITouch>, in view: UIView) {
-        guard !isPaused else { return }
+        guard !isPaused, finished == nil else { return }
         let now = CACurrentMediaTime()
         touch.areaWidth = Double(view.bounds.width)
         for t in touches {
@@ -104,10 +128,11 @@ final class DrivingController: NSObject, ObservableObject {
 
     func perform(_ action: DrivingAction) {
         if action == .pause {
+            guard finished == nil else { return }
             isPaused ? resume() : pause()
             return
         }
-        guard !isPaused else { return }
+        guard !isPaused, finished == nil else { return }
         feedback.handle(session.perform(action))
     }
 
@@ -121,7 +146,7 @@ final class DrivingController: NSObject, ObservableObject {
         for gesture in touch.update(time: now) {
             if let action = GestureMap.action(for: gesture) { perform(action) }
         }
-        guard !isPaused else { return }
+        guard !isPaused, finished == nil else { return }
 
         var input = touch.input(at: now)
         if settings.steeringMode == .tilt {
@@ -139,5 +164,9 @@ final class DrivingController: NSObject, ObservableObject {
         feedback.handle(events)
         feedback.update(session: session)
         view?.setNeedsDisplay()
+        if let summary = session.summary {
+            touch.reset()
+            finished = summary
+        }
     }
 }

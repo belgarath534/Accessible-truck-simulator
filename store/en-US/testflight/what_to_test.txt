@@ -1,11 +1,11 @@
-Thanks for testing the first driving prototype! Headphones recommended.
+New: drives now have an end! Headphones recommended.
 
-Please try:
-• With VoiceOver on: do the gestures reach the game? Three-finger double tap (engine), two-finger double tap (dashboard), three-finger tap (road ahead), two-finger swipe left or right (turn signals), two-finger swipe up (horn), two-finger swipe down (pause).
-• Tilt steering: does tilting right steer right? If it's backwards, try Invert tilt in Settings.
-• The one-finger joystick (Settings, Steering method).
-• Can you keep the truck in your lane by sound alone? Are the lane beeps and rumble strips clear, or too much?
-• Do the curve warnings come early enough, and is the suggested speed right?
-• Does the engine sound like a truck? Too loud, too quiet, annoying?
+• Practice Drive: one 12 km lap. You hear the distance left at 10, 5, 2 and 1 km. At 400 m you're told to slow down. Stop at the drop-off to finish and get your results: stop accuracy, time, average and top speed, crashes and fuel.
+• Free Drive: the endless loop, for when you just want to cruise.
+• Pause menu (two-finger swipe down) now shows your trip: distance driven, distance left, percent done, time, speeds and crashes.
+• Three-finger tap (GPS) now also says the distance to the drop-off.
 
-Tell us what feels good and what doesn't, with a screenshot or feedback from TestFlight.
+Please check:
+• Is the drop-off stop easy to find by ear? Is the 400 m warning enough time to slow down?
+• Does the results screen read well with VoiceOver?
+• Anything still hard: lane beeps, curve warnings, tilt or joystick steering.

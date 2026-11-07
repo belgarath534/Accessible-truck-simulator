@@ -215,3 +215,80 @@ final class TouchInterpreterTests: XCTestCase {
         XCTAssertNil(GestureMap.action(for: .tap(fingers: 1, count: 1)))
     }
 }
+
+final class TripTests: XCTestCase {
+    /// A simple "driver" that keeps the lane, holds a speed, and brakes to stop at the drop-off.
+    private func driveTrip(_ s: DrivingSession, cruise: Double = 22, stopAt targetRemaining: Double = 0,
+                           maxSeconds: Double = 2_000) -> [SimEvent] {
+        _ = s.perform(.toggleEngine)
+        var events: [SimEvent] = []
+        var t = 0.0
+        while t < maxSeconds && s.summary == nil {
+            let truck = s.truck
+            let steer = -(1.2 * truck.lateralOffset + 6 * truck.headingError)
+            var target = cruise
+            if let r = s.remaining {
+                // Speed we can still stop from at a gentle 2 m/s².
+                let d = max(0, r - targetRemaining)
+                target = min(target, (2 * 2 * d).squareRoot())
+            }
+            let throttle = truck.speed < target - 1 ? 0.7 : 0
+            let brake = truck.speed > target + 0.5 || (s.remaining.map { $0 <= targetRemaining } ?? false) ? 0.6 : 0
+            events += s.step(dt: 1.0 / 60, input: DrivingInput(throttle: throttle, brake: brake, steer: steer))
+            t += 1.0 / 60
+        }
+        return events
+    }
+
+    func testPracticeTripEndsAtDropOff() {
+        let road = Road(segments: [.straight(3_000)], loops: true)
+        let s = DrivingSession(road: road, goal: .practice(on: road))
+        let events = driveTrip(s)
+        guard let summary = s.summary else { return XCTFail("trip never finished") }
+        XCTAssertEqual(summary.goalName, "Practice Drive")
+        XCTAssertLessThan(abs(summary.stopError), DrivingSession.arrivalTolerance)
+        XCTAssertGreaterThan(summary.stats.drivingTime, 60)
+        XCTAssertEqual(summary.stats.distance, 3_000, accuracy: 60)
+        XCTAssertTrue(events.contains(.tripProgress(remaining: 2_000)))
+        XCTAssertTrue(events.contains(.tripProgress(remaining: 1_000)))
+        XCTAssertFalse(events.contains(.tripProgress(remaining: 5_000)), "milestone longer than the trip")
+        XCTAssertTrue(events.contains { if case .destinationAhead = $0 { return true }; return false })
+        XCTAssertTrue(events.contains { if case .arrived = $0 { return true }; return false })
+
+        // Once finished, the simulation is frozen.
+        let position = s.truck.position
+        XCTAssertEqual(s.step(dt: 1, input: DrivingInput(throttle: 1)), [])
+        XCTAssertEqual(s.truck.position, position)
+    }
+
+    func testStoppingShortDoesNotFinish() {
+        let road = Road(segments: [.straight(2_000)], loops: true)
+        let s = DrivingSession(road: road, goal: .destination(name: "Test", distance: 1_500))
+        let events = driveTrip(s, stopAt: 300, maxSeconds: 200)
+        XCTAssertNil(s.summary)
+        XCTAssertTrue(events.contains { if case .stoppedShort = $0 { return true }; return false })
+    }
+
+    func testFreeDriveNeverFinishes() {
+        let s = DrivingSession(road: .practiceLoop, goal: .freeDrive)
+        _ = driveTrip(s, maxSeconds: 120)
+        XCTAssertNil(s.summary)
+        XCTAssertNil(s.remaining)
+    }
+
+    func testTripPhrases() {
+        let p = Phrases(units: .metric)
+        XCTAssertEqual(p.duration(605), "10 minutes 5 seconds")
+        XCTAssertEqual(p.duration(61), "1 minute 1 second")
+        var stats = TripStats()
+        stats.distance = 4_200
+        stats.drivingTime = 300
+        stats.topSpeed = 25
+        let status = p.tripStatus(goal: .destination(name: "Practice Drive", distance: 12_000), stats: stats, remaining: 7_800)
+        XCTAssertTrue(status.hasPrefix("Practice Drive. 4.2 kilometers driven, 7.8 kilometers to the drop-off, 35 percent done."), status)
+        XCTAssertTrue(p.tripStatus(goal: .freeDrive, stats: stats, remaining: nil).contains("No destination"))
+        let summary = TripSummary(goalName: "Practice Drive", stats: stats, stopError: 8)
+        XCTAssertTrue(p.arrived(summary).hasPrefix("Delivered! Practice Drive complete. Perfect stop"))
+        XCTAssertEqual(p.roadAhead(nil, remaining: 7_800), "7.8 kilometers to the drop-off. Straight road ahead.")
+    }
+}

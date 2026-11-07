@@ -128,6 +128,9 @@ final class DrivingTouchView: UIView {
         }
         if case let .on(side) = truck.signal { status.append(side == .left ? "◀︎ signal" : "signal ▶︎") }
         status.append("Fuel \(Int(truck.fuelLiters / controller.session.spec.fuelCapacityLiters * 100))%")
+        if let remaining = controller.session.remaining {
+            status.append("Drop-off: \(units.distance(max(0, remaining)))")
+        }
         drawText(status.joined(separator: "   "), at: CGPoint(x: 20, y: 64), size: 17, color: .white, centered: false)
     }
 

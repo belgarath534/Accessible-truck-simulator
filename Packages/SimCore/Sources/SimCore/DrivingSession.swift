@@ -48,9 +48,18 @@ public struct TruckState: Equatable, Sendable {
 public final class DrivingSession {
     public let spec: TruckSpec
     public let road: Road
+    public let goal: TripGoal
     public var assist: SteeringAssist
     public private(set) var truck: TruckState
     public private(set) var time: Double = 0
+    public private(set) var stats = TripStats()
+    /// Set when the trip is finished; the simulation stops changing after that.
+    public private(set) var summary: TripSummary?
+
+    /// How close (metres) to the drop-off the truck must stop to finish the trip.
+    public static let arrivalTolerance = 60.0
+    static let milestones: [Double] = [10_000, 5_000, 2_000, 1_000]
+    static let destinationWarning = 400.0
 
     // Lane geometry relative to lane centre.
     public static let rumbleOffset = 0.9
@@ -61,10 +70,16 @@ public final class DrivingSession {
     private var rumbleSide: Side?
     private var fuelWarned = false
     private var lastEngineOffHint: Double = -100
+    private var announcedMilestones: Set<Double> = []
+    private var warnedDestination = false
+    private var announcedAtDestination = false
+    private var wasStopped = true
 
-    public init(spec: TruckSpec = .starter, road: Road = .practiceLoop, assist: SteeringAssist = .medium) {
+    public init(spec: TruckSpec = .starter, road: Road = .practiceLoop, goal: TripGoal = .freeDrive,
+                assist: SteeringAssist = .medium) {
         self.spec = spec
         self.road = road
+        self.goal = goal
         self.assist = assist
         self.truck = TruckState(fuelLiters: spec.fuelCapacityLiters)
     }
@@ -94,7 +109,7 @@ public final class DrivingSession {
         case .speakDashboard:
             return [.dashboard(dashboard)]
         case .speakRoadAhead:
-            return [.roadAhead(road.nextCurve(after: truck.position, within: 3_000))]
+            return [.roadAhead(road.nextCurve(after: truck.position, within: 3_000), remaining: remaining)]
         case .pause:
             return []
         }
@@ -113,6 +128,11 @@ public final class DrivingSession {
         )
     }
 
+    /// Metres left to the drop-off (negative once past it), or nil on a free drive.
+    public var remaining: Double? {
+        goal.distance.map { $0 - truck.odometer }
+    }
+
     /// Puts the truck back in the centre of its lane, stopped. Used after a crash.
     public func recover() {
         truck.lateralOffset = 0
@@ -126,6 +146,7 @@ public final class DrivingSession {
     // MARK: - Simulation step
 
     public func step(dt: Double, input rawInput: DrivingInput) -> [SimEvent] {
+        guard summary == nil else { return [] }
         var events: [SimEvent] = []
         time += dt
         let input = DrivingInput(
@@ -144,7 +165,52 @@ public final class DrivingSession {
         stepTemperatureAndFuel(dt: dt, events: &events)
         checkLane(events: &events)
         checkCurves(events: &events)
+        updateStats(dt: dt, events: events)
+        checkTrip(events: &events)
         return events
+    }
+
+    private func updateStats(dt: Double, events: [SimEvent]) {
+        if stats.drivingTime > 0 || truck.speed > 0.1 { stats.drivingTime += dt }
+        stats.distance = truck.odometer
+        stats.topSpeed = max(stats.topSpeed, truck.speed)
+        stats.fuelUsedLiters = spec.fuelCapacityLiters - truck.fuelLiters
+        for event in events {
+            switch event {
+            case .crashed: stats.crashes += 1
+            case .tooFastForCurve: stats.tooFastWarnings += 1
+            default: break
+            }
+        }
+    }
+
+    private func checkTrip(events: inout [SimEvent]) {
+        guard let total = goal.distance, let remaining else { return }
+        for m in DrivingSession.milestones where remaining <= m && !announcedMilestones.contains(m) {
+            announcedMilestones.insert(m)
+            // Only milestones the player actually drives toward (not ones that are already passed at the start).
+            if total - m > 500 { events.append(.tripProgress(remaining: m)) }
+        }
+        if !warnedDestination && remaining <= DrivingSession.destinationWarning {
+            warnedDestination = true
+            events.append(.destinationAhead(distance: max(0, remaining)))
+        }
+        if !announcedAtDestination && remaining <= 0 && truck.speed > 2 {
+            announcedAtDestination = true
+            events.append(.atDestination)
+        }
+
+        let stopped = truck.speed < 0.3
+        defer { wasStopped = stopped }
+        guard stopped else { return }
+        if remaining <= DrivingSession.arrivalTolerance && stats.drivingTime > 0 {
+            let result = TripSummary(goalName: goal.name, stats: stats, stopError: -remaining)
+            summary = result
+            events.append(.arrived(result))
+        } else if !wasStopped && remaining <= 1_000 && stats.drivingTime > 0
+                    && !events.contains(where: { if case .crashed = $0 { return true }; return false }) {
+            events.append(.stoppedShort(remaining: remaining))
+        }
     }
 
     private func stepEngineState(dt: Double, events: inout [SimEvent]) {

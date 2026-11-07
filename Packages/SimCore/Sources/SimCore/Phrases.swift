@@ -43,9 +43,77 @@ public struct Phrases {
         return text + "."
     }
 
-    public func roadAhead(_ c: UpcomingCurve?) -> String {
-        guard let c else { return "Straight road ahead." }
-        return "Next: " + curve(c)
+    public func roadAhead(_ c: UpcomingCurve?, remaining: Double? = nil) -> String {
+        var text = ""
+        if let remaining {
+            text = remaining > 0 ? "\(units.distance(remaining)) to the drop-off. " : "You're at the drop-off. "
+        }
+        guard let c else { return text + "Straight road ahead." }
+        return text + "Next: " + curve(c)
+    }
+
+    public func duration(_ seconds: Double) -> String {
+        let total = Int(seconds.rounded())
+        let h = total / 3600, m = (total % 3600) / 60, s = total % 60
+        func unit(_ n: Int, _ word: String) -> String { "\(n) \(word)\(n == 1 ? "" : "s")" }
+        if h > 0 { return unit(h, "hour") + " " + unit(m, "minute") }
+        if m > 0 { return unit(m, "minute") + " " + unit(s, "second") }
+        return unit(s, "second")
+    }
+
+    public func tripProgress(remaining: Double) -> String {
+        "\(units.distance(remaining)) to the drop-off."
+    }
+
+    public func destinationAhead(_ distance: Double) -> String {
+        "Drop-off in \(units.distance(distance)). Slow down and stop at the drop-off."
+    }
+
+    public let atDestination = "You're at the drop-off. Stop now."
+
+    public func stoppedShort(_ remaining: Double) -> String {
+        "The drop-off is \(units.distance(remaining)) ahead. Keep going."
+    }
+
+    /// The trip status shown in the pause menu.
+    public func tripStatus(goal: TripGoal, stats: TripStats, remaining: Double?) -> String {
+        var parts: [String] = [goal.name + "."]
+        if let total = goal.distance, let remaining {
+            let left = max(0, remaining)
+            let percent = Int((min(1, stats.distance / total) * 100).rounded())
+            parts.append("\(units.distance(stats.distance)) driven, \(units.distance(left)) to the drop-off, \(percent) percent done.")
+        } else {
+            parts.append("No destination: drive as long as you like. \(units.distance(stats.distance)) driven.")
+        }
+        parts.append("Driving time \(duration(stats.drivingTime)).")
+        if stats.drivingTime > 0 {
+            parts.append("Average speed \(units.speed(stats.averageSpeed)), top speed \(units.speed(stats.topSpeed)) \(units.speedUnitSpoken).")
+        }
+        parts.append(stats.crashes == 0 ? "No crashes." : "Crashes: \(stats.crashes).")
+        return parts.joined(separator: " ")
+    }
+
+    public func arrived(_ s: TripSummary) -> String {
+        let stop: String
+        switch s.stopRating {
+        case .perfect: stop = "Perfect stop, right at the drop-off."
+        case .good:
+            let d = units.distance(abs(s.stopError))
+            stop = "Good stop, \(d) \(s.stopError >= 0 ? "past" : "before") the drop-off."
+        case .overshot: stop = "You stopped \(units.distance(s.stopError)) past the drop-off."
+        }
+        return "Delivered! \(s.goalName) complete. \(stop) " + tripResults(s.stats)
+    }
+
+    public func tripResults(_ st: TripStats) -> String {
+        var parts = ["Time \(duration(st.drivingTime)).",
+                     "Distance \(units.distance(st.distance)).",
+                     "Average speed \(units.speed(st.averageSpeed)), top speed \(units.speed(st.topSpeed)) \(units.speedUnitSpoken)."]
+        parts.append(st.crashes == 0 ? "No crashes." : "Crashes: \(st.crashes).")
+        if st.tooFastWarnings > 0 { parts.append("Too fast for a curve \(st.tooFastWarnings) time\(st.tooFastWarnings == 1 ? "" : "s").") }
+        parts.append(units == .metric ? String(format: "Fuel used %.0f liters.", st.fuelUsedLiters)
+                                      : String(format: "Fuel used %.1f gallons.", st.fuelUsedLiters * 0.264_17))
+        return parts.joined(separator: " ")
     }
 
     public func dashboard(_ d: DashboardReading) -> String {

@@ -69,7 +69,16 @@ public enum SimEvent: Equatable, Sendable {
     case outOfFuel
     case lowFuel
     case dashboard(DashboardReading)
-    case roadAhead(UpcomingCurve?)
+    case roadAhead(UpcomingCurve?, remaining: Double?)
+    /// Distance left to the drop-off at milestones (10 km, 5 km, 2 km, 1 km).
+    case tripProgress(remaining: Double)
+    /// The drop-off is close: slow down.
+    case destinationAhead(distance: Double)
+    /// The truck is at the drop-off and still moving.
+    case atDestination
+    /// The truck stopped, but before the drop-off.
+    case stoppedShort(remaining: Double)
+    case arrived(TripSummary)
 }
 
 /// Snapshot of the instruments, used by the spoken dashboard.

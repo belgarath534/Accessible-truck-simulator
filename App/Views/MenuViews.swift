@@ -3,16 +3,20 @@ import SwiftUI
 
 struct MainMenuView: View {
     @EnvironmentObject private var settings: AppSettings
-    @State private var driving = false
+    @State private var trip: TripGoal?
 
     var body: some View {
         NavigationStack {
             List {
                 Section {
-                    Button("Start Driving") { driving = true }
+                    Button("Practice Drive") { trip = .practice(on: .practiceLoop) }
                         .font(.title2.bold())
+                        .accessibilityHint("One lap of the country road, then stop at the drop-off.")
+                    Button("Free Drive") { trip = .freeDrive }
+                        .font(.title2)
+                        .accessibilityHint("Drive the loop as long as you like, with no destination.")
                 } footer: {
-                    Text("Drive the practice loop: about 12 kilometers of country road with curves of every kind.")
+                    Text("Practice Drive is one \(settings.units.distance(Road.practiceLoop.totalLength)) lap with curves of every kind, ending at a drop-off where you stop the truck. Free Drive never ends: pause and quit when you're done.")
                 }
                 Section {
                     NavigationLink("How to Drive") { ControlsHelpView() }
@@ -21,8 +25,10 @@ struct MainMenuView: View {
             }
             .navigationTitle("Truck Sim")
         }
-        .fullScreenCover(isPresented: $driving) {
-            DrivingScreen(settings: settings) { driving = false }
+        .fullScreenCover(isPresented: Binding(get: { trip != nil }, set: { if !$0 { trip = nil } })) {
+            if let trip {
+                DrivingScreen(settings: settings, goal: trip) { self.trip = nil }
+            }
         }
     }
 }
@@ -58,6 +64,7 @@ struct ControlsHelpView: View {
                 Text("Too far: a rumble strip on that side, with strong vibration. Go further and you leave the road and crash.")
                 Text("Curves are announced ahead of time with a suggested speed. In a curve you must steer, or the truck drifts to the outside.")
                 Text("Speed is called out every 10 kilometers or miles per hour.")
+                Text("On a Practice Drive you hear the distance left at 10, 5, 2 and 1 kilometers. At 400 meters you're told to slow down; stop at the drop-off to finish. The three-finger tap also tells you the distance left, and the pause menu shows how far you've driven, how far is left, your time and crashes.")
             }
             Section("Keyboard and controller") {
                 Text("Keyboard: Up or W accelerate, Down or S brake, Left and Right or A and D steer. Left and right bracket for signals, I dashboard, G GPS, N engine, H horn, Escape pause.")
