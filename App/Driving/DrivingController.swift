@@ -43,8 +43,8 @@ final class DrivingController: NSObject, ObservableObject {
 
     private static func makeSession(_ drive: DriveMode, _ settings: AppSettings, _ truck: TruckSpec,
                                     fuel: Double) -> DrivingSession {
-        DrivingSession(spec: truck, goal: drive.goal, startingFuel: fuel, cargoMassKg: drive.job?.cargo.massKg ?? 0,
-                       timeLimit: drive.job?.timeLimit, assist: settings.assist)
+        DrivingSession(spec: truck, goal: drive.goal, cargoMassKg: drive.job?.cargo.massKg ?? 0,
+                       timeLimit: drive.job?.timeLimit, startingFuel: fuel, assist: settings.assist)
     }
 
     /// Leaving or restarting a drive that didn't finish: keep the fuel level and charge any fuel or tow costs.
