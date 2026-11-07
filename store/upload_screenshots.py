@@ -46,7 +46,7 @@ def call(method, path, **kw):
 
 
 folder = sys.argv[1]
-files = sorted(f for f in os.listdir(folder) if f.endswith(".png"))
+files = sorted(f for f in os.listdir(folder) if f.endswith(".png") and f[0].isdigit())
 if not files:
     sys.exit("No screenshots found")
 

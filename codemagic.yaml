@@ -166,7 +166,16 @@ workflows:
           n=1
           for SCREEN in drive jobs garage company menu; do
             xcrun simctl launch --terminate-running-process "$UDID" com.accessibletrucksim.TruckSim -screenshot $SCREEN
-            if [ "$SCREEN" = "drive" ]; then sleep 25; else sleep 6; fi
+            if [ "$SCREEN" = "drive" ]; then
+              sleep 5
+              xcrun simctl io "$UDID" screenshot "shots/debug_drive_5s.png" || true
+              sleep 20
+              echo "=== Is the app still running?"
+              xcrun simctl spawn "$UDID" launchctl list | grep -i trucksim || echo "TruckSim is NOT running"
+              echo "=== App log"
+              xcrun simctl spawn "$UDID" log show --last 2m --style compact \
+                --predicate 'process == "TruckSim" OR eventMessage CONTAINS[c] "trucksim"' | tail -150 || true
+            else sleep 6; fi
             xcrun simctl io "$UDID" screenshot "shots/raw_${n}_${SCREEN}.png"
             n=$((n+1))
           done
