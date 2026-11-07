@@ -27,3 +27,4 @@ Every push uploads an unsigned `TruckSim-unsigned.ipa` artifact (a quick compile
 
 Signed builds go through Codemagic (`codemagic.yaml`), set up the same way as Dungeon Descent: the
 "Accessible Backrooms" App Store Connect key and distribution certificate. See [docs/CODEMAGIC.md](docs/CODEMAGIC.md).
+If Codemagic credits run out, GitHub Actions has a manual backup job: [docs/GITHUB_TESTFLIGHT.md](docs/GITHUB_TESTFLIGHT.md).
