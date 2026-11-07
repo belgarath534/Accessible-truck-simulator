@@ -17,6 +17,7 @@ Contact details (name, email, phone) are copied from Dungeon Descent, which is
 on the same account, so they never have to be typed into this repository.
 """
 import os
+import re
 import sys
 import time
 from pathlib import Path
@@ -261,8 +262,24 @@ def _():
               "advertising", "healthOrWellnessTopics", "parentalControls", "ageAssurance")
     attrs = {k: "NONE" for k in how_much if k in current}
     attrs.update({k: False for k in yes_no if k in current})
-    patch("ageRatingDeclarations", decl["id"], attrs)
-    return f"{len(attrs)} answers"
+    # Apple keeps adding questions. When it names one we left out (or wants a different type),
+    # answer it the same way: "No" for yes/no questions, "None" for how-much questions.
+    for _ in range(15):
+        try:
+            patch("ageRatingDeclarations", decl["id"], attrs)
+            return f"{len(attrs)} answers"
+        except ApiError as e:
+            msg = str(e)
+            missing = re.findall(r"value for the attribute '(\w+)'", msg)
+            wants_string = re.findall(r"attribute '(\w+)'. Expected a STRING", msg)
+            wants_bool = re.findall(r"attribute '(\w+)'. Expected a BOOLEAN", msg)
+            if not (missing or wants_string or wants_bool):
+                raise
+            for k in missing + wants_bool:
+                attrs[k] = False
+            for k in wants_string:
+                attrs[k] = "NONE"
+    raise ApiError("Apple kept asking for more age rating answers")
 
 
 @part("Content rights (no third-party content)")
