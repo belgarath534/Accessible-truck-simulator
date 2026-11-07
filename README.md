@@ -4,3 +4,22 @@ An accessible iOS truck-driving game in Swift, playable by blind and sighted pla
 
 - [Pitch](docs/PITCH.md)
 - [Architecture & feasibility proposal](docs/ARCHITECTURE.md)
+
+## Status: driving prototype (milestones M0–M2)
+
+One truck on a 12 km practice loop with curves. Engine start, automatic gearbox, accelerate, brake,
+steer (tilt or one-finger joystick, plus keyboard and game controller), synthesized engine/road/rumble-strip
+audio, lane guidance beeps, spoken curve warnings and dashboard, and vibration. See **How to Drive** in the app.
+
+## Layout
+
+- `Packages/SimCore` – the simulation (physics, road, gestures, spoken phrases). Pure Swift, unit-tested,
+  runs on Linux too: `cd Packages/SimCore && swift test`.
+- `App/` – the iOS app: SwiftUI menus, driving screen, audio synthesis, speech, haptics, input.
+- `project.yml` – XcodeGen spec. The Xcode project is generated, not committed.
+
+## Building without a Mac
+
+GitHub Actions (`.github/workflows/build.yml`) runs the tests on Linux and builds the app on a macOS runner.
+Every push uploads an unsigned `TruckSim-unsigned.ipa` artifact. Installing it on an iPhone needs signing
+(a free Apple ID through a sideloading tool, or TestFlight with a paid Apple Developer account).

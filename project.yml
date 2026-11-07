@@ -1,0 +1,42 @@
+# Xcode project definition. The .xcodeproj is generated from this by XcodeGen
+# (on GitHub's Mac runners, or locally with `brew install xcodegen && xcodegen`).
+name: TruckSim
+options:
+  bundleIdPrefix: com.accessibletrucksim
+  deploymentTarget:
+    iOS: "17.0"
+packages:
+  SimCore:
+    path: Packages/SimCore
+targets:
+  TruckSim:
+    type: application
+    platform: iOS
+    sources:
+      - App
+    dependencies:
+      - package: SimCore
+    info:
+      path: App/Info.plist
+      properties:
+        CFBundleDisplayName: Truck Sim
+        CFBundleShortVersionString: "0.1.0"
+        CFBundleVersion: "1"
+        UILaunchScreen: {}
+        UIRequiresFullScreen: true
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationLandscapeRight
+          - UIInterfaceOrientationLandscapeLeft
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+        GCSupportsControllerUserInteraction: true
+        GCSupportedGameControllers:
+          - ProfileName: ExtendedGamepad
+        ITSAppUsesNonExemptEncryption: false
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.accessibletrucksim.TruckSim
+        SWIFT_VERSION: "5.0"
+        TARGETED_DEVICE_FAMILY: "1"
+        CODE_SIGN_STYLE: Automatic
+    scheme: {}
