@@ -1,0 +1,9 @@
+Accessible Truck Sim is an audio-first driving game designed for blind players using VoiceOver. No account or sign-in is needed, and the app collects no data.
+
+How to try it:
+1. Turn the phone sideways (landscape) and tap Start Driving.
+2. Three-finger double tap starts the engine.
+3. In the default Tilt mode, hold the right half of the screen to accelerate, hold the left half to brake, and rotate the phone like a steering wheel to steer. In Settings you can switch to a one-finger joystick: slide up for gas, down to brake, left and right to steer.
+4. Two-finger double tap reads the dashboard aloud. Two-finger swipe down opens the pause menu, which has Quit to Main Menu.
+
+The driving screen is a single VoiceOver element marked "allows direct interaction", so touches go straight to the game while VoiceOver is on. The game speaks for itself while you drive. All sound is generated live in the app. Headphones give the best experience, because lane guidance and rumble strips are panned left and right.

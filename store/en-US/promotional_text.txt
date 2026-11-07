@@ -1,0 +1,1 @@
+A truck simulator you can drive by ear, made for VoiceOver by a blind developer. Start the engine, find your lane by sound, and take the curves at the right speed.

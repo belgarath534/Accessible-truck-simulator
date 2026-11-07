@@ -1,0 +1,18 @@
+Accessible Truck Sim is a truck-driving game you can play completely by sound. It's made for VoiceOver from the ground up by a blind developer, and sighted players can play it too.
+
+You really drive. No menus pick a route while the truck drives itself. You start the engine, press the accelerator, brake, and steer.
+
+DRIVE BY EAR
+• A diesel engine that rises and falls with RPM and load, with an air hiss on every gear change
+• Soft beeps in the ear you're drifting toward, faster and higher the further you leave the centre of your lane
+• Rumble strips you hear and feel on the side you're drifting toward
+• Curves announced ahead of time with a suggested speed, and a warning if you're too fast
+• Speed called out as you accelerate, and a spoken dashboard on demand: speed, gear, RPM, fuel, engine temperature and turn signals
+• Vibration that follows the engine and kicks hard on the rumble strip
+
+YOUR WAY TO STEER
+• Tilt the phone like a steering wheel, or use a one-finger joystick
+• Bluetooth keyboards and game controllers supported
+• Simple gestures that work with VoiceOver on: three-finger double tap to start the engine, two-finger double tap for the dashboard, two-finger swipes for turn signals and the horn
+
+This is an early version with one truck and a practice road full of curves. Coming next: GPS routes, traffic, deliveries, better trucks, upgrades and your own trucking company.

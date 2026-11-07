@@ -1,0 +1,11 @@
+Thanks for testing the first driving prototype! Headphones recommended.
+
+Please try:
+• With VoiceOver on: do the gestures reach the game? Three-finger double tap (engine), two-finger double tap (dashboard), three-finger tap (road ahead), two-finger swipe left or right (turn signals), two-finger swipe up (horn), two-finger swipe down (pause).
+• Tilt steering: does tilting right steer right? If it's backwards, try Invert tilt in Settings.
+• The one-finger joystick (Settings, Steering method).
+• Can you keep the truck in your lane by sound alone? Are the lane beeps and rumble strips clear, or too much?
+• Do the curve warnings come early enough, and is the suggested speed right?
+• Does the engine sound like a truck? Too loud, too quiet, annoying?
+
+Tell us what feels good and what doesn't, with a screenshot or feedback from TestFlight.

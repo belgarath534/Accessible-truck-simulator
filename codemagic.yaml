@@ -85,6 +85,11 @@ workflows:
           echo "Creating the \"$PROFILE_NAME\" profile"
           app-store-connect profiles create "$BID" --type IOS_APP_STORE --certificate-ids "$CERT_ID" \
             --name "$PROFILE_NAME" --save --profiles-dir "$DEST"
+      - name: Fill in App Store Connect info (TestFlight text, listing, review notes)
+        script: |
+          # Never fails the build: problems are listed in this step's log instead.
+          python3 -m pip install --quiet --user pyjwt cryptography requests
+          python3 store/fill_store_info.py || echo "Store info step had a problem; see above"
       - name: Use the App Store signing profile
         script: |
           xcode-project use-profiles --project TruckSim.xcodeproj
@@ -100,3 +105,17 @@ workflows:
       app_store_connect:
         auth: integration
         submit_to_testflight: false  # internal testers get every build anyway
+
+  truck-sim-store-info:
+    name: Truck Sim store info only
+    # Quick run (no app build): fills in TestFlight and App Store text from store/en-US,
+    # including "What to Test" on the newest builds. See store/fill_store_info.py.
+    max_build_duration: 15
+    instance_type: mac_mini_m2
+    integrations:
+      app_store_connect: Accessible Backrooms
+    scripts:
+      - name: Fill in App Store Connect info
+        script: |
+          python3 -m pip install --quiet --user pyjwt cryptography requests
+          python3 store/fill_store_info.py

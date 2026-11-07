@@ -1,0 +1,1 @@
+Accessible Truck Sim: a truck-driving game you play by sound, built for VoiceOver. Start the engine, accelerate, brake and steer a big rig down a curvy country road using engine sound, lane guidance beeps, rumble strips, spoken curve warnings and vibration. Steer by tilting the phone like a wheel, with a one-finger joystick, or with a keyboard or game controller.
