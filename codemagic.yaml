@@ -170,11 +170,18 @@ workflows:
             xcrun simctl io "$UDID" screenshot "shots/raw_${n}_${SCREEN}.png"
             n=$((n+1))
           done
+          # If the app crashed, show why.
+          for r in ~/Library/Logs/DiagnosticReports/TruckSim*; do
+            [ -f "$r" ] || continue
+            echo "=== Crash report $r"; head -c 6000 "$r"; cp "$r" shots/ || true
+          done
           # The app is landscape-only; the simulator captures the portrait framebuffer. Turn each picture
           # so it reads correctly, then make sure the size is one Apple accepts.
           for f in shots/raw_*.png; do
             out="shots/$(basename "$f" | sed 's/raw_//')"
-            sips -r ${ROTATE:-270} "$f" --out "$out" >/dev/null
+            w=$(sips -g pixelWidth "$f" | awk '/pixelWidth/{print $2}')
+            h=$(sips -g pixelHeight "$f" | awk '/pixelHeight/{print $2}')
+            if [ "$h" -gt "$w" ]; then sips -r ${ROTATE:-270} "$f" --out "$out" >/dev/null; else cp "$f" "$out"; fi
             sips -g pixelWidth -g pixelHeight "$out" | tail -2
           done
           rm shots/raw_*.png

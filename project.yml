@@ -42,4 +42,7 @@ targets:
         MARKETING_VERSION: "0.1.0"
         CURRENT_PROJECT_VERSION: "1"
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        # Audio settings are shared with the real-time audio thread on purpose (a slightly stale value is
+        # harmless); don't let runtime exclusivity checks stop the app over it.
+        OTHER_SWIFT_FLAGS: "-enforce-exclusivity=unchecked"
     scheme: {}

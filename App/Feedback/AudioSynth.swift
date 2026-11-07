@@ -28,11 +28,19 @@ final class SynthState {
     /// Seconds left of an oncoming car's horn.
     var carHornSeconds: Float = 0
     /// Traffic: up to four nearby vehicles, one sound each.
-    var trafficGain: [Float] = [0, 0, 0, 0]
-    var trafficPitch: [Float] = [1, 1, 1, 1]
-    var trafficSpeed: [Float] = [0, 0, 0, 0]
-    var trafficIsTruck: [Bool] = [false, false, false, false]
-    var trafficBehind: [Bool] = [false, false, false, false]
+    // Fixed blocks of memory, not Swift arrays: the game writes them while the audio thread reads them, and
+    // an array being changed and read at the same moment makes iOS stop the app ("simultaneous access").
+    let trafficGain = SynthState.block(Float(0))
+    let trafficPitch = SynthState.block(Float(1))
+    let trafficSpeed = SynthState.block(Float(0))
+    let trafficIsTruck = SynthState.block(false)
+    let trafficBehind = SynthState.block(false)
+
+    private static func block<T>(_ value: T) -> UnsafeMutablePointer<T> {
+        let p = UnsafeMutablePointer<T>.allocate(capacity: 4)
+        p.initialize(repeating: value, count: 4)
+        return p
+    }
     var crashSeconds: Float = 0
     var shiftSeconds: Float = 0
     var volume: Float = 0.8
