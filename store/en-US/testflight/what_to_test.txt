@@ -1,12 +1,10 @@
-New: music and an in-truck radio, plus drives with an end. Headphones recommended.
+New sound! Headphones recommended.
 
-• Music in the main menu.
-• Radio while driving: it comes on when you start (you can change that in Settings). Three-finger swipe up turns it on or off, three-finger swipe left or right changes the song. The radio gets quieter whenever the game speaks.
-• Settings, Music and radio: menu music, radio on start, music volume.
-• Practice Drive: one 12 km lap that ends when you stop at the drop-off, with a results screen. Free Drive is the endless loop.
-• The pause menu shows your trip: distance driven, distance left, time, speeds and crashes.
+• Real truck engine: recorded diesel loops that blend together and rise in pitch with the RPM, a recorded starter when you start the engine, a shutdown sound, and an air brake hiss when you come to a stop.
+• New upbeat music: a loud menu theme and three new radio songs (country rock, classic rock, Southern groove). The radio plays quieter than the menu and drops lower whenever the game speaks.
+• Radio: three-finger swipe up for on or off, three-finger swipe left or right to change songs.
 
 Please check:
-• Is the music too loud or too quiet next to the engine, lane beeps and speech?
-• Do the three-finger swipes work with VoiceOver on?
-• Is the drop-off stop easy to find by ear?
+• Does the engine sound like a big truck at idle, pulling away and at highway speed? Any clicks or jumps?
+• Does the starter line up with the engine catching?
+• Is the radio a good level next to the engine, lane beeps and speech?
