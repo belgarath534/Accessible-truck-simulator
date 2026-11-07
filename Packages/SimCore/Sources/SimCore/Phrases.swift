@@ -223,8 +223,8 @@ public struct Phrases {
     }
 
     /// Whether the fuel in the tank covers a trip.
-    public func fuelCheck(fuelLiters: Double, capacity: Double, distance: Double) -> String {
-        let needed = CareerState.fuelNeeded(forDistance: distance)
+    public func fuelCheck(fuelLiters: Double, capacity: Double, distance: Double, cargoKg: Double = 0) -> String {
+        let needed = CareerState.fuelNeeded(forDistance: distance, cargoKg: cargoKg)
         let percent = Int((fuelLiters / capacity * 100).rounded())
         if fuelLiters >= needed { return "Fuel OK: \(percent) percent." }
         return "Not enough fuel: \(percent) percent. Fill up first, or stop at a truck stop on the way."

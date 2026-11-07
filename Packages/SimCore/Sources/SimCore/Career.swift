@@ -278,9 +278,10 @@ public struct CareerState: Codable, Equatable, Sendable {
         if jobBoard.contains(where: { $0.origin != currentTown }) { refreshBoard() }
     }
 
-    /// Roughly how many litres a trip of this length needs, with a 20 percent margin for hills and heavy loads.
-    public static func fuelNeeded(forDistance metres: Double) -> Double {
-        metres * DrivingSession.typicalFuelPerMetre * 1.2
+    /// Roughly how many litres a trip needs: heavier cargo burns more (measured: a 24-tonne load about 25 percent
+    /// more), plus a 15 percent margin.
+    public static func fuelNeeded(forDistance metres: Double, cargoKg: Double = 0) -> Double {
+        metres * DrivingSession.typicalFuelPerMetre * (1 + cargoKg / 80_000) * 1.15
     }
 
     /// Litres in the selected truck's tank.

@@ -91,7 +91,8 @@ struct JobBoardView: View {
     private var phrases: Phrases { Phrases(units: settings.units) }
 
     private func fuelText(_ job: DeliveryJob) -> String {
-        phrases.fuelCheck(fuelLiters: career.fuelLiters, capacity: career.truck.fuelCapacityLiters, distance: job.distance)
+        phrases.fuelCheck(fuelLiters: career.fuelLiters, capacity: career.truck.fuelCapacityLiters, distance: job.distance,
+                          cargoKg: job.cargo.massKg)
     }
 
     var body: some View {
@@ -171,7 +172,8 @@ struct ControlsHelpView: View {
             Section("Money and jobs") {
                 Text("The Job Board offers three deliveries. Each one tells you the cargo, distance, pay, time limit and weight. Drive to the drop-off and stop there to deliver.")
                 Text("Bonuses: 10 percent for arriving on time, 10 percent for no crashes, and 5 percent for a perfect stop. Being late takes money off, and each crash damages the cargo: 5 percent of the pay, 10 percent for fragile cargo, never more than 40 percent.")
-                Text("Heavy cargo makes the truck slower to speed up and longer to stop.")
+                Text("Heavy cargo makes the truck slower to speed up and longer to stop, and it burns more fuel.")
+                Text("In the last 150 meters before the drop-off you'll hear a beacon, like a parking sensor: the beeps get faster as you get closer and turn into a steady tone right at the drop-off. Stop there for the perfect-stop bonus. If you go past it, the beeps drop lower.")
                 Text("While driving a job, the three-finger tap tells you the distance and time left. You'll hear reminders at 5 minutes and 1 minute.")
                 Text("Free Drive pays a little for every kilometer. Pause and choose End Drive and Get Paid, or Quit to Main Menu, which also pays. Each crash costs a repair fee.")
             }

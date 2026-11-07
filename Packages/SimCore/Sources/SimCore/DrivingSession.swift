@@ -245,8 +245,9 @@ public final class DrivingSession {
         return DrivingSession.typicalFuelPerMetre
     }
 
-    /// Typical litres per metre at highway speed with the game's fuel scale (used before a trip is measured).
-    public static let typicalFuelPerMetre = 0.12 / 22 * fuelGameScale / 18
+    /// Typical litres per metre on a map job with a light load (measured: about 3.4 L/km), used before a trip
+    /// is measured and for the Job Board's fuel check.
+    public static let typicalFuelPerMetre = 0.0035
 
     /// How far the fuel left will go, metres.
     public var range: Double { truck.fuelLiters / fuelPerMetre }

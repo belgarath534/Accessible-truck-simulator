@@ -93,7 +93,7 @@ final class FeedbackCoordinator {
             trip = "Free Drive from \(freeDriveTown). Roam the map: at each junction you'll hear the choices; signal left or right to turn, or no signal to go straight. You earn \(Phrases.money(Int(Payout.freeDriveRatePerKm))) per kilometer. Pause and choose End Drive to get paid."
         case let .job(job):
             trip = phrases.jobIntro(job) + " Stop at the drop-off to deliver."
-            if let fuel = startingFuel, fuel < CareerState.fuelNeeded(forDistance: job.distance) {
+            if let fuel = startingFuel, fuel < CareerState.fuelNeeded(forDistance: job.distance, cargoKg: job.cargo.massKg) {
                 trip += " Warning: you may not have enough fuel. Listen for truck stops and fill up on the way."
             }
         }
@@ -226,6 +226,12 @@ final class FeedbackCoordinator {
         audio.update(truck: truck, spec: session.spec)
         audio.state.pumping = session.isRefueling
         audio.state.siren = session.sirenOn
+        // Drop-off beacon: beeps speed up over the last 150 m, a steady tone right at the drop-off.
+        if session.summary == nil, let r = session.remaining, r < 150, r > -60 {
+            audio.state.beaconDistance = Float(r)
+        } else {
+            audio.state.beaconDistance = -1_000
+        }
         haptics.update(
             engineRunning: truck.engine == .running,
             rpmFraction: truck.rpm / session.spec.maxRPM,

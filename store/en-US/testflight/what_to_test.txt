@@ -1,11 +1,9 @@
-Fairer money: fuel, tows and crashes rebalanced. Headphones recommended.
+New: a drop-off beacon, and a better fuel check. Headphones recommended.
 
-• Fuel lasts about twice as long: a full tank is around 2 hours of driving, and each trip costs less fuel.
-• The Job Board tells you for each job whether you have enough fuel, and has a Fill Up at the Yard button. A drive warns you at the start if your fuel may not last.
-• Tows cost $150 (was $400) and take 2 minutes (was 5).
-• Crashes damage cargo less: 5 percent of the pay each (10 percent for fragile), never more than 40 percent.
-• Also in this build: hire drivers in the Company screen, police and speeding tickets, the new air horn, and the map.
+• Drop-off beacon: in the last 150 meters you hear beeps like a parking sensor. They get faster as you get closer and turn into a steady tone right at the drop-off. Stop on the steady tone for the perfect-stop bonus. Past the drop-off the beeps drop lower.
+• The Job Board's fuel check now uses measured fuel use and counts heavy cargo, which burns more fuel.
+• Also: fuel lasts about twice as long as before, tows are cheaper, crashes cost less, and you can hire drivers in the Company screen.
 
 Please check:
-• Does a delivery now pay what feels fair, even with a crash or two?
-• Is the fuel check on the Job Board clear?
+• Does the beacon help you stop right at the drop-off?
+• Is the fuel check right? Did any job run out of fuel when it said "Fuel OK"?

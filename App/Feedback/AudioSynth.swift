@@ -21,6 +21,8 @@ final class SynthState {
     var pumping = false
     /// Police siren behind the truck.
     var siren = false
+    /// Metres to the drop-off for the beacon (negative = past it); -1000 = off.
+    var beaconDistance: Float = -1_000
     /// Seconds left of a police radio crackle (passing a parked police car).
     var crackleSeconds: Float = 0
     var crashSeconds: Float = 0
@@ -203,6 +205,7 @@ private final class FXVoice: Voice {
     var signalPhase: Float = 0, hornA: Float = 0, hornB: Float = 0, clickOsc: Float = 0, lp: Float = 0
     var pumpPhase: Float = 0, pumpLP: Float = 0
     var sirenTime: Float = 0, sirenPhase: Float = 0, sirenAmp: Float = 0
+    var beaconClock: Float = 0, beaconOsc: Float = 0
     var crackleHP: Float = 0, crackleLP: Float = 0, crackleTone: Float = 0
     var noise = Noise(seed: 0x0BAD_F00D)
 
@@ -243,6 +246,24 @@ private final class FXVoice: Voice {
                 let n = noise.next()
                 pumpLP += (n - pumpLP) * 0.05
                 s += (sinf(twoPi * pumpPhase) * 0.12 + sinf(twoPi * pumpPhase * 2) * 0.05 + pumpLP * 0.5) * 0.8
+            }
+            // Drop-off beacon, like a parking sensor: faster beeps as you get closer, steady at the drop-off,
+            // and a lower tone once you're past it.
+            let bd = state.beaconDistance
+            if bd > -999 && !state.muted {
+                let past = bd < 0
+                let freq: Float = past ? 520 : 1_040
+                beaconOsc += freq / sr; if beaconOsc >= 1 { beaconOsc -= 1 }
+                let tone = sinf(twoPi * beaconOsc) * 0.14
+                if abs(bd) <= 12 {
+                    s += tone
+                } else {
+                    let interval = 0.08 + min(1, abs(bd) / 150) * 0.7
+                    beaconClock += dt; if beaconClock >= interval { beaconClock -= interval }
+                    if beaconClock < 0.06 { s += tone * (1 - beaconClock / 0.06) }
+                }
+            } else {
+                beaconClock = 0
             }
             // Police siren: a wail sweeping up and down, fading in and out.
             sirenAmp += ((state.siren ? 1 : 0) - sirenAmp) * 0.0005
