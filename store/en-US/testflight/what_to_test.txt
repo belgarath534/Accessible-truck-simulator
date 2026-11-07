@@ -1,13 +1,15 @@
-New: the Garage! Buy trucks, each with its own engine sound. Headphones recommended.
+New: truck upgrades! Headphones recommended.
 
-• Garage on the main menu: three trucks. Hear the Engine plays each one: start, rev up and back down.
-  - Old Reliable (yours): steady six-cylinder.
-  - Workhorse ($6,000): rough old diesel, lumpy idle, no turbo. A bit less power, but grips better in curves.
-  - Road King ($18,000): deep V8 rumble with a loud turbo. Much more power, stronger brakes, bigger tank, faster top speed.
-• Buying a truck switches you to it. You can switch back to any truck you own.
-• The main menu says which truck you're driving.
+• In the Garage, each truck you own has an Upgrades screen with four upgrades, three levels each:
+  - Engine: 12 percent more power per level, and the engine sounds bigger and deeper, with more turbo.
+  - Brakes: 10 percent stronger per level. Stop shorter, especially with heavy loads.
+  - Tires: 8 percent more grip in curves per level.
+  - Fuel tank: 25 percent bigger per level.
+• Upgrades belong to the truck you bought them for.
+• Hear the Engine in the Upgrades screen plays the upgraded sound.
+• Also new: the Garage with three trucks (Old Reliable, Workhorse and Road King), each with its own engine sound.
 
 Please check:
-• Do the three engines sound different and good? Which do you like best?
-• Can you feel the Road King's extra power with a heavy load?
-• Does the Garage read well with VoiceOver?
+• Can you hear the engine upgrade?
+• Do the prices feel fair for what you earn from jobs?
+• Do the Garage and Upgrades screens read well with VoiceOver?

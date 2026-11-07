@@ -165,6 +165,8 @@ public struct CareerState: Codable, Equatable, Sendable {
     /// Garage: ids of trucks the player owns, and the one they drive.
     public var ownedTrucks: [String]
     public var selectedTruck: String
+    /// Upgrade levels per truck id.
+    public var upgrades: [String: UpgradeLevels]
 
     public static let startingMoney = 500
 
@@ -178,11 +180,12 @@ public struct CareerState: Codable, Equatable, Sendable {
         jobBoard = JobBoard.makeBoard(using: &rng)
         ownedTrucks = [TruckSpec.starter.id]
         selectedTruck = TruckSpec.starter.id
+        upgrades = [:]
     }
 
     // Saves from before the garage existed have no truck fields: give them the starter truck.
     enum CodingKeys: String, CodingKey {
-        case money, jobsCompleted, kilometersDriven, totalEarned, jobBoard, seed, ownedTrucks, selectedTruck
+        case money, jobsCompleted, kilometersDriven, totalEarned, jobBoard, seed, ownedTrucks, selectedTruck, upgrades
     }
 
     public init(from decoder: Decoder) throws {
@@ -195,9 +198,28 @@ public struct CareerState: Codable, Equatable, Sendable {
         seed = try c.decode(UInt64.self, forKey: .seed)
         ownedTrucks = try c.decodeIfPresent([String].self, forKey: .ownedTrucks) ?? [TruckSpec.starter.id]
         selectedTruck = try c.decodeIfPresent(String.self, forKey: .selectedTruck) ?? TruckSpec.starter.id
+        upgrades = try c.decodeIfPresent([String: UpgradeLevels].self, forKey: .upgrades) ?? [:]
     }
 
-    public var truck: TruckSpec { TruckSpec.withID(selectedTruck) }
+    /// The truck being driven, with its upgrades.
+    public var truck: TruckSpec { TruckSpec.withID(selectedTruck).upgraded(upgradeLevels(for: TruckSpec.withID(selectedTruck))) }
+
+    public func upgradeLevels(for truck: TruckSpec) -> UpgradeLevels { upgrades[truck.id] ?? UpgradeLevels() }
+
+    public enum UpgradeResult: Equatable, Sendable { case upgraded(level: Int), maxed, notOwned, notEnoughMoney(short: Int) }
+
+    /// Buys the next level of an upgrade for a truck the player owns.
+    @discardableResult
+    public mutating func buyUpgrade(_ kind: UpgradeKind, for truck: TruckSpec) -> UpgradeResult {
+        guard owns(truck) else { return .notOwned }
+        var levels = upgradeLevels(for: truck)
+        guard let price = kind.price(after: levels[kind]) else { return .maxed }
+        guard money >= price else { return .notEnoughMoney(short: price - money) }
+        money -= price
+        levels[kind] += 1
+        upgrades[truck.id] = levels
+        return .upgraded(level: levels[kind])
+    }
 
     public func owns(_ truck: TruckSpec) -> Bool { ownedTrucks.contains(truck.id) }
 

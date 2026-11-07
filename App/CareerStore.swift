@@ -70,6 +70,15 @@ final class CareerStore: ObservableObject {
         return result
     }
 
+    /// A truck from the catalog with this player's upgrades applied.
+    func upgraded(_ truck: TruckSpec) -> TruckSpec { truck.upgraded(state.upgradeLevels(for: truck)) }
+
+    func buyUpgrade(_ kind: UpgradeKind, for truck: TruckSpec) -> CareerState.UpgradeResult {
+        let result = state.buyUpgrade(kind, for: truck)
+        save()
+        return result
+    }
+
     func select(_ truck: TruckSpec) {
         state.select(truck)
         save()

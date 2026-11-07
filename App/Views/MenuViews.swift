@@ -240,7 +240,11 @@ struct GarageView: View {
             }
             ForEach(TruckSpec.catalog, id: \.id) { truck in
                 Section {
-                    Text(phrases.truck(truck))
+                    Text(phrases.truck(career.upgraded(truck)))
+                    if career.state.owns(truck) {
+                        NavigationLink("Upgrades") { UpgradesView(truck: truck) }
+                            .accessibilityHint("Engine, brakes, tires and fuel tank for the \(truck.name).")
+                    }
                     if career.truck.id == truck.id {
                         Text("You're driving this truck.").font(.headline)
                     } else if career.state.owns(truck) {
@@ -255,7 +259,7 @@ struct GarageView: View {
                                 : "You need \(Phrases.money(truck.price - career.money)) more.")
                     }
                     Button(preview.playingTruckID == truck.id ? "Stop Engine" : "Hear the Engine") {
-                        if preview.playingTruckID == truck.id { preview.stop() } else { preview.play(truck, volume: settings.volume) }
+                        if preview.playingTruckID == truck.id { preview.stop() } else { preview.play(career.upgraded(truck), volume: settings.volume) }
                     }
                 } header: {
                     Text(truck.price == 0 ? truck.name : "\(truck.name), \(Phrases.money(truck.price))")
@@ -282,5 +286,57 @@ struct GarageView: View {
 
     private func announce(_ text: String) {
         message = text
+    }
+}
+
+struct UpgradesView: View {
+    @EnvironmentObject private var settings: AppSettings
+    @EnvironmentObject private var career: CareerStore
+    @StateObject private var preview = EnginePreview()
+    let truck: TruckSpec
+    @State private var message: String?
+
+    var body: some View {
+        let levels = career.state.upgradeLevels(for: truck)
+        List {
+            Section {
+                Text("Bank: \(Phrases.money(career.money))")
+                Button(preview.playingTruckID == truck.id ? "Stop Engine" : "Hear the Engine") {
+                    if preview.playingTruckID == truck.id { preview.stop() } else { preview.play(career.upgraded(truck), volume: settings.volume) }
+                }
+            }
+            ForEach(UpgradeKind.allCases, id: \.self) { kind in
+                let level = levels[kind]
+                Section {
+                    Text("Level \(level) of \(UpgradeKind.maxLevel). \(kind.effect).")
+                    if let price = kind.price(after: level) {
+                        Button("Upgrade to level \(level + 1) for \(Phrases.money(price))") { buy(kind) }
+                            .accessibilityHint(career.money >= price ? "" : "You need \(Phrases.money(price - career.money)) more.")
+                    } else {
+                        Text("Fully upgraded.").font(.headline)
+                    }
+                } header: {
+                    Text("\(kind.name), level \(level)")
+                }
+            }
+        }
+        .navigationTitle("\(truck.name) Upgrades")
+        .onDisappear { preview.stop() }
+        .alert(message ?? "", isPresented: Binding(get: { message != nil }, set: { if !$0 { message = nil } })) {
+            Button("OK", role: .cancel) {}
+        }
+    }
+
+    private func buy(_ kind: UpgradeKind) {
+        switch career.buyUpgrade(kind, for: truck) {
+        case let .upgraded(level):
+            message = "\(kind.name) upgraded to level \(level). \(Phrases.money(career.money)) left in the bank."
+        case .maxed:
+            message = "\(kind.name) is already fully upgraded."
+        case .notOwned:
+            message = "Buy the \(truck.name) first."
+        case let .notEnoughMoney(short):
+            message = "Not enough money. You need \(Phrases.money(short)) more."
+        }
     }
 }

@@ -482,3 +482,44 @@ final class GarageTests: XCTestCase {
         XCTAssertTrue(text.contains("top speed 100 kilometers per hour"), text)
     }
 }
+
+final class UpgradeTests: XCTestCase {
+    func testBuyingUpgrades() {
+        var career = CareerState(seed: 5)
+        career.money = 10_000
+        XCTAssertEqual(career.buyUpgrade(.engine, for: .roadKing), .notOwned)
+        XCTAssertEqual(career.buyUpgrade(.engine, for: .starter), .upgraded(level: 1))
+        XCTAssertEqual(career.buyUpgrade(.engine, for: .starter), .upgraded(level: 2))
+        XCTAssertEqual(career.money, 10_000 - 2_000 - 4_500)
+        XCTAssertEqual(career.buyUpgrade(.engine, for: .starter), .notEnoughMoney(short: 8_000 - 3_500))
+        career.money = 20_000
+        XCTAssertEqual(career.buyUpgrade(.engine, for: .starter), .upgraded(level: 3))
+        XCTAssertEqual(career.buyUpgrade(.engine, for: .starter), .maxed)
+        XCTAssertEqual(career.upgradeLevels(for: .starter)[.engine], 3)
+        XCTAssertEqual(career.upgradeLevels(for: .workhorse)[.engine], 0, "upgrades belong to one truck")
+    }
+
+    func testUpgradesChangeTheTruck() {
+        var levels = UpgradeLevels()
+        levels[.engine] = 3
+        levels[.fuelTank] = 2
+        levels[.tires] = 1
+        let t = TruckSpec.starter.upgraded(levels)
+        XCTAssertGreaterThan(t.horsepower, TruckSpec.starter.horsepower)
+        XCTAssertEqual(t.fuelCapacityLiters, TruckSpec.starter.fuelCapacityLiters * 1.5, accuracy: 0.001)
+        XCTAssertGreaterThan(t.steeringLatAccel, TruckSpec.starter.steeringLatAccel)
+        XCTAssertLessThan(t.sound.pitch, TruckSpec.starter.sound.pitch, "a bigger engine sounds deeper")
+
+        var career = CareerState(seed: 9)
+        career.upgrades[TruckSpec.starter.id] = levels
+        XCTAssertEqual(career.truck.horsepower, t.horsepower, "the driven truck has its upgrades")
+    }
+
+    func testSavesKeepUpgrades() throws {
+        var career = CareerState(seed: 2)
+        career.money = 5_000
+        career.buyUpgrade(.brakes, for: .starter)
+        let loaded = try JSONDecoder().decode(CareerState.self, from: JSONEncoder().encode(career))
+        XCTAssertEqual(loaded.upgradeLevels(for: .starter)[.brakes], 1)
+    }
+}
