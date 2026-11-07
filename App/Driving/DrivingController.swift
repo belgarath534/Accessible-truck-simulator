@@ -82,7 +82,10 @@ final class DrivingController: NSObject, ObservableObject {
     }
 
     func stop() {
-        MusicPlayer.shared.stop()
+        // Runs twice when leaving (quit button, then the screen closing), sometimes after the menu
+        // music has already started again: only ever turn off the radio, never the menu music.
+        guard displayLink != nil else { return }
+        if MusicPlayer.shared.mode == .radio { MusicPlayer.shared.stop() }
         displayLink?.invalidate()
         displayLink = nil
         feedback.stop()

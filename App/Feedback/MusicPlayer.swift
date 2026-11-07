@@ -42,7 +42,12 @@ final class MusicPlayer: NSObject, AVAudioPlayerDelegate {
     // MARK: Menu
 
     func playMenu() {
-        guard mode != .menu, let url = menuTracks.first else { return }
+        if mode == .menu {
+            // Already the menu music; make sure it isn't left paused.
+            if player?.isPlaying == false { player?.play() }
+            return
+        }
+        guard let url = menuTracks.first else { return }
         prepareSession()
         play(url, loop: true)
         mode = .menu
