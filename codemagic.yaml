@@ -150,8 +150,14 @@ workflows:
           def num(t):
               m=re.search(r"iPhone (\d+)", t["name"])
               return int(m.group(1)) if m else 0
-          pm=[t for t in rt["supportedDeviceTypes"] if "Pro Max" in t["name"]]
-          print(rt["identifier"], max(pm, key=num)["identifier"])')"
+          phones=[t for t in rt.get("supportedDeviceTypes", []) if t["name"].startswith("iPhone")]
+          print("iPhones:", ", ".join(t["name"] for t in phones), file=sys.stderr)
+          pick=None
+          for word in ("Pro Max", "Max", "Plus", ""):
+              cands=[t for t in phones if word in t["name"]]
+              if cands:
+                  pick=max(cands, key=num); break
+          print(rt["identifier"], pick["identifier"])')"
           echo "Device $TYPE on $RUNTIME"
           UDID=$(xcrun simctl create "Screenshots" "$TYPE" "$RUNTIME")
           xcrun simctl boot "$UDID"
