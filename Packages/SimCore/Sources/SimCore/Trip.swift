@@ -47,6 +47,12 @@ public struct TripSummary: Equatable, Sendable {
     /// Metres between where the truck stopped and the drop-off; positive means it stopped past it.
     public var stopError: Double
 
+    public init(goalName: String, stats: TripStats, stopError: Double) {
+        self.goalName = goalName
+        self.stats = stats
+        self.stopError = stopError
+    }
+
     public enum StopRating: String, Sendable { case perfect, good, overshot }
 
     public var stopRating: StopRating {
