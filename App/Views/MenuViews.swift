@@ -28,6 +28,13 @@ struct MainMenuView: View {
                     Text("You're in \(career.state.currentTownName).")
                     Text("Driving: \(career.truck.name). Fuel \(Int((career.fuelLiters / career.truck.fuelCapacityLiters * 100).rounded())) percent.")
                 }
+                if !settings.tutorialDone {
+                    Section {
+                        Button("Start Here: Tutorial") { drive = .tutorial }
+                            .font(.title2.bold())
+                            .accessibilityHint("A guided first drive that teaches you every control, one step at a time.")
+                    }
+                }
                 Section {
                     NavigationLink {
                         JobBoardView { job in drive = .job(job) }
@@ -53,6 +60,11 @@ struct MainMenuView: View {
                     Button("Practice Drive") { drive = .practice }
                         .font(.title2)
                         .accessibilityHint("One lap of the country road, then stop at the drop-off. No pay.")
+                    if settings.tutorialDone {
+                        Button("Tutorial") { drive = .tutorial }
+                            .font(.title2)
+                            .accessibilityHint("The guided first drive again: every control, one step at a time.")
+                    }
                 } footer: {
                     Text("Jobs go from the town you're in to another town and pay the most, with bonuses for arriving on time, not crashing and a perfect stop. Free Drive roams the map and pays a little for every kilometer. Practice Drive is the practice loop and doesn't pay.")
                 }

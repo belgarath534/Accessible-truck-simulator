@@ -22,6 +22,12 @@ final class DrivingController: NSObject, ObservableObject {
     private let tilt = TiltSteering()
     private let hardware = HardwareInput()
     private let feedback: FeedbackCoordinator
+    /// The guided first drive's teacher (nil for other drives).
+    private var tutorial: Tutorial?
+    /// Gestures since the last frame, for the tutorial.
+    private var recentActions: [DrivingAction] = []
+    /// When the tutorial finished, to show the results after its last words.
+    private var tutorialFinishedAt: CFTimeInterval?
 
     private var displayLink: CADisplayLink?
     private var lastTime: CFTimeInterval = 0
@@ -39,7 +45,12 @@ final class DrivingController: NSObject, ObservableObject {
         touch = TouchInterpreter(mode: settings.steeringMode, areaWidth: 800)
         feedback = FeedbackCoordinator(settings: settings)
         super.init()
+        tutorial = makeTutorial()
         hardware.onAction = { [weak self] action in self?.perform(action) }
+    }
+
+    private func makeTutorial() -> Tutorial? {
+        drive == .tutorial ? Tutorial(mode: settings.steeringMode, units: settings.units) : nil
     }
 
     private static func makeSession(_ drive: DriveMode, _ settings: AppSettings, _ truck: TruckSpec,
@@ -47,13 +58,15 @@ final class DrivingController: NSObject, ObservableObject {
         // Jobs and Free Drive happen on the map; Practice Drive stays on the practice loop.
         let navigator: Navigator?
         switch drive {
-        case .practice: navigator = nil
+        case .practice, .tutorial: navigator = nil
         case .freeDrive: navigator = Navigator(map: .standard, origin: town, destination: nil)
         case let .job(job):
             navigator = job.destination.flatMap { Navigator(map: .standard, origin: job.origin ?? town, destination: $0) }
         }
         let session = DrivingSession(spec: truck, goal: drive.goal, cargoMassKg: drive.job?.cargo.massKg ?? 0,
-                                     timeLimit: drive.job?.timeLimit, startingFuel: fuel, navigator: navigator,
+                                     timeLimit: drive.job?.timeLimit,
+                                     startingFuel: drive == .tutorial ? nil : fuel, // the tutorial is on the house
+                                     navigator: navigator,
                                      assist: settings.assist)
         // Traffic on the map; the practice loop stays quiet for learning.
         session.trafficEnabled = settings.traffic && navigator != nil
@@ -62,6 +75,7 @@ final class DrivingController: NSObject, ObservableObject {
 
     /// Leaving or restarting a drive that didn't finish: keep the fuel level and charge any fuel or tow costs.
     private func closeOutUnfinished() {
+        guard drive != .tutorial else { return }
         career.saveFuel(session.truck.fuelLiters)
         let costs = Payout.expenses(session.stats)
         if !costs.isEmpty { career.charge(Payout(lines: costs)) }
@@ -91,7 +105,8 @@ final class DrivingController: NSObject, ObservableObject {
         displayLink = link
         lastTime = 0
         UIApplication.shared.isIdleTimerDisabled = true
-        feedback.announceIntro(mode: settings.steeringMode, drive: drive)
+        // The tutorial speaks its own welcome.
+        if tutorial == nil { feedback.announceIntro(mode: settings.steeringMode, drive: drive) }
         MusicPlayer.shared.stop()
         if settings.radioOnStart && !ScreenshotMode.isOn { MusicPlayer.shared.startRadio() }
     }
@@ -159,8 +174,10 @@ final class DrivingController: NSObject, ObservableObject {
 
     private func settle(_ summary: TripSummary) {
         let result: Payout?
+        if drive == .tutorial { payout = nil; return }
         career.saveFuel(session.truck.fuelLiters)
         switch drive {
+        case .tutorial: result = nil
         case .practice: result = Payout.practice(summary.stats)
         case .freeDrive:
             result = Payout.freeDrive(summary.stats)
@@ -176,6 +193,9 @@ final class DrivingController: NSObject, ObservableObject {
         session = DrivingController.makeSession(drive, settings, career.truck, fuel: career.fuelLiters,
                                                 town: career.state.currentTown)
         payout = nil
+        tutorial = makeTutorial()
+        tutorialFinishedAt = nil
+        recentActions = []
         feedback.reset()
         touch.reset()
         tilt.recenter()
@@ -184,7 +204,7 @@ final class DrivingController: NSObject, ObservableObject {
             MusicPlayer.shared.setPaused(false)
             lastTime = 0
             accumulator = 0
-            feedback.announceIntro(mode: settings.steeringMode, drive: drive)
+            if tutorial == nil { feedback.announceIntro(mode: settings.steeringMode, drive: drive) }
             focusDrivingView()
         } else {
             resume()
@@ -223,6 +243,7 @@ final class DrivingController: NSObject, ObservableObject {
             return
         }
         guard !isPaused, finished == nil else { return }
+        if tutorial != nil { recentActions.append(action) }
         switch action {
         case .toggleRadio, .nextSong, .previousSong:
             handleRadio(action)
@@ -289,12 +310,34 @@ final class DrivingController: NSObject, ObservableObject {
         feedback.handle(events)
         feedback.update(session: session)
         view?.setNeedsDisplay()
+        updateTutorial(dt: dt, now: now)
         if let summary = session.summary {
             settle(summary)
             if let payout { feedback.announcePayout(payout) }
             touch.reset()
             MusicPlayer.shared.setPaused(true)
             finished = summary
+        }
+    }
+
+    // MARK: Tutorial
+
+    private func updateTutorial(dt: Double, now: CFTimeInterval) {
+        guard let tutorial else { return }
+        if let line = tutorial.update(dt: dt, session: session, actions: recentActions) {
+            feedback.speech.speak(line, priority: .high)
+        }
+        recentActions = []
+        guard tutorial.isComplete else { return }
+        if tutorialFinishedAt == nil {
+            tutorialFinishedAt = now
+            settings.tutorialDone = true
+        }
+        // Let the closing words play before the results screen takes VoiceOver's focus.
+        if let at = tutorialFinishedAt, now - at > 9 {
+            touch.reset()
+            MusicPlayer.shared.setPaused(true)
+            finished = TripSummary(goalName: "Tutorial", stats: session.stats, stopError: 0)
         }
     }
 }

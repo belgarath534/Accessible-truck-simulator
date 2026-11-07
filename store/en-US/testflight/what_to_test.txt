@@ -1,13 +1,5 @@
-New: traffic! Headphones strongly recommended.
+New: the Tutorial. Open the game and choose "Start Here: Tutorial" at the top of the main menu. It's a guided first drive on the practice loop that teaches every control one step at a time and waits for you at each step: starting the engine, accelerating, staying in your lane, the dashboard, the GPS, turn signals, curves, the horn and stopping. If you don't do a step, it reminds you. The tutorial is free: no fuel or costs. After you finish it, it moves down the menu next to Practice Drive, so you can take it again.
 
-• Roads now have two lanes. On country and mountain roads the left lane is oncoming traffic. On Interstate 40 the left lane goes your way, for passing.
-• Oncoming cars, pickups and trucks in 3D sound: they come at you on your left, rush past and fade behind. Drift over the center line with someone coming and they honk: "Oncoming traffic! Get back in your lane!" Hitting one is a crash.
-• Slower vehicles ahead in your lane: "Slow pickup ahead, 150 meters, doing 50." Slow down behind them, or pass: signal left and steer into the left lane, then signal right and steer back.
-• Lane beeps guide you to the lane you mean to be in.
-• Practice Drive has no traffic. Traffic can be turned off in Settings.
-• Also: the drop-off beacon, so you can stop right at the drop-off.
+Also: traffic is now off by default. Turn it on in Settings if you want other vehicles on the map's roads.
 
-Please check:
-• Can you tell where each vehicle is by sound?
-• Is passing a slow vehicle doable?
-• Is there too much traffic, or too little?
+Please tell us: Was any step confusing? Did any instruction get cut off or talk over something else? Did the tutorial ever get stuck?

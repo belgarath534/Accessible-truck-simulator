@@ -22,8 +22,9 @@ struct DrivingScreen: View {
                     payout: controller.payout,
                     balance: controller.career.money,
                     isFreeDrive: controller.drive == .freeDrive,
+                    isTutorial: controller.drive == .tutorial,
                     units: controller.settings.units,
-                    driveAgain: controller.drive.job == nil ? controller.restart : nil,
+                    driveAgain: controller.drive.job == nil && controller.drive != .tutorial ? controller.restart : nil,
                     quit: {
                         controller.stop()
                         onExit()
@@ -92,6 +93,9 @@ struct PauseMenuView: View {
                 case .practice:
                     Button("Restart from the Start", action: restart)
                         .buttonStyle(.bordered)
+                case .tutorial:
+                    Button("Start the Tutorial Over", action: restart)
+                        .buttonStyle(.bordered)
                 }
                 if drive.job == nil {
                     Button("Quit to Main Menu", role: .destructive, action: quit)
@@ -114,6 +118,7 @@ struct TripCompleteView: View {
     let payout: Payout?
     let balance: Int
     let isFreeDrive: Bool
+    var isTutorial = false
     let units: UnitSystem
     let driveAgain: (() -> Void)?
     let quit: () -> Void
@@ -127,13 +132,21 @@ struct TripCompleteView: View {
             ScrollView {
                 VStack(spacing: 20) {
                     VStack(spacing: 8) {
-                        Text(isFreeDrive ? "Drive Ended" : "Delivered!")
+                        Text(isTutorial ? "Tutorial Complete!" : isFreeDrive ? "Drive Ended" : "Delivered!")
                             .font(.largeTitle.bold())
+                        if isTutorial {
+                            Text("You've learned the engine, pedals, steering, the dashboard, GPS, signals, curves, the horn and stopping. Take a job from the Job Board to start earning money, or try a Practice Drive. The controls are always in How to Drive on the main menu.")
+                                .font(.body)
+                                .multilineTextAlignment(.center)
+                        } else {
                         Text(isFreeDrive ? phrases.tripResults(summary.stats)
                                          : phrases.arrived(summary).replacingOccurrences(of: "Delivered! ", with: ""))
                             .font(.body)
                             .multilineTextAlignment(.center)
-                        if let payout {
+                        }
+                        if isTutorial {
+                            EmptyView()
+                        } else if let payout {
                             Text(phrases.payout(payout))
                                 .font(.title3.bold())
                                 .multilineTextAlignment(.center)

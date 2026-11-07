@@ -89,6 +89,8 @@ final class FeedbackCoordinator {
         }
         var trip: String
         switch drive {
+        case .tutorial:
+            trip = "Tutorial."
         case .practice:
             trip = "Practice Drive: \(settings.units.distance(Road.practiceLoop.totalLength)) to the drop-off. Stop there to finish. Practice drives don't pay."
         case .freeDrive:
