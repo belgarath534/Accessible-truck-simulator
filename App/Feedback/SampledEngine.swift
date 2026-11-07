@@ -13,7 +13,7 @@ final class SampledEngine {
     static let loops: [(name: String, rpm: Float)] = [
         ("engine_idle", 600), ("engine_low", 1_000), ("engine_mid", 1_400), ("engine_high", 1_850),
     ]
-    static let oneShotNames = ["engine_start", "engine_stop", "air_brake", "horn"]
+    static let oneShotNames = ["engine_start", "engine_stop", "air_brake"]
 
     private struct Layer {
         let player: AVAudioPlayerNode

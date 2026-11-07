@@ -256,6 +256,9 @@ final class AudioSynth {
     private var laneNode: AVAudioSourceNode?
     private var voices: [AnyObject] = []
     private var sampled: SampledEngine?
+    /// The air horn recording, used by every truck.
+    private var hornPlayer: AVAudioPlayerNode?
+    private var hornBuffer: AVAudioPCMBuffer?
     private var configObserver: NSObjectProtocol?
 
     func start(sound: EngineSound = .recorded) {
@@ -299,6 +302,13 @@ final class AudioSynth {
         _ = attach(fx)
 
         sampled = sound.recorded ? SampledEngine(engine: engine) : nil
+        if let buffer = SampledEngine.load("horn") {
+            let player = AVAudioPlayerNode()
+            engine.attach(player)
+            engine.connect(player, to: engine.mainMixerNode, format: buffer.format)
+            hornPlayer = player
+            hornBuffer = buffer
+        }
         state.useSampledEngine = sampled != nil
         state.hasStartSample = sampled?.has("engine_start") ?? false
 
@@ -356,7 +366,14 @@ final class AudioSynth {
     }
 
     func honk() {
-        if sampled?.play("horn", volume: state.volume) != true { state.hornSeconds = 0.7 }
+        guard let player = hornPlayer, let buffer = hornBuffer, !state.muted else {
+            state.hornSeconds = 0.7
+            return
+        }
+        player.stop()
+        player.volume = state.volume * 0.55
+        player.scheduleBuffer(buffer, at: nil)
+        player.play()
     }
     func crash() { state.crashSeconds = 1.5 }
     func gearShift() { state.shiftSeconds = 0.25 }
