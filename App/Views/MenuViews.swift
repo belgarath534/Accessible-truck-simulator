@@ -90,6 +90,10 @@ struct JobBoardView: View {
 
     private var phrases: Phrases { Phrases(units: settings.units) }
 
+    private func fuelText(_ job: DeliveryJob) -> String {
+        phrases.fuelCheck(fuelLiters: career.fuelLiters, capacity: career.truck.fuelCapacityLiters, distance: job.distance)
+    }
+
     var body: some View {
         List {
             Section {
@@ -100,16 +104,27 @@ struct JobBoardView: View {
                         VStack(alignment: .leading, spacing: 4) {
                             Text("\(job.cargo.name): \(Phrases.money(job.pay))").font(.headline)
                             Text(phrases.job(job)).font(.subheadline)
+                            Text(fuelText(job)).font(.subheadline)
                         }
                     }
                     .accessibilityElement(children: .ignore)
-                    .accessibilityLabel(phrases.job(job))
+                    .accessibilityLabel(phrases.job(job) + " " + fuelText(job))
                     .accessibilityHint("Starts this delivery.")
                 }
             } header: {
                 Text("Available jobs")
             } footer: {
                 Text("Heavy loads accelerate slowly and need more room to brake. Fragile loads are damaged more by crashes. Urgent loads have tighter time limits but pay more.")
+            }
+            Section {
+                let cost = career.state.yardFillCost(for: career.baseTruck)
+                Text("Fuel: \(Int((career.fuelLiters / career.truck.fuelCapacityLiters * 100).rounded())) percent.")
+                if cost > 0 {
+                    Button("Fill Up at the Yard for \(Phrases.money(cost))") {
+                        _ = career.fillAtYard(career.baseTruck)
+                    }
+                    .accessibilityHint("Truck stops on the road are cheaper.")
+                }
             }
             Section {
                 Button("Get New Jobs") { career.refreshBoard() }
@@ -155,7 +170,7 @@ struct ControlsHelpView: View {
             }
             Section("Money and jobs") {
                 Text("The Job Board offers three deliveries. Each one tells you the cargo, distance, pay, time limit and weight. Drive to the drop-off and stop there to deliver.")
-                Text("Bonuses: 10 percent for arriving on time, 10 percent for no crashes, and 5 percent for a perfect stop. Being late or crashing takes money off, and fragile cargo is damaged more.")
+                Text("Bonuses: 10 percent for arriving on time, 10 percent for no crashes, and 5 percent for a perfect stop. Being late takes money off, and each crash damages the cargo: 5 percent of the pay, 10 percent for fragile cargo, never more than 40 percent.")
                 Text("Heavy cargo makes the truck slower to speed up and longer to stop.")
                 Text("While driving a job, the three-finger tap tells you the distance and time left. You'll hear reminders at 5 minutes and 1 minute.")
                 Text("Free Drive pays a little for every kilometer. Pause and choose End Drive and Get Paid, or Quit to Main Menu, which also pays. Each crash costs a repair fee.")
@@ -176,7 +191,7 @@ struct ControlsHelpView: View {
                 Text("Fuel stays in your truck between drives. A full tank lasts about an hour of driving. The dashboard, two-finger double tap, says how far your fuel will take you.")
                 Text("Truck stops are on Interstate 40 and the longer country roads, and there are three on the practice loop. When your fuel is under half you'll hear one coming, and the three-finger tap always tells you the distance to the next one.")
                 Text("To fill up: signal right before the truck stop and slow below 50 kilometers or 30 miles per hour as you reach it. Stop at the pump and wait while it fills. Press the gas to leave early.")
-                Text("You're warned at a quarter tank and at 10 percent. If you run out, a tow truck takes you to the next truck stop for a fee and puts in a quarter tank. That costs 5 minutes too.")
+                Text("You're warned at a quarter tank and at 10 percent. If you run out, a tow truck takes you to the next truck stop for $150 and puts in a quarter tank. That costs 2 minutes too. The Job Board tells you if you have enough fuel for each job.")
                 Text("Fuel at truck stops costs less than filling up at your yard in the Garage. Fuel and tow costs come off your pay.")
             }
             Section("Keyboard and controller") {

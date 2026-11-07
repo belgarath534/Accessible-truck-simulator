@@ -98,17 +98,17 @@ public final class DrivingSession {
     // Lane geometry relative to lane centre.
     public static let rumbleOffset = 0.9
     public static let offRoadOffset = 2.6
-    /// Fuel burns this many times faster than a real truck, so a full tank lasts about an hour of driving.
-    public static let fuelGameScale = 18.0
+    /// Fuel burns this many times faster than a real truck, so a full tank lasts about two hours of driving.
+    public static let fuelGameScale = 10.0
     /// Dollars per litre at truck stops.
     public static let truckStopFuelPrice = 2.5
     /// Pumps fill this many litres per second.
     public static let pumpRate = 40.0
     /// Fastest you can take a truck stop exit, m/s.
     public static let truckStopExitSpeed = 50 / 3.6
-    public static let towFee = 400
+    public static let towFee = 150
     /// The tow takes time: added to the driving time (matters for deadlines).
-    public static let towSeconds = 300.0
+    public static let towSeconds = 120.0
 
     // Police
     /// Chance a police car is parked at a spot when you pass it.
@@ -242,8 +242,11 @@ public final class DrivingSession {
     /// Litres per metre the truck burns: measured this trip once it has gone a little way, else a typical cruise.
     public var fuelPerMetre: Double {
         if stats.distance > 1_000 && stats.fuelUsedLiters > 0 { return stats.fuelUsedLiters / stats.distance }
-        return 0.12 / 22 // about 0.12 L/s at 80 km/h with the game's fuel scale
+        return DrivingSession.typicalFuelPerMetre
     }
+
+    /// Typical litres per metre at highway speed with the game's fuel scale (used before a trip is measured).
+    public static let typicalFuelPerMetre = 0.12 / 22 * fuelGameScale / 18
 
     /// How far the fuel left will go, metres.
     public var range: Double { truck.fuelLiters / fuelPerMetre }

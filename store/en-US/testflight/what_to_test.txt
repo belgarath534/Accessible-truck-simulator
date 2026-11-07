@@ -1,12 +1,11 @@
-New: hire drivers for your company! Headphones recommended.
+Fairer money: fuel, tows and crashes rebalanced. Headphones recommended.
 
-• Company on the main menu: hire drivers (1, 2 or 3 stars). Better drivers cost more but deliver faster.
-• Each driver needs a truck other than the one you drive. Hiring gives them a free truck automatically, and you can choose which truck in the Company screen.
-• Drivers earn money even while the game is closed, for up to 8 hours at a time. When you come back to the main menu you'll hear what they delivered and earned.
-• If you switch to a truck a driver is using, the driver swaps to the truck you were driving.
-• Also new: police and speeding tickets, and the new air horn.
+• Fuel lasts about twice as long: a full tank is around 2 hours of driving, and each trip costs less fuel.
+• The Job Board tells you for each job whether you have enough fuel, and has a Fill Up at the Yard button. A drive warns you at the start if your fuel may not last.
+• Tows cost $150 (was $400) and take 2 minutes (was 5).
+• Crashes damage cargo less: 5 percent of the pay each (10 percent for fragile), never more than 40 percent.
+• Also in this build: hire drivers in the Company screen, police and speeding tickets, the new air horn, and the map.
 
 Please check:
-• Is hiring and giving trucks easy with VoiceOver?
-• Does the "while you were away" report make sense?
-• Do drivers earn too much or too little?
+• Does a delivery now pay what feels fair, even with a crash or two?
+• Is the fuel check on the Job Board clear?

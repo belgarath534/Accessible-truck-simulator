@@ -325,13 +325,13 @@ final class CareerTests: XCTestCase {
         stats.crashes = 2
         stats.drivingTime = 1_000 // 100 s late -> 2 minutes -> 6%
         let messy = Payout.delivery(job, summary: TripSummary(goalName: "x", stats: stats, stopError: 40))
-        XCTAssertEqual(messy.total, 1_000 - 60 - 200)
+        XCTAssertEqual(messy.total, 1_000 - 60 - 100, "5 percent per crash")
 
         let fragileJob = DeliveryJob(cargo: Cargo(name: "Glass", massKg: 4_000, ratePerKm: 100, fragile: true),
                                      distance: 10_000, pay: 1_000, timeLimit: 900)
         stats.crashes = 5
         let wrecked = Payout.delivery(fragileJob, summary: TripSummary(goalName: "x", stats: stats, stopError: 40))
-        XCTAssertEqual(wrecked.total, 1_000 - 60 - 600, "damage is capped at 60 percent")
+        XCTAssertEqual(wrecked.total, 1_000 - 60 - 400, "damage is capped at 40 percent")
     }
 
     func testFreeDrivePaysLessThanJobs() {
@@ -547,11 +547,13 @@ final class FuelTests: XCTestCase {
         return events
     }
 
-    func testFullTankLastsAboutAnHour() {
+    func testFullTankLastsAboutTwoHours() {
         let s = DrivingSession(road: Road(segments: [.straight(200_000)]))
-        XCTAssertEqual(s.range, s.spec.fuelCapacityLiters / (0.12 / 22), accuracy: 1)
-        XCTAssertGreaterThan(s.range, 50_000)
-        XCTAssertLessThan(s.range, 120_000)
+        XCTAssertEqual(s.range, s.spec.fuelCapacityLiters / DrivingSession.typicalFuelPerMetre, accuracy: 1)
+        XCTAssertGreaterThan(s.range, 110_000)
+        XCTAssertLessThan(s.range, 180_000)
+        // Even the longest job on the map fits in a full tank with room to spare.
+        XCTAssertLessThan(CareerState.fuelNeeded(forDistance: 25_000), s.spec.fuelCapacityLiters * 0.3)
     }
 
     func testPullInAndRefuel() {
@@ -882,5 +884,25 @@ final class CompanyTests: XCTestCase {
         let text = Phrases.driverReports([DriverReport(name: "Sam Hayes", jobs: 4, earned: 1_200)])
         XCTAssertEqual(text, "Your drivers: Sam Hayes delivered 4 jobs and earned $1,200.")
         XCTAssertNil(Phrases.driverReports([]))
+    }
+}
+
+final class BalanceTests: XCTestCase {
+    /// A typical 13-mile job with a couple of crashes should still pay well.
+    func testRoughJobStillPays() {
+        let cargo = Cargo.catalog.first { $0.name == "Lumber" }!
+        let job = DeliveryJob(cargo: cargo, distance: 21_000, pay: 2_730, timeLimit: 1_800)
+        var stats = TripStats()
+        stats.distance = 21_000
+        stats.drivingTime = 1_500
+        stats.crashes = 2
+        let payout = Payout.delivery(job, summary: TripSummary(goalName: "x", stats: stats, stopError: 30))
+        XCTAssertGreaterThan(payout.total, Int(Double(job.pay) * 0.95))
+    }
+
+    func testFuelCheckPhrase() {
+        let p = Phrases(units: .metric)
+        XCTAssertTrue(p.fuelCheck(fuelLiters: 400, capacity: 400, distance: 20_000).hasPrefix("Fuel OK"))
+        XCTAssertTrue(p.fuelCheck(fuelLiters: 5, capacity: 400, distance: 20_000).hasPrefix("Not enough fuel"))
     }
 }

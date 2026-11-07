@@ -78,6 +78,7 @@ final class DrivingController: NSObject, ObservableObject {
         if settings.steeringMode == .tilt { tilt.start() }
         feedback.engineSound = session.spec.sound
         feedback.freeDriveTown = career.state.currentTownName
+        feedback.startingFuel = session.truck.fuelLiters
         feedback.start()
         hardware.start()
 

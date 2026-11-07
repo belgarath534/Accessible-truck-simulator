@@ -188,8 +188,8 @@ public struct Payout: Equatable, Sendable {
         }
 
         if stats.crashes > 0 {
-            let perCrash = job.cargo.fragile ? 0.20 : 0.10
-            let fraction = min(0.6, Double(stats.crashes) * perCrash)
+            let perCrash = job.cargo.fragile ? 0.10 : 0.05
+            let fraction = min(0.4, Double(stats.crashes) * perCrash)
             lines.append(Line(label: "Cargo damage from \(stats.crashes) crash\(stats.crashes == 1 ? "" : "es")",
                               amount: -Int((Double(base) * fraction).rounded())))
         } else {
@@ -276,6 +276,11 @@ public struct CareerState: Codable, Equatable, Sendable {
         }
         // Jobs saved before the map (or from another town) are replaced with jobs from here.
         if jobBoard.contains(where: { $0.origin != currentTown }) { refreshBoard() }
+    }
+
+    /// Roughly how many litres a trip of this length needs, with a 20 percent margin for hills and heavy loads.
+    public static func fuelNeeded(forDistance metres: Double) -> Double {
+        metres * DrivingSession.typicalFuelPerMetre * 1.2
     }
 
     /// Litres in the selected truck's tank.

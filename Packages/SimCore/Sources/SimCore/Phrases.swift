@@ -108,7 +108,7 @@ public struct Phrases {
     public let leftTruckStop = "Back on the road."
 
     public func towed(cost: Int, fuelCost: Int) -> String {
-        "A tow truck took you to the next truck stop and put in a quarter tank. Tow \(Phrases.money(cost)), fuel \(Phrases.money(fuelCost)). That took 5 minutes. Start the engine to go on."
+        "A tow truck took you to the next truck stop and put in a quarter tank. Tow \(Phrases.money(cost)), fuel \(Phrases.money(fuelCost)). That took 2 minutes. Start the engine to go on."
     }
 
     public func roadAheadTruckStop(_ distance: Double) -> String {
@@ -220,6 +220,14 @@ public struct Phrases {
 
     public func weight(_ kg: Double) -> String {
         units == .metric ? "\(Int((kg / 1_000).rounded())) tonnes" : "\(Int((kg * 2.204_62 / 2_000).rounded())) tons"
+    }
+
+    /// Whether the fuel in the tank covers a trip.
+    public func fuelCheck(fuelLiters: Double, capacity: Double, distance: Double) -> String {
+        let needed = CareerState.fuelNeeded(forDistance: distance)
+        let percent = Int((fuelLiters / capacity * 100).rounded())
+        if fuelLiters >= needed { return "Fuel OK: \(percent) percent." }
+        return "Not enough fuel: \(percent) percent. Fill up first, or stop at a truck stop on the way."
     }
 
     public func job(_ job: DeliveryJob) -> String {

@@ -11,6 +11,8 @@ final class FeedbackCoordinator {
     private var onRumbleStrip = false
     private var lastSpokenSpeedStep: Int?
     private var wasMoving = false
+    /// Litres in the tank at the start, for the low-fuel warning; set before start().
+    var startingFuel: Double?
     /// Town name for the Free Drive intro; set before start().
     var freeDriveTown = "Millbrook"
     /// The current truck's engine voice; set before start().
@@ -83,7 +85,7 @@ final class FeedbackCoordinator {
         case .joystick:
             controls = "Put one finger anywhere. Slide up to accelerate, down to brake, left or right to steer. Lift your finger to coast."
         }
-        let trip: String
+        var trip: String
         switch drive {
         case .practice:
             trip = "Practice Drive: \(settings.units.distance(Road.practiceLoop.totalLength)) to the drop-off. Stop there to finish. Practice drives don't pay."
@@ -91,6 +93,9 @@ final class FeedbackCoordinator {
             trip = "Free Drive from \(freeDriveTown). Roam the map: at each junction you'll hear the choices; signal left or right to turn, or no signal to go straight. You earn \(Phrases.money(Int(Payout.freeDriveRatePerKm))) per kilometer. Pause and choose End Drive to get paid."
         case let .job(job):
             trip = phrases.jobIntro(job) + " Stop at the drop-off to deliver."
+            if let fuel = startingFuel, fuel < CareerState.fuelNeeded(forDistance: job.distance) {
+                trip += " Warning: you may not have enough fuel. Listen for truck stops and fill up on the way."
+            }
         }
         speech.speak(
             "\(trip) Engine off. \(controls) Three-finger double tap starts the engine. Two-finger double tap reads the dashboard. Two-finger swipe down pauses.",
