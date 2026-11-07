@@ -124,6 +124,9 @@ final class FeedbackCoordinator {
             audio.setRumble(side)
         case let .curveAhead(curve):
             speech.speak(phrases.curve(curve), priority: .normal)
+        case let .onShoulder(side):
+            speech.speak(phrases.onShoulder(side), priority: .high)
+            haptics.tap(intensity: 0.8, sharpness: 0.3)
         case .tooFastForCurve:
             speech.speak("Too fast for this curve!", priority: .high)
             haptics.tap(intensity: 1, sharpness: 0.9)

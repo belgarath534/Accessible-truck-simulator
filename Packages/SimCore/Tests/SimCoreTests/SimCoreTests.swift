@@ -388,3 +388,42 @@ final class CareerTests: XCTestCase {
         XCTAssertTrue(events.contains(.lateForDelivery))
     }
 }
+
+final class HandlingTests: XCTestCase {
+    /// A driver who only uses what a blind player hears: the lane beeps (which side, from 0.25 m off centre),
+    /// with half a second of reaction time, steering hard away from them; and curve announcements, slowing
+    /// to the suggested speed.
+    private func crashesOnPracticeLoop(assist: SteeringAssist) -> Int {
+        let s = DrivingSession(road: .practiceLoop, goal: .practice(on: .practiceLoop), assist: assist)
+        _ = s.perform(.toggleEngine)
+        let dt = 1.0 / 60
+        var heard: [Double] = Array(repeating: 0, count: 30) // 0.5 s delay line of lane-beep side
+        var targetSpeed = 22.0
+        var t = 0.0
+        while s.summary == nil && t < 3_000 {
+            let y = s.truck.lateralOffset
+            heard.append(abs(y) > 0.25 ? (y > 0 ? 1 : -1) : 0)
+            let beep = heard.removeFirst()
+            let steer = -beep * 0.8
+            if let curve = s.road.nextCurve(after: s.truck.position, within: 250) {
+                targetSpeed = curve.advisorySpeed
+            } else if s.road.curvature(at: s.truck.position) == 0 {
+                targetSpeed = 22
+            }
+            if let r = s.remaining { targetSpeed = min(targetSpeed, (4 * max(0, r)).squareRoot()) }
+            let throttle = s.truck.speed < targetSpeed - 1 ? 0.6 : 0
+            let brake = s.truck.speed > targetSpeed + 1 || (s.remaining ?? 1) <= 0 ? 0.5 : 0
+            _ = s.step(dt: dt, input: DrivingInput(throttle: throttle, brake: brake, steer: steer))
+            t += dt
+        }
+        return s.stats.crashes
+    }
+
+    func testSimpleHandlingIsDrivableByEar() {
+        let simple = crashesOnPracticeLoop(assist: .medium)
+        let realistic = crashesOnPracticeLoop(assist: .off)
+        print("Crashes by ear on the practice loop: medium assist \(simple), realistic \(realistic)")
+        XCTAssertLessThanOrEqual(simple, 1)
+        XCTAssertLessThan(simple, max(realistic, 1) + 1)
+    }
+}

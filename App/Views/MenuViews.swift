@@ -178,7 +178,7 @@ struct SettingsView: View {
             } header: {
                 Text("Audio and feedback")
             } footer: {
-                Text("Steering assist straightens the truck on straight roads when you're not steering. You always have to steer through curves yourself.")
+                Text("Steering assist Low, Medium or High: steering moves the truck sideways, and letting go stops the drift. Curves push you toward the outside, so steer into them, harder when you're faster. Leaving the road slowly puts you on the gravel shoulder; leaving it fast is a crash. Off: realistic steering, much harder by ear.")
             }
             Section {
                 Toggle("Music in the menus", isOn: $settings.menuMusic)

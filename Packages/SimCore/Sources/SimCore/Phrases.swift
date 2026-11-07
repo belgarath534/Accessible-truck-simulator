@@ -78,6 +78,10 @@ public struct Phrases {
 
     public let atDestination = "You're at the drop-off. Stop now."
 
+    public func onShoulder(_ side: Side) -> String {
+        "On the \(side.rawValue) shoulder. Steer \(side == .left ? "right" : "left") to get back on the road."
+    }
+
     public func stoppedShort(_ remaining: Double) -> String {
         "The drop-off is \(units.distance(remaining)) ahead. Keep going."
     }

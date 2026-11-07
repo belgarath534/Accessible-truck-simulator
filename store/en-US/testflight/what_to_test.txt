@@ -1,14 +1,10 @@
-New: money and delivery jobs! Headphones recommended.
+New: much easier steering! Headphones recommended.
 
-• Bank balance on the main menu. You start with $500.
-• Job Board: three deliveries with cargo, distance, pay, time limit and weight. Pick one, drive to the drop-off and stop there to deliver.
-• Pay: bonuses for on time, no crashes and a perfect stop. Being late or crashing costs money, and fragile cargo is damaged more by crashes.
-• Heavy cargo (steel, gravel, lumber) speeds up slowly and needs more room to brake.
-• Time reminders at 5 minutes and 1 minute. The three-finger tap tells you the distance and time left.
-• Free Drive now pays a little per kilometer. Pause and choose End Drive and Get Paid.
-• Your money is saved, even after closing the app.
+• Steering assist (Low, Medium and High) now uses simpler handling: steering moves the truck sideways, and letting go stops the drift. Curves still push you to the outside, harder the faster you go, so you steer into them. Medium is the default. Off is the old realistic steering.
+• Leaving the road slowly puts you on the gravel shoulder with a warning to steer back. Only leaving the road fast counts as a crash.
+• Also in this build: money, the Job Board, delivery pay with bonuses, and Free Drive pay.
 
 Please check:
-• Do the jobs feel worth doing? Too much or too little money? Are the time limits fair?
-• Can you feel the difference with heavy cargo?
-• Do the job board and results screen read well with VoiceOver?
+• Can you stay in your lane now? How many crashes on a delivery?
+• Do curves still feel like work? Too easy or too hard? Try Low and High assist too.
+• Is the shoulder warning helpful?

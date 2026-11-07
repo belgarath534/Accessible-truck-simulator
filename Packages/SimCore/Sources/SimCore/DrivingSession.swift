@@ -1,8 +1,34 @@
 import Foundation
 
-/// How much the game helps keep the truck straight. Steering through curves is always up to the player.
+/// How much the game helps with steering. Steering through curves is always up to the player.
+///
+/// Off is realistic: steering turns the truck, and the angle carries it sideways, which is hard by ear.
+/// Low, medium and high use simpler handling: steering moves the truck sideways directly, letting go
+/// stops the drift, and curves push the truck toward the outside so you still have to steer through them.
 public enum SteeringAssist: String, CaseIterable, Sendable {
     case off, low, medium, high
+
+    var usesSimpleHandling: Bool { self != .off }
+
+    /// Sideways speed at full steering, m/s.
+    var maxLateralSpeed: Double {
+        switch self {
+        case .off: return 0
+        case .low: return 2.2
+        case .medium: return 1.8
+        case .high: return 1.5
+        }
+    }
+
+    /// How hard curves push the truck to the outside (seconds of curve force turned into drift speed).
+    var curvePush: Double {
+        switch self {
+        case .off: return 0
+        case .low: return 0.55
+        case .medium: return 0.38
+        case .high: return 0.25
+        }
+    }
 
     /// How quickly the truck's heading settles back in line with the road when the player isn't steering (1/s).
     var alignRate: Double {
@@ -27,6 +53,8 @@ public struct TruckState: Equatable, Sendable {
     public var speed: Double = 0
     /// Road-wheel angle, radians; positive = right.
     public var steerAngle: Double = 0
+    /// Sideways speed across the lane, m/s; positive = drifting right.
+    public var lateralVelocity: Double = 0
     public var rpm: Double = 0
     /// 0-based index into `gearRatios`.
     public var gearIndex: Int = 0
@@ -68,6 +96,8 @@ public final class DrivingSession {
     // Lane geometry relative to lane centre.
     public static let rumbleOffset = 0.9
     public static let offRoadOffset = 2.6
+    /// Below this speed (m/s), leaving the lane with an assist on means the shoulder, not a crash.
+    public static let shoulderSafeSpeed = 25 / 3.6
 
     private var announcedCurveIndex: Int?
     private var lastTooFastWarning: Double = -100
@@ -79,6 +109,7 @@ public final class DrivingSession {
     private var announcedAtDestination = false
     private var wasStopped = true
     private var announcedTimeWarnings: Set<Double> = []
+    private var lastShoulderWarning: Double = -100
     private var announcedLate = false
 
     public init(spec: TruckSpec = .starter, road: Road = .practiceLoop, goal: TripGoal = .freeDrive,
@@ -153,6 +184,7 @@ public final class DrivingSession {
     public func recover() {
         truck.lateralOffset = 0
         truck.headingError = 0
+        truck.lateralVelocity = 0
         truck.speed = 0
         truck.steerAngle = 0
         truck.gearIndex = 0
@@ -349,8 +381,13 @@ public final class DrivingSession {
         truck.steerAngle += min(max(target - truck.steerAngle, -maxDelta), maxDelta)
         if abs(truck.steerAngle) > maxAngle { truck.steerAngle = maxAngle * (truck.steerAngle > 0 ? 1 : -1) }
 
-        // Kinematic bicycle model in road-relative coordinates.
         let kRoad = road.curvature(at: truck.position)
+        if assist.usesSimpleHandling {
+            stepSimpleLateral(dt: dt, input: input, curvature: kRoad)
+            return
+        }
+
+        // Realistic: kinematic bicycle model in road-relative coordinates.
         var headingRate = v * tan(truck.steerAngle) / spec.wheelbase - v * kRoad
         if abs(input.steer) < 0.1 && v > 0.5 {
             headingRate -= assist.alignRate * truck.headingError
@@ -358,6 +395,26 @@ public final class DrivingSession {
         truck.headingError += headingRate * dt
         truck.headingError = min(max(truck.headingError, -0.6), 0.6)
         truck.lateralOffset += v * sin(truck.headingError) * dt
+    }
+
+    /// Simple handling: steering sets how fast the truck moves across the lane.
+    private func stepSimpleLateral(dt: Double, input: DrivingInput, curvature k: Double) {
+        let v = truck.speed
+        // Sideways force the curve asks for at this speed; positive curvature (right bend) pushes left.
+        let curveAccel = v * v * k
+        var push = -curveAccel * assist.curvePush
+        // Too fast for the curve: past the tyres' grip the truck slides out much harder.
+        let grip = spec.steeringLatAccel
+        let overGrip = abs(curveAccel) / grip - 0.9
+        if overGrip > 0 { push *= 1 + 4 * overGrip }
+        // Barely any sideways movement while crawling.
+        let speedFactor = min(1, v / 4)
+        let target = (input.steer * assist.maxLateralSpeed + push) * speedFactor
+        // The truck's weight: sideways speed changes smoothly, not instantly.
+        truck.lateralVelocity += (target - truck.lateralVelocity) * min(1, dt / 0.35)
+        truck.lateralOffset += truck.lateralVelocity * dt
+        truck.headingError = v > 0.5 ? atan2(truck.lateralVelocity, v) : 0
+        truck.steerAngle = input.steer * min(spec.maxSteerAngle, v > 1 ? grip * spec.wheelbase / (v * v) : spec.maxSteerAngle)
     }
 
     private func stepTemperatureAndFuel(dt: Double, events: inout [SimEvent]) {
@@ -384,10 +441,21 @@ public final class DrivingSession {
         let y = truck.lateralOffset
         if abs(y) > DrivingSession.offRoadOffset {
             let side: Side = y > 0 ? .right : .left
-            events.append(.crashed(.leftRoad(side)))
-            recover()
-            events.append(.rumbleStrip(nil))
-            return
+            if truck.speed > DrivingSession.shoulderSafeSpeed || !assist.usesSimpleHandling {
+                events.append(.crashed(.leftRoad(side)))
+                recover()
+                events.append(.rumbleStrip(nil))
+                return
+            }
+            // Slow enough: the truck rolls onto the gravel shoulder instead of crashing.
+            truck.lateralOffset = DrivingSession.offRoadOffset * (y > 0 ? 1 : -1)
+            if truck.lateralVelocity * y > 0 { truck.lateralVelocity = 0 }
+            truck.speed *= 0.995
+            truck.headingError = 0
+            if time - lastShoulderWarning > 4 {
+                lastShoulderWarning = time
+                events.append(.onShoulder(side))
+            }
         }
         let side: Side? = abs(y) > DrivingSession.rumbleOffset ? (y > 0 ? .right : .left) : nil
         if side != rumbleSide {

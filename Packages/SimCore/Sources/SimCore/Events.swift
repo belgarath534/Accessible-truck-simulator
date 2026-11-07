@@ -69,6 +69,8 @@ public enum SimEvent: Equatable, Sendable {
     case rumbleStrip(Side?) // nil = back in lane
     case curveAhead(UpcomingCurve)
     case tooFastForCurve
+    /// Slow enough to roll onto the gravel shoulder instead of crashing; steer back to the other side.
+    case onShoulder(Side)
     case crashed(CrashReason)
     case outOfFuel
     case lowFuel
