@@ -275,6 +275,10 @@ final class DrivingController: NSObject, ObservableObject {
             input.steer = tilt.steer(orientation: orientation)
         }
         input = input.merged(with: hardware.poll())
+        if ScreenshotMode.isOn {
+            if session.truck.engine == .off { feedback.handle(session.perform(.toggleEngine)) }
+            input = ScreenshotMode.autopilot(session)
+        }
 
         accumulator += dt
         var events: [SimEvent] = []

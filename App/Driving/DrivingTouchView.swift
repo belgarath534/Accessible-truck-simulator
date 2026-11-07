@@ -102,6 +102,17 @@ final class DrivingTouchView: UIView {
             drawText(arrow, at: CGPoint(x: laneCenterX, y: 20), size: 22, color: .yellow, centered: true)
         }
 
+        // Other vehicles: oncoming in the left lane, slower ones ahead.
+        for v in controller.session.traffic {
+            let rel = CGFloat(v.position - truck.position)
+            let carY = h * 0.7 - rel * ppm
+            guard carY > -100 && carY < h + 100 else { continue }
+            let carX = laneCenterX + CGFloat(v.lane) * ppm
+            let carW = CGFloat(v.halfWidth * 2) * ppm, carL = CGFloat(v.length) * ppm
+            ctx.setFillColor((v.oncoming ? UIColor.systemBlue : UIColor.systemOrange).cgColor)
+            ctx.fill(CGRect(x: carX - carW / 2, y: carY - carL / 2, width: carW, height: carL))
+        }
+
         // Truck.
         ctx.saveGState()
         let truckX = laneCenterX + CGFloat(truck.lateralOffset) * ppm

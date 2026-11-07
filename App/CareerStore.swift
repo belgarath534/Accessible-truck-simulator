@@ -43,8 +43,14 @@ final class CareerStore: ObservableObject {
         return dir.appendingPathComponent("career.json")
     }()
 
-    init() {
-        if let data = try? Data(contentsOf: url),
+    /// Screenshot mode: example progress that is never saved.
+    private let isDemo: Bool
+
+    init(demo: CareerState? = nil) {
+        isDemo = demo != nil
+        if let demo {
+            state = demo
+        } else if let data = try? Data(contentsOf: url),
            let saved = try? JSONDecoder().decode(CareerState.self, from: data) {
             state = saved
         } else {
@@ -142,7 +148,7 @@ final class CareerStore: ObservableObject {
     }
 
     private func save() {
-        guard let data = try? JSONEncoder().encode(state) else { return }
+        guard !isDemo, let data = try? JSONEncoder().encode(state) else { return }
         try? data.write(to: url, options: .atomic)
     }
 }

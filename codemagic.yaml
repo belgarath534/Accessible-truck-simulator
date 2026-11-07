@@ -119,3 +119,66 @@ workflows:
         script: |
           python3 -m pip install --quiet --user pyjwt cryptography requests
           python3 store/fill_store_info.py
+
+  truck-sim-screenshots:
+    name: Truck Sim App Store screenshots
+    # Runs the game in the largest iPhone simulator in screenshot mode and saves five screenshots as
+    # artifacts. With UPLOAD=yes it also puts them on the App Store version (replacing what's there).
+    max_build_duration: 40
+    instance_type: mac_mini_m2
+    integrations:
+      app_store_connect: Accessible Backrooms
+    environment:
+      xcode: 27.1
+    scripts:
+      - name: Build for the simulator
+        script: |
+          set -e
+          brew install xcodegen
+          xcodegen generate
+          xcodebuild -project TruckSim.xcodeproj -scheme TruckSim -configuration Debug \
+            -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build CODE_SIGNING_ALLOWED=NO build | tail -5
+      - name: Take screenshots
+        script: |
+          set -e
+          TYPE=$(xcrun simctl list devicetypes -j | python3 -c '
+          import json,sys
+          types=[t for t in json.load(sys.stdin)["devicetypes"] if "Pro Max" in t["name"] and "iPhone" in t["name"]]
+          print(types[-1]["identifier"])')
+          RUNTIME=$(xcrun simctl list runtimes -j | python3 -c '
+          import json,sys
+          rts=[r for r in json.load(sys.stdin)["runtimes"] if r["platform"]=="iOS" and r["isAvailable"]]
+          print(rts[-1]["identifier"])')
+          echo "Device $TYPE on $RUNTIME"
+          UDID=$(xcrun simctl create "Screenshots" "$TYPE" "$RUNTIME")
+          xcrun simctl boot "$UDID"
+          xcrun simctl bootstatus "$UDID" -b
+          xcrun simctl status_bar "$UDID" override --time 9:41 --batteryState charged --batteryLevel 100 --cellularBars 4 --wifiBars 3 || true
+          xcrun simctl install "$UDID" build/Build/Products/Debug-iphonesimulator/TruckSim.app
+          mkdir -p shots
+          n=1
+          for SCREEN in drive jobs garage company menu; do
+            xcrun simctl launch --terminate-running-process "$UDID" com.accessibletrucksim.TruckSim -screenshot $SCREEN
+            if [ "$SCREEN" = "drive" ]; then sleep 25; else sleep 6; fi
+            xcrun simctl io "$UDID" screenshot "shots/raw_${n}_${SCREEN}.png"
+            n=$((n+1))
+          done
+          # The app is landscape-only; the simulator captures the portrait framebuffer. Turn each picture
+          # so it reads correctly, then make sure the size is one Apple accepts.
+          for f in shots/raw_*.png; do
+            out="shots/$(basename "$f" | sed 's/raw_//')"
+            sips -r ${ROTATE:-270} "$f" --out "$out" >/dev/null
+            sips -g pixelWidth -g pixelHeight "$out" | tail -2
+          done
+          rm shots/raw_*.png
+      - name: Upload to App Store Connect
+        script: |
+          if [ "$UPLOAD" = "yes" ]; then
+            python3 -m pip install --quiet --user pyjwt cryptography requests
+            python3 store/upload_screenshots.py shots
+          else
+            echo "Not uploading (UPLOAD is not yes). Check the artifacts first."
+          fi
+    artifacts:
+      - shots/*.png
