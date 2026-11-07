@@ -110,6 +110,21 @@ public final class DrivingSession {
     /// The tow takes time: added to the driving time (matters for deadlines).
     public static let towSeconds = 300.0
 
+    // Police
+    /// Chance a police car is parked at a spot when you pass it.
+    public static let policeChance = 0.5
+    /// How close (metres) a police car must be to clock your speed.
+    public static let policeRange = 120.0
+    /// How far over the limit (m/s) before they pull you over: 8 km/h.
+    public static let speedingTolerance = 8 / 3.6
+    /// Seconds to stop after the siren starts.
+    public static let pullOverTime = 25.0
+
+    public static func speedingFine(speed: Double, limit: Double) -> Int {
+        let over = max(0, (speed - limit) * 3.6)
+        return 100 + Int((over * 25 / 10).rounded()) * 10
+    }
+
     /// Below this speed (m/s), leaving the lane with an assist on means the shoulder, not a crash.
     public static let shoulderSafeSpeed = 25 / 3.6
 
@@ -124,6 +139,13 @@ public final class DrivingSession {
     private var wasStopped = true
     private var announcedTimeWarnings: Set<Double> = []
     private var currentZone: String?
+    private var policeDecided: [Double: Bool] = [:]
+    private var chase: (speed: Double, limit: Double, timer: Double)?
+    private var rng: SeededRandom
+    /// Chance a police car is at each spot (tests set it to 0 or 1).
+    public var policePresenceChance = DrivingSession.policeChance
+    /// True while a police car is behind you with its siren on.
+    public var sirenOn: Bool { chase != nil }
     private var navAnnounced: Set<Int> = []
     private var lastShoulderWarning: Double = -100
 
@@ -146,7 +168,9 @@ public final class DrivingSession {
 
     public init(spec: TruckSpec = .starter, road: Road = .practiceLoop, goal: TripGoal = .freeDrive,
                 cargoMassKg: Double = 0, timeLimit: Double? = nil, startingFuel: Double? = nil,
-                navigator: Navigator? = nil, assist: SteeringAssist = .medium) {
+                navigator: Navigator? = nil, assist: SteeringAssist = .medium,
+                seed: UInt64 = UInt64.random(in: 1...UInt64.max)) {
+        self.rng = SeededRandom(seed: seed)
         self.spec = spec
         self.navigator = navigator
         self.road = navigator?.road ?? road
@@ -274,6 +298,7 @@ public final class DrivingSession {
         checkLane(events: &events)
         checkCurves(events: &events)
         checkMap(events: &events)
+        checkPolice(dt: dt, events: &events)
         checkTruckStops(dt: dt, input: input, events: &events)
         checkTow(dt: dt, events: &events)
         updateStats(dt: dt, events: events)
@@ -558,11 +583,54 @@ public final class DrivingSession {
         exitChecked = nil
         truckStopState = .driving
         navAnnounced = []
+        policeDecided = [:]
         currentZone = road.speedZone(at: truck.position)?.name
         events.append(.tookRoad(roadName: result.choice.roadName, toward: result.choice.toward,
                                 length: road.totalLength, turn: result.choice.turn))
         if !result.onRoute, let remaining {
             events.append(.rerouted(remaining: remaining))
+        }
+    }
+
+    // MARK: - Police
+
+    private func checkPolice(dt: Double, events: inout [SimEvent]) {
+        if var c = chase {
+            c.timer += dt
+            if truck.speed < 0.3 {
+                let fine = DrivingSession.speedingFine(speed: c.speed, limit: c.limit)
+                stats.tickets += 1
+                stats.ticketCost += fine
+                chase = nil
+                events.append(.speedingTicket(speed: c.speed, limit: c.limit, fine: fine))
+            } else if c.timer > DrivingSession.pullOverTime {
+                let fine = DrivingSession.speedingFine(speed: c.speed, limit: c.limit) * 3 + 500
+                stats.tickets += 1
+                stats.ticketCost += fine
+                chase = nil
+                events.append(.fledPolice(fine: fine))
+            } else {
+                chase = c
+            }
+            return
+        }
+        for spot in road.policeSpots where abs(truck.position - spot) < DrivingSession.policeRange {
+            let present: Bool
+            if let decided = policeDecided[spot] {
+                present = decided
+            } else {
+                present = Double.random(in: 0...1, using: &rng) < policePresenceChance
+                policeDecided[spot] = present
+                if present && truck.speed > 1 { events.append(.passedPolice) }
+            }
+            guard present else { continue }
+            let limit = currentSpeedLimit
+            if truck.speed > limit + DrivingSession.speedingTolerance {
+                chase = (truck.speed, limit, 0)
+                policeDecided[spot] = false // one stop per police car
+                events.append(.policeChase(speed: truck.speed, limit: limit))
+                return
+            }
         }
     }
 

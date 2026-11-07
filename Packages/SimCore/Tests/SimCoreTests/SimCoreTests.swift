@@ -740,3 +740,70 @@ final class MapTests: XCTestCase {
         XCTAssertTrue(loaded.jobBoard.allSatisfy { $0.origin == "millbrook" })
     }
 }
+
+final class PoliceTests: XCTestCase {
+    private func session(cop: Bool) -> DrivingSession {
+        var road = Road(segments: [.straight(5_000)], loops: false, speedLimit: 60 / 3.6)
+        road.policeSpots = [2_000]
+        let s = DrivingSession(road: road, seed: 1)
+        s.policePresenceChance = cop ? 1 : 0
+        _ = s.perform(.toggleEngine)
+        return s
+    }
+
+    private func run(_ s: DrivingSession, seconds: Double, input: (DrivingSession) -> DrivingInput) -> [SimEvent] {
+        var events: [SimEvent] = []
+        for _ in 0..<Int(seconds * 60) { events += s.step(dt: 1.0 / 60, input: input(s)) }
+        return events
+    }
+
+    func testSpeedingPastACopMeansATicketWhenYouStop() {
+        let s = session(cop: true)
+        var events = run(s, seconds: 200) { s in
+            // Speed to about 80 in a 60, then stop when the siren starts.
+            s.sirenOn ? DrivingInput(brake: 1) : DrivingInput(throttle: s.truck.speed < 22 ? 1 : 0)
+        }
+        events = events.filter { if case .gearChanged = $0 { return false }; return true }
+        XCTAssertTrue(events.contains(.passedPolice))
+        XCTAssertTrue(events.contains { if case .policeChase = $0 { return true }; return false })
+        guard case let .speedingTicket(speed, limit, fine)? = events.first(where: { if case .speedingTicket = $0 { return true }; return false })
+        else { return XCTFail("no ticket: \(events)") }
+        XCTAssertGreaterThan(speed, limit)
+        XCTAssertEqual(fine, DrivingSession.speedingFine(speed: speed, limit: limit))
+        XCTAssertEqual(s.stats.tickets, 1)
+        XCTAssertTrue(Payout.freeDrive(s.stats).lines.contains { $0.label == "Speeding ticket" && $0.amount == -fine })
+    }
+
+    func testDrivingAtTheLimitIsFine() {
+        let s = session(cop: true)
+        let events = run(s, seconds: 200) { s in DrivingInput(throttle: s.truck.speed < 60 / 3.6 ? 0.6 : 0) }
+        XCTAssertTrue(events.contains(.passedPolice))
+        XCTAssertFalse(events.contains { if case .policeChase = $0 { return true }; return false })
+    }
+
+    func testNoCopNoTicket() {
+        let s = session(cop: false)
+        let events = run(s, seconds: 200) { s in DrivingInput(throttle: s.truck.speed < 24 ? 1 : 0) }
+        XCTAssertFalse(events.contains { if case .policeChase = $0 { return true }; return false })
+    }
+
+    func testFleeingCostsMore() {
+        let s = session(cop: true)
+        let events = run(s, seconds: 200) { s in DrivingInput(throttle: s.truck.speed < 22 ? 1 : 0) }
+        guard case let .fledPolice(fine)? = events.first(where: { if case .fledPolice = $0 { return true }; return false })
+        else { return XCTFail("didn't flee") }
+        XCTAssertGreaterThan(fine, 1_000)
+    }
+
+    func testFineScale() {
+        XCTAssertEqual(DrivingSession.speedingFine(speed: 70 / 3.6, limit: 50 / 3.6), 600)
+        XCTAssertEqual(DrivingSession.speedingFine(speed: 50 / 3.6, limit: 50 / 3.6), 100)
+    }
+
+    func testMapHasPoliceInTowns() {
+        let map = WorldMap.standard
+        let e = map.outgoing(from: "ridgeport").first!
+        let road = map.road(e)
+        XCTAssertTrue(road.policeSpots.contains { $0 < townZoneLength }, "a cop inside Ridgeport")
+    }
+}

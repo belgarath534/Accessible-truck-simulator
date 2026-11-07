@@ -169,6 +169,20 @@ public struct Phrases {
         "Leaving \(name). Speed limit \(units.speed(speedLimit))."
     }
 
+    // MARK: Police
+
+    public func policeChase(speed: Double, limit: Double) -> String {
+        "Police! You were doing \(units.speed(speed)) in a \(units.speed(limit)). Pull over: slow down and stop."
+    }
+
+    public func speedingTicket(speed: Double, limit: Double, fine: Int) -> String {
+        "Speeding ticket: \(units.speed(speed)) in a \(units.speed(limit)). Fine \(Phrases.money(fine)). You can go."
+    }
+
+    public func fledPolice(_ fine: Int) -> String {
+        "You didn't stop for the police. Fine \(Phrases.money(fine))."
+    }
+
     public func onShoulder(_ side: Side) -> String {
         "On the \(side.rawValue) shoulder. Steer \(side == .left ? "right" : "left") to get back on the road."
     }

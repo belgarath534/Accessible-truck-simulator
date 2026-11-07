@@ -19,6 +19,10 @@ final class SynthState {
     var hornSeconds: Float = 0
     /// Fuel pump running (truck stop).
     var pumping = false
+    /// Police siren behind the truck.
+    var siren = false
+    /// Seconds left of a police radio crackle (passing a parked police car).
+    var crackleSeconds: Float = 0
     var crashSeconds: Float = 0
     var shiftSeconds: Float = 0
     var volume: Float = 0.8
@@ -198,6 +202,8 @@ private final class FXVoice: Voice {
     let sr: Float
     var signalPhase: Float = 0, hornA: Float = 0, hornB: Float = 0, clickOsc: Float = 0, lp: Float = 0
     var pumpPhase: Float = 0, pumpLP: Float = 0
+    var sirenTime: Float = 0, sirenPhase: Float = 0, sirenAmp: Float = 0
+    var crackleHP: Float = 0, crackleLP: Float = 0, crackleTone: Float = 0
     var noise = Noise(seed: 0x0BAD_F00D)
 
     init(state: SynthState, sampleRate: Float) { self.state = state; sr = sampleRate }
@@ -237,6 +243,28 @@ private final class FXVoice: Voice {
                 let n = noise.next()
                 pumpLP += (n - pumpLP) * 0.05
                 s += (sinf(twoPi * pumpPhase) * 0.12 + sinf(twoPi * pumpPhase * 2) * 0.05 + pumpLP * 0.5) * 0.8
+            }
+            // Police siren: a wail sweeping up and down, fading in and out.
+            sirenAmp += ((state.siren ? 1 : 0) - sirenAmp) * 0.0005
+            if sirenAmp > 0.001 {
+                sirenTime += dt
+                let sweep = 0.5 - 0.5 * cosf(twoPi * sirenTime / 3.2)
+                sirenPhase += (650 + 700 * sweep) / sr; if sirenPhase >= 1 { sirenPhase -= 1 }
+                let tone = sinf(twoPi * sirenPhase) + 0.35 * sinf(twoPi * 2 * sirenPhase) + 0.15 * sinf(twoPi * 3 * sirenPhase)
+                s += tone * 0.16 * sirenAmp
+            } else {
+                sirenTime = 0
+            }
+            // Police radio crackle: band-passed static with a short squelch tone.
+            if state.crackleSeconds > 0 {
+                state.crackleSeconds -= dt
+                let n = noise.next()
+                crackleLP += (n - crackleLP) * 0.35
+                crackleHP += (crackleLP - crackleHP) * 0.05
+                let band = (crackleLP - crackleHP) * (noise.next() > 0.6 ? 1.6 : 0.5)
+                crackleTone += 1_150 / sr; if crackleTone >= 1 { crackleTone -= 1 }
+                let squelch = state.crackleSeconds > 0.45 ? sinf(twoPi * crackleTone) * 0.12 : 0
+                s += (band * 0.45 + squelch) * min(1, state.crackleSeconds * 8)
             }
             if state.crashSeconds > 0 {
                 state.crashSeconds -= dt
@@ -376,5 +404,6 @@ final class AudioSynth {
         player.play()
     }
     func crash() { state.crashSeconds = 1.5 }
+    func policeRadio() { state.crackleSeconds = 0.6 }
     func gearShift() { state.shiftSeconds = 0.25 }
 }

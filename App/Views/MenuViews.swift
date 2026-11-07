@@ -146,6 +146,11 @@ struct ControlsHelpView: View {
                 Text("In Free Drive, the GPS lists the choices before each junction. The three-finger tap tells you what's ahead.")
                 Text("After a delivery you're in the destination town, and the Job Board shows jobs from there.")
             }
+            Section("Police and speed limits") {
+                Text("Police cars park in every town and along the interstate and country roads. Not every spot has a cop every time. When you pass one you'll hear a police radio crackle.")
+                Text("Go more than 8 kilometers or 5 miles per hour over the limit near a cop and you'll hear the siren and Pull over. Slow down and stop to get your ticket: $100 plus $25 for every kilometer per hour over. If you don't stop within 25 seconds, the fine is much bigger.")
+                Text("Tickets come off your pay. The dashboard, two-finger double tap, tells you the speed limit where you are.")
+            }
             Section("Fuel and truck stops") {
                 Text("Fuel stays in your truck between drives. A full tank lasts about an hour of driving. The dashboard, two-finger double tap, says how far your fuel will take you.")
                 Text("Truck stops are on Interstate 40 and the longer country roads, and there are three on the practice loop. When your fuel is under half you'll hear one coming, and the three-finger tap always tells you the distance to the next one.")

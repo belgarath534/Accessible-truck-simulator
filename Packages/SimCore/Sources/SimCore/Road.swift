@@ -75,6 +75,8 @@ public struct Road: Sendable {
     public var truckStops: [Double] = []
     /// Stretches with their own speed limit (towns).
     public var speedZones: [SpeedZone] = []
+    /// Spots where a police car may be parked, watching for speeders (metres along the road).
+    public var policeSpots: [Double] = []
 
     public init(segments: [RoadSegment], loops: Bool = true, speedLimit: Double = 80 / 3.6,
                 truckStops: [Double] = []) {

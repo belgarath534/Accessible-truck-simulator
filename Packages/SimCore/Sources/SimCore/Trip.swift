@@ -39,6 +39,8 @@ public struct TripStats: Equatable, Sendable {
     public var fuelCost: Int = 0
     public var tows: Int = 0
     public var towCost: Int = 0
+    public var tickets: Int = 0
+    public var ticketCost: Int = 0
 
     public init() {}
 

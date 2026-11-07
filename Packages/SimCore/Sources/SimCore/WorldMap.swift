@@ -71,6 +71,10 @@ public struct WorldMap: Sendable {
             r.speedZones.append(SpeedZone(start: r.totalLength - townZoneLength, end: r.totalLength + 1_000,
                                           limit: townSpeedLimit, name: node(to(e))!.name))
         }
+        // Police watch the town speed limits from inside each town.
+        if node(from(e))?.isTown == true { r.policeSpots.append(townZoneLength * 0.5) }
+        if node(to(e))?.isTown == true { r.policeSpots.append(r.totalLength - townZoneLength * 0.5) }
+        r.policeSpots.sort()
         return r
     }
 
@@ -178,6 +182,7 @@ public extension Road {
         var r = Road(segments: Array(segs), loops: loops, speedLimit: speedLimit,
                      truckStops: truckStops.map { totalLength - $0 })
         r.speedZones = speedZones.map { SpeedZone(start: totalLength - $0.end, end: totalLength - $0.start, limit: $0.limit, name: $0.name) }
+        r.policeSpots = policeSpots.map { totalLength - $0 }.sorted()
         return r
     }
 
@@ -228,6 +233,10 @@ public extension Road {
                 start += seg.length
             }
             if let best { road.truckStops = [best] }
+        }
+        // A police spot on interstates and country roads, somewhere along the open road.
+        if style != .mountain {
+            road.policeSpots = [(length * Double.random(in: 0.3...0.7, using: &rng)).rounded()]
         }
         return road
     }

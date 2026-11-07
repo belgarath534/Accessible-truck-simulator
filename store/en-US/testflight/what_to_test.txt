@@ -1,14 +1,11 @@
-New: the map! Towns, highways and GPS turn by turn. Headphones recommended.
+New: police, speeding tickets and a new air horn. Headphones recommended.
 
-• Six places: Millbrook (your home yard), Cedar Falls (lumber, up the mountain), Ridgeport (port), Ironton (mines and steel), Bayview (farms), and Central Junction.
-• Roads feel different: Interstate 40 at 100 km/h with gentle curves, country roads at 80, mountain roads at 60 with sharp curves, and towns at 50. You hear when you enter and leave a town.
-• Jobs go from the town you're in to another town, with cargo that fits where it's from. After a delivery you're in the new town.
-• GPS: each turn is announced at 1 km and 300 m. Signal left or right before the junction to turn, or no signal to go straight. Take a wrong turn and it recalculates.
-• Free Drive roams the map: before each junction you hear the choices. The three-finger tap says what's ahead and the next turn.
-• Practice Drive is still the practice loop.
+• Police park in every town and along the interstate and country roads. Not every spot has a cop every time. You'll hear a police radio crackle when you pass one.
+• Go more than 8 km/h (5 mph) over the limit near a cop and you'll hear the siren and "Pull over". Slow down and stop for your ticket: $100 plus $25 for every km/h over. Don't stop within 25 seconds and the fine is much bigger.
+• Tickets come off your pay. The dashboard (two-finger double tap) says the speed limit where you are.
+• New air horn (two-finger swipe up) on every truck.
 
 Please check:
-• Are the GPS turn instructions clear and early enough?
-• Is turning with the signal easy?
-• Do the roads feel different from each other?
-• How long are the jobs now? Too long or too short?
+• Can you hear the police radio when you pass a cop?
+• Is the siren clear? Is the fine fair?
+• How does the new horn sound?

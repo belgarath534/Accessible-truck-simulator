@@ -143,6 +143,15 @@ final class FeedbackCoordinator {
             speech.speak(phrases.enteredTown(name, speedLimit: limit), priority: .normal)
         case let .leftTown(name, limit):
             speech.speak(phrases.leftTown(name, speedLimit: limit), priority: .normal)
+        case .passedPolice:
+            audio.policeRadio()
+        case let .policeChase(speed, limit):
+            speech.speak(phrases.policeChase(speed: speed, limit: limit), priority: .high)
+            haptics.tap(intensity: 1, sharpness: 0.8)
+        case let .speedingTicket(speed, limit, fine):
+            speech.speak(phrases.speedingTicket(speed: speed, limit: limit, fine: fine), priority: .high)
+        case let .fledPolice(fine):
+            speech.speak(phrases.fledPolice(fine), priority: .high)
         case let .onShoulder(side):
             speech.speak(phrases.onShoulder(side), priority: .high)
             haptics.tap(intensity: 0.8, sharpness: 0.3)
@@ -211,6 +220,7 @@ final class FeedbackCoordinator {
         let truck = session.truck
         audio.update(truck: truck, spec: session.spec)
         audio.state.pumping = session.isRefueling
+        audio.state.siren = session.sirenOn
         haptics.update(
             engineRunning: truck.engine == .running,
             rpmFraction: truck.rpm / session.spec.maxRPM,

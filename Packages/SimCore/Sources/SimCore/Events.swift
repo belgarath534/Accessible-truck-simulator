@@ -95,6 +95,13 @@ public enum SimEvent: Equatable, Sendable {
     /// Left the planned route; the GPS found a new one.
     case rerouted(remaining: Double)
     case missedDropOff
+    // Police
+    /// Passed a parked police car (a radio crackle), whether or not you were speeding.
+    case passedPolice
+    /// Caught speeding: siren on, pull over. Speeds in m/s.
+    case policeChase(speed: Double, limit: Double)
+    case speedingTicket(speed: Double, limit: Double, fine: Int)
+    case fledPolice(fine: Int)
     case dashboard(DashboardReading)
     case roadAhead(UpcomingCurve?, remaining: Double?, timeLeft: Double?, truckStop: Double?)
     /// Delivery deadline reminders (5 minutes and 1 minute left).
