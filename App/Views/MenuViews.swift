@@ -99,7 +99,7 @@ struct ControlsHelpView: View {
             Section("Driving") {
                 switch settings.steeringMode {
                 case .tilt:
-                    Text("Hold the phone sideways like a steering wheel, screen facing you. Tilt it to steer. The position you hold it in when you start counts as straight.")
+                    Text("Hold the phone sideways, at any angle: upright, tilted back or flat. Lower the right end to steer right, the left end to steer left. However you hold it when the drive starts counts as straight; it re-centers when you resume from pause.")
                     Text("Hold anywhere on the right half of the screen to accelerate. The longer you hold, the harder you press.")
                     Text("Hold anywhere on the left half of the screen to brake.")
                 case .joystick:

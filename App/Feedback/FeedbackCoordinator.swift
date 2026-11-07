@@ -75,7 +75,7 @@ final class FeedbackCoordinator {
         let controls: String
         switch mode {
         case .tilt:
-            controls = "Hold your phone sideways like a steering wheel and tilt to steer. Hold the right half of the screen to accelerate, the left half to brake."
+            controls = "Hold your phone sideways, at any angle. Lower the right end to steer right, the left end to steer left. Hold the right half of the screen to accelerate, the left half to brake."
         case .joystick:
             controls = "Put one finger anywhere. Slide up to accelerate, down to brake, left or right to steer. Lift your finger to coast."
         }
