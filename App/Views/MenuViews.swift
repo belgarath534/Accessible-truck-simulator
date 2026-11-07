@@ -150,16 +150,10 @@ struct CreditsView: View {
     var body: some View {
         List {
             Section("Music") {
-                Text("All music is public domain (CC0) from OpenGameArt.org. Thank you to the composers for sharing it.")
-                Text("Menu: Drive, by Zane Little Music")
-                Text("Radio: Country, by Pro Sensory")
-                Text("Radio: Empty Stretch, by Zane Little Music")
-                Text("Radio: Sunny Side Up, by Pro Sensory")
-                Text("Radio: Detour, by Zane Little Music")
-                Text("Radio: All Night Road, by iamoneabe")
+                Text("Menu theme and radio songs were made for Accessible Truck Sim with ElevenLabs Music.")
             }
             Section("Sound") {
-                Text("Engine, road, lane guidance and effects are generated live in the game.")
+                Text("Engine, starter, shutdown and air brake sounds were made with ElevenLabs Sound Effects. Road noise, rumble strips, lane guidance beeps and indicator clicks are generated live in the game.")
             }
         }
         .navigationTitle("Credits")

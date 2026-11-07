@@ -106,7 +106,7 @@ public extension TruckSpec {
         idleRPM: 600,
         maxRPM: 2_100,
         cylinders: 6,
-        engineStartSeconds: 1.4,
+        engineStartSeconds: 1.8,
         gearRatios: [12.0, 9.0, 6.8, 5.1, 3.9, 2.9, 2.2, 1.7, 1.3, 1.0],
         finalDrive: 3.4,
         drivetrainEfficiency: 0.9,

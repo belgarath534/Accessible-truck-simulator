@@ -98,11 +98,13 @@ final class MusicPlayer: NSObject, AVAudioPlayerDelegate {
         p.prepareToPlay()
         p.play()
         player = p
-        applyVolume(fade: 1.0)
+        DispatchQueue.main.async { self.applyVolume(fade: 1.0) }
     }
 
     private func applyVolume(fade: TimeInterval) {
-        let target = volume * (ducked ? 0.3 : 1)
+        // The menu can be loud; the radio sits lower so the engine, lane beeps and speech stay clear.
+        let modeLevel: Float = mode == .radio ? 0.7 : 1
+        let target = volume * modeLevel * (ducked ? 0.3 : 1)
         player?.setVolume(target, fadeDuration: fade)
     }
 
