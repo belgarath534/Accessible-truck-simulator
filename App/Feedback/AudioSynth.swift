@@ -533,7 +533,7 @@ final class AudioSynth {
             state.trafficSpeed[slot] = Float(abs(s.closingSpeed))
             state.trafficIsTruck[slot] = s.kind == .truck
             state.trafficBehind[slot] = s.distance < -4
-            trafficNodes[slot].pan = Float(max(-1, min(1, s.lateral / max(5, abs(s.distance)) * 1.5)))
+            if trafficNodes.indices.contains(slot) { trafficNodes[slot].pan = Float(max(-1, min(1, s.lateral / max(5, abs(s.distance)) * 1.5))) }
         }
     }
     func gearShift() { state.shiftSeconds = 0.25 }
