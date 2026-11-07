@@ -69,7 +69,7 @@ final class DrivingTouchView: UIView {
         let truck = controller.session.truck
         let road = controller.session.road
         let w = bounds.width, h = bounds.height
-        let ppm = w / 22 // pixels per metre
+        let ppm = min(w / 22, h / 26) // pixels per metre: the truck and some road ahead fit in landscape
         let laneCenterX = w / 2
 
         // Road: our lane is centred; the oncoming lane is to the left.
