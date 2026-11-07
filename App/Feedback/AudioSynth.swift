@@ -25,6 +25,14 @@ final class SynthState {
     var beaconDistance: Float = -1_000
     /// Seconds left of a police radio crackle (passing a parked police car).
     var crackleSeconds: Float = 0
+    /// Seconds left of an oncoming car's horn.
+    var carHornSeconds: Float = 0
+    /// Traffic: up to four nearby vehicles, one sound each.
+    var trafficGain: [Float] = [0, 0, 0, 0]
+    var trafficPitch: [Float] = [1, 1, 1, 1]
+    var trafficSpeed: [Float] = [0, 0, 0, 0]
+    var trafficIsTruck: [Bool] = [false, false, false, false]
+    var trafficBehind: [Bool] = [false, false, false, false]
     var crashSeconds: Float = 0
     var shiftSeconds: Float = 0
     var volume: Float = 0.8
@@ -176,6 +184,43 @@ private final class RumbleVoice: Voice {
 
 /// Optional lane guidance: soft beeps in the ear the truck is drifting toward.
 /// They speed up and rise in pitch the further from the centre of the lane you are.
+/// One nearby vehicle: tyre roar and engine hum, with Doppler pitch, getting muffled once it's behind you.
+private final class TrafficVoice: Voice {
+    let state: SynthState
+    let sr: Float
+    let slot: Int
+    var gain: Float = 0, lp1: Float = 0, lp2: Float = 0, hum: Float = 0, hum2: Float = 0, muffle: Float = 0
+    var noise: Noise
+
+    init(state: SynthState, sampleRate: Float, slot: Int) {
+        self.state = state
+        sr = sampleRate
+        self.slot = slot
+        noise = Noise(seed: 0x5EED_0000 &+ UInt32(slot) &* 7_919)
+    }
+
+    func render(_ out: UnsafeMutablePointer<Float>, frames: Int) {
+        let targetGain = state.muted ? 0 : state.trafficGain[slot]
+        let pitch = state.trafficPitch[slot]
+        let speed = state.trafficSpeed[slot]
+        let truck = state.trafficIsTruck[slot]
+        let tyreCut = (300 + speed * 40) * pitch
+        let c = onePoleCoefficient(cutoff: tyreCut, sampleRate: sr)
+        let muffleTarget: Float = state.trafficBehind[slot] ? 1 : 0
+        let humFreq = (truck ? 52 : 95) * pitch * (0.7 + speed / 40)
+        for i in 0..<frames {
+            gain += (targetGain - gain) * 0.002
+            muffle += (muffleTarget - muffle) * 0.0005
+            lp1 += (noise.next() - lp1) * c
+            lp2 += (lp1 - lp2) * c * (1 - 0.7 * muffle)
+            hum += humFreq / sr; if hum >= 1 { hum -= 1 }
+            hum2 += humFreq * 2.01 / sr; if hum2 >= 1 { hum2 -= 1 }
+            let engine = sinf(twoPi * hum) * (truck ? 0.35 : 0.2) + sinf(twoPi * hum2) * 0.1
+            out[i] = (lp2 * 1.6 + engine) * gain * state.volume
+        }
+    }
+}
+
 private final class LaneVoice: Voice {
     let state: SynthState
     let sr: Float
@@ -206,6 +251,7 @@ private final class FXVoice: Voice {
     var pumpPhase: Float = 0, pumpLP: Float = 0
     var sirenTime: Float = 0, sirenPhase: Float = 0, sirenAmp: Float = 0
     var beaconClock: Float = 0, beaconOsc: Float = 0
+    var carHornA: Float = 0, carHornB: Float = 0, carHornLP: Float = 0
     var crackleHP: Float = 0, crackleLP: Float = 0, crackleTone: Float = 0
     var noise = Noise(seed: 0x0BAD_F00D)
 
@@ -265,6 +311,18 @@ private final class FXVoice: Voice {
             } else {
                 beaconClock = 0
             }
+            // An oncoming car's horn: two quick toots.
+            if state.carHornSeconds > 0 {
+                state.carHornSeconds -= dt
+                let on = state.carHornSeconds > 0.55 || (state.carHornSeconds < 0.4 && state.carHornSeconds > 0.05)
+                if on {
+                    carHornA += 415 / sr; if carHornA >= 1 { carHornA -= 1 }
+                    carHornB += 520 / sr; if carHornB >= 1 { carHornB -= 1 }
+                    let sq = (carHornA < 0.5 ? 1 : -1) * 0.5 + (carHornB < 0.5 ? 1 : -1) * 0.5
+                    carHornLP += (Float(sq) - carHornLP) * 0.25
+                    s += carHornLP * 0.22
+                }
+            }
             // Police siren: a wail sweeping up and down, fading in and out.
             sirenAmp += ((state.siren ? 1 : 0) - sirenAmp) * 0.0005
             if sirenAmp > 0.001 {
@@ -307,6 +365,9 @@ final class AudioSynth {
     private var sampled: SampledEngine?
     /// The air horn recording, used by every truck.
     private var hornPlayer: AVAudioPlayerNode?
+    private var trafficNodes: [AVAudioSourceNode] = []
+    /// Which vehicle id each traffic sound slot is playing.
+    private var trafficSlots: [Int?] = [nil, nil, nil, nil]
     private var hornBuffer: AVAudioPCMBuffer?
     private var configObserver: NSObjectProtocol?
 
@@ -348,6 +409,7 @@ final class AudioSynth {
         _ = attach(road)
         rumbleNode = attach(rumble)
         laneNode = attach(lane)
+        trafficNodes = (0..<4).map { attach(TrafficVoice(state: state, sampleRate: sr, slot: $0)) }
         _ = attach(fx)
 
         sampled = sound.recorded ? SampledEngine(engine: engine) : nil
@@ -426,5 +488,45 @@ final class AudioSynth {
     }
     func crash() { state.crashSeconds = 1.5 }
     func policeRadio() { state.crackleSeconds = 0.6 }
+    func oncomingCarHorn() { state.carHornSeconds = 0.9 }
+
+    /// Lane guidance follows the lane you mean to be in (your lane, or the passing lane after signalling).
+    func setLaneGuidance(offset: Double) {
+        state.laneOffset = Float(offset)
+        laneNode?.pan = Float(max(-1, min(1, offset / DrivingSession.rumbleOffset)))
+    }
+
+    /// Places each nearby vehicle in the stereo field, louder when close, pitched up while approaching.
+    func updateTraffic(_ sounds: [TrafficSound]) {
+        // Keep vehicles in the slots they already had, so sounds don't jump between voices.
+        var free = Array(0..<4)
+        var assignment: [Int: TrafficSound] = [:]
+        for (slot, id) in trafficSlots.enumerated() {
+            if let id, let s = sounds.first(where: { $0.id == id }) {
+                assignment[slot] = s
+                free.removeAll { $0 == slot }
+            }
+        }
+        for s in sounds where !assignment.values.contains(where: { $0.id == s.id }) {
+            guard let slot = free.first else { break }
+            free.removeFirst()
+            assignment[slot] = s
+        }
+        for slot in 0..<4 {
+            guard let s = assignment[slot] else {
+                trafficSlots[slot] = nil
+                state.trafficGain[slot] = 0
+                continue
+            }
+            trafficSlots[slot] = s.id
+            let d = max(3, (s.distance * s.distance + s.lateral * s.lateral).squareRoot())
+            state.trafficGain[slot] = Float((s.kind == .truck ? 1.3 : 1.0) / (1 + pow(d / 22, 2)))
+            state.trafficPitch[slot] = Float(min(1.25, max(0.8, 343 / (343 - s.closingSpeed))))
+            state.trafficSpeed[slot] = Float(abs(s.closingSpeed))
+            state.trafficIsTruck[slot] = s.kind == .truck
+            state.trafficBehind[slot] = s.distance < -4
+            trafficNodes[slot].pan = Float(max(-1, min(1, s.lateral / max(5, abs(s.distance)) * 1.5)))
+        }
+    }
     func gearShift() { state.shiftSeconds = 0.25 }
 }

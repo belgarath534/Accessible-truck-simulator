@@ -906,3 +906,108 @@ final class BalanceTests: XCTestCase {
         XCTAssertTrue(p.fuelCheck(fuelLiters: 5, capacity: 400, distance: 20_000).hasPrefix("Not enough fuel"))
     }
 }
+
+final class TrafficTests: XCTestCase {
+    private func session(interstate: Bool = false) -> DrivingSession {
+        var road = Road(segments: [.straight(20_000)], loops: false, speedLimit: 80 / 3.6)
+        road.leftLaneSameDirection = interstate
+        let s = DrivingSession(road: road, seed: 5)
+        s.trafficEnabled = true
+        s.oncomingTimer = 1_000 // no random spawns unless a test wants them
+        s.slowTimer = 1_000
+        _ = s.perform(.toggleEngine)
+        for _ in 0..<120 { _ = s.step(dt: 1.0 / 60, input: .idle) }
+        return s
+    }
+
+    private func run(_ s: DrivingSession, seconds: Double, input: (DrivingSession) -> DrivingInput) -> [SimEvent] {
+        var events: [SimEvent] = []
+        for _ in 0..<Int(seconds * 60) { events += s.step(dt: 1.0 / 60, input: input(s)) }
+        return events
+    }
+
+    private func keepLane(_ s: DrivingSession, throttle: Double = 0.6) -> DrivingInput {
+        DrivingInput(throttle: s.truck.speed < 20 ? throttle : 0, steer: -s.laneGuidanceOffset)
+    }
+
+    func testOncomingTrafficPassesSafelyWhenYouStayInLane() {
+        let s = session()
+        s.traffic = [TrafficVehicle(id: 1, kind: .truck, oncoming: true, lane: DrivingSession.leftLaneCenter,
+                                    position: 400, speed: 20)]
+        let events = run(s, seconds: 30) { self.keepLane($0) }
+        XCTAssertFalse(events.contains { if case .crashed = $0 { return true }; return false })
+        XCTAssertTrue(s.traffic.isEmpty || s.traffic[0].position < s.truck.position, "it went past")
+    }
+
+    func testDriftingIntoOncomingTrafficIsAHeadOnCrash() {
+        let s = session()
+        s.traffic = [TrafficVehicle(id: 1, kind: .car, oncoming: true, lane: DrivingSession.leftLaneCenter,
+                                    position: 500, speed: 20)]
+        let events = run(s, seconds: 30) { s in
+            DrivingInput(throttle: s.truck.speed < 15 ? 0.6 : 0, steer: s.truck.lateralOffset > -3.7 ? -0.6 : 0)
+        }
+        XCTAssertTrue(events.contains(.oncomingHorn))
+        XCTAssertTrue(events.contains(.wrongSideOfRoad))
+        XCTAssertTrue(events.contains(.crashed(.collision(headOn: true, vehicle: .car))))
+    }
+
+    func testRearEndingASlowVehicle() {
+        let s = session()
+        s.traffic = [TrafficVehicle(id: 1, kind: .pickup, oncoming: false, lane: 0, position: 250, speed: 8)]
+        let events = run(s, seconds: 60) { s in DrivingInput(throttle: 1, steer: -s.laneGuidanceOffset) }
+        XCTAssertTrue(events.contains { if case .vehicleAhead(_, _, .pickup) = $0 { return true }; return false })
+        XCTAssertTrue(events.contains(.tooClose))
+        XCTAssertTrue(events.contains(.crashed(.collision(headOn: false, vehicle: .pickup))))
+    }
+
+    func testFollowingASlowVehicleIsSafe() {
+        let s = session()
+        s.traffic = [TrafficVehicle(id: 1, kind: .truck, oncoming: false, lane: 0, position: 250, speed: 8)]
+        let events = run(s, seconds: 90) { s in
+            let gap = (s.traffic.first?.position ?? 1e9) - s.truck.position
+            let target = gap < 60 ? 7.0 : 18.0
+            return DrivingInput(throttle: s.truck.speed < target ? 0.5 : 0, brake: s.truck.speed > target + 1 ? 0.8 : 0,
+                                steer: -s.laneGuidanceOffset)
+        }
+        XCTAssertFalse(events.contains { if case .crashed = $0 { return true }; return false })
+    }
+
+    func testPassingOnTheInterstate() {
+        let s = session(interstate: true)
+        _ = s.perform(.signal(.left))
+        let events = run(s, seconds: 20) { s in
+            DrivingInput(throttle: s.truck.speed < 20 ? 0.6 : 0, steer: s.truck.lateralOffset > -3.5 ? -0.6 : 0)
+        }
+        XCTAssertEqual(s.targetLane, DrivingSession.leftLaneCenter, "signalled: the left lane is where you mean to be")
+        XCTAssertTrue(events.contains(.changedLane(toLeft: true, oncoming: false)))
+        XCTAssertFalse(events.contains(.wrongSideOfRoad))
+        XCTAssertFalse(events.contains { if case .rumbleStrip(.some) = $0 { return true }; return false })
+        _ = s.perform(.signal(.right))
+        let back = run(s, seconds: 10) { s in DrivingInput(steer: -s.truck.lateralOffset) }
+        XCTAssertTrue(back.contains(.changedLane(toLeft: false, oncoming: false)))
+        XCTAssertEqual(s.targetLane, 0)
+    }
+
+    func testSpawning() {
+        let twoWay = session()
+        twoWay.oncomingTimer = 1
+        twoWay.slowTimer = 1
+        // A slow vehicle only appears once you're moving; oncoming ones start 700 m out, beyond earshot.
+        _ = run(twoWay, seconds: 12) { self.keepLane($0) }
+        XCTAssertTrue(twoWay.traffic.contains { $0.oncoming })
+        XCTAssertTrue(twoWay.traffic.contains { !$0.oncoming })
+        XCTAssertFalse(twoWay.trafficSounds.isEmpty)
+
+        let interstate = session(interstate: true)
+        interstate.oncomingTimer = 1
+        _ = run(interstate, seconds: 5) { self.keepLane($0) }
+        XCTAssertFalse(interstate.traffic.contains { $0.oncoming }, "the other carriageway is separate")
+    }
+
+    func testTrafficOffByDefault() {
+        let s = DrivingSession(road: Road(segments: [.straight(20_000)], loops: false))
+        _ = s.perform(.toggleEngine)
+        for _ in 0..<(60 * 120) { _ = s.step(dt: 1.0 / 60, input: DrivingInput(throttle: 0.5)) }
+        XCTAssertTrue(s.traffic.isEmpty)
+    }
+}

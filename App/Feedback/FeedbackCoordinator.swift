@@ -148,6 +148,18 @@ final class FeedbackCoordinator {
             speech.speak(phrases.enteredTown(name, speedLimit: limit), priority: .normal)
         case let .leftTown(name, limit):
             speech.speak(phrases.leftTown(name, speedLimit: limit), priority: .normal)
+        case let .changedLane(toLeft, oncoming):
+            speech.speak(phrases.changedLane(toLeft: toLeft, oncoming: oncoming), priority: .normal)
+        case .wrongSideOfRoad:
+            speech.speak(phrases.wrongSideOfRoad, priority: .high)
+            haptics.tap(intensity: 1, sharpness: 1)
+        case let .vehicleAhead(distance, speed, kind):
+            speech.speak(phrases.vehicleAhead(distance: distance, speed: speed, kind: kind), priority: .high)
+        case .tooClose:
+            speech.speak(phrases.tooClose, priority: .high)
+            haptics.tap(intensity: 0.9, sharpness: 0.9)
+        case .oncomingHorn:
+            audio.oncomingCarHorn()
         case .passedPolice:
             audio.policeRadio()
         case let .policeChase(speed, limit):
@@ -224,6 +236,8 @@ final class FeedbackCoordinator {
     func update(session: DrivingSession) {
         let truck = session.truck
         audio.update(truck: truck, spec: session.spec)
+        audio.setLaneGuidance(offset: session.laneGuidanceOffset)
+        audio.updateTraffic(session.trafficSounds)
         audio.state.pumping = session.isRefueling
         audio.state.siren = session.sirenOn
         // Drop-off beacon: beeps speed up over the last 150 m, a steady tone right at the drop-off.

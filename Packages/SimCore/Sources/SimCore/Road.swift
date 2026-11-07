@@ -77,6 +77,9 @@ public struct Road: Sendable {
     public var speedZones: [SpeedZone] = []
     /// Spots where a police car may be parked, watching for speeders (metres along the road).
     public var policeSpots: [Double] = []
+    /// True on divided highways (interstates): the left lane goes your way, as a passing lane.
+    /// Otherwise the left lane is oncoming traffic.
+    public var leftLaneSameDirection = false
 
     public init(segments: [RoadSegment], loops: Bool = true, speedLimit: Double = 80 / 3.6,
                 truckStops: [Double] = []) {

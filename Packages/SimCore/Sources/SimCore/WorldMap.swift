@@ -183,6 +183,7 @@ public extension Road {
                      truckStops: truckStops.map { totalLength - $0 })
         r.speedZones = speedZones.map { SpeedZone(start: totalLength - $0.end, end: totalLength - $0.start, limit: $0.limit, name: $0.name) }
         r.policeSpots = policeSpots.map { totalLength - $0 }.sorted()
+        r.leftLaneSameDirection = leftLaneSameDirection
         return r
     }
 
@@ -220,6 +221,7 @@ public extension Road {
         }
         segs.append(.straight(length - used))
         var road = Road(segments: segs, loops: false, speedLimit: style.speedLimit)
+        road.leftLaneSameDirection = style == .interstate
         // A truck stop on longer non-mountain roads, in the middle of a straight near the halfway point.
         if style != .mountain && length >= 5_000 {
             var best: Double?

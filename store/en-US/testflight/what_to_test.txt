@@ -1,9 +1,13 @@
-New: a drop-off beacon, and a better fuel check. Headphones recommended.
+New: traffic! Headphones strongly recommended.
 
-• Drop-off beacon: in the last 150 meters you hear beeps like a parking sensor. They get faster as you get closer and turn into a steady tone right at the drop-off. Stop on the steady tone for the perfect-stop bonus. Past the drop-off the beeps drop lower.
-• The Job Board's fuel check now uses measured fuel use and counts heavy cargo, which burns more fuel.
-• Also: fuel lasts about twice as long as before, tows are cheaper, crashes cost less, and you can hire drivers in the Company screen.
+• Roads now have two lanes. On country and mountain roads the left lane is oncoming traffic. On Interstate 40 the left lane goes your way, for passing.
+• Oncoming cars, pickups and trucks in 3D sound: they come at you on your left, rush past and fade behind. Drift over the center line with someone coming and they honk: "Oncoming traffic! Get back in your lane!" Hitting one is a crash.
+• Slower vehicles ahead in your lane: "Slow pickup ahead, 150 meters, doing 50." Slow down behind them, or pass: signal left and steer into the left lane, then signal right and steer back.
+• Lane beeps guide you to the lane you mean to be in.
+• Practice Drive has no traffic. Traffic can be turned off in Settings.
+• Also: the drop-off beacon, so you can stop right at the drop-off.
 
 Please check:
-• Does the beacon help you stop right at the drop-off?
-• Is the fuel check right? Did any job run out of fuel when it said "Fuel OK"?
+• Can you tell where each vehicle is by sound?
+• Is passing a slow vehicle doable?
+• Is there too much traffic, or too little?

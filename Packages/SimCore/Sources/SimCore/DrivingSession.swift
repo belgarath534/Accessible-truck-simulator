@@ -95,9 +95,15 @@ public final class DrivingSession {
     static let milestones: [Double] = [10_000, 5_000, 2_000, 1_000]
     static let destinationWarning = 400.0
 
-    // Lane geometry relative to lane centre.
+    // Lane geometry, metres from the centre of your lane (positive = right).
+    // Your lane is centred on 0; the left lane (oncoming, or the passing lane on interstates) on -3.7.
     public static let rumbleOffset = 0.9
     public static let offRoadOffset = 2.6
+    public static let leftLaneCenter = -3.7
+    public static let centerLine = -1.85
+    /// Rumble strip and road edge on the far left (beyond the left lane).
+    public static let leftRumbleOffset = -4.6
+    public static let leftOffRoadOffset = -6.3
     /// Fuel burns this many times faster than a real truck, so a full tank lasts about two hours of driving.
     public static let fuelGameScale = 10.0
     /// Dollars per litre at truck stops.
@@ -141,13 +147,29 @@ public final class DrivingSession {
     private var currentZone: String?
     private var policeDecided: [Double: Bool] = [:]
     private var chase: (speed: Double, limit: Double, timer: Double)?
-    private var rng: SeededRandom
+    var rng: SeededRandom
+    /// Traffic on the road (off unless the app turns it on).
+    public var trafficEnabled = false
+    public internal(set) var traffic: [TrafficVehicle] = []
+    var nextVehicleID = 0
+    var oncomingTimer = 12.0
+    var slowTimer = 40.0
+    var warnedAhead: Set<Int> = []
+    var honked: Set<Int> = []
+    var lastTooClose: Double = -100
     /// Chance a police car is at each spot (tests set it to 0 or 1).
     public var policePresenceChance = DrivingSession.policeChance
     /// True while a police car is behind you with its siren on.
     public var sirenOn: Bool { chase != nil }
     private var navAnnounced: Set<Int> = []
     private var lastShoulderWarning: Double = -100
+    /// The lane you mean to be in: 0 (yours) or leftLaneCenter after signalling left to pass.
+    public private(set) var targetLane = 0.0
+    private var inLeftLane = false
+    var lastWrongSideWarning: Double = -100
+
+    /// How far the truck is from the centre of the lane it should be in (lane guidance beeps use this).
+    public var laneGuidanceOffset: Double { truck.lateralOffset - targetLane }
 
     private enum TruckStopState: Equatable {
         case driving
@@ -275,6 +297,8 @@ public final class DrivingSession {
         truck.lateralVelocity = 0
         truck.speed = 0
         truck.steerAngle = 0
+        targetLane = 0
+        inLeftLane = false
         truck.gearIndex = 0
         rumbleSide = nil
     }
@@ -302,6 +326,7 @@ public final class DrivingSession {
         checkLane(events: &events)
         checkCurves(events: &events)
         checkMap(events: &events)
+        stepTraffic(dt: dt, events: &events)
         checkPolice(dt: dt, events: &events)
         checkTruckStops(dt: dt, input: input, events: &events)
         checkTow(dt: dt, events: &events)
@@ -588,6 +613,7 @@ public final class DrivingSession {
         truckStopState = .driving
         navAnnounced = []
         policeDecided = [:]
+        clearTraffic()
         currentZone = road.speedZone(at: truck.position)?.name
         events.append(.tookRoad(roadName: result.choice.roadName, toward: result.choice.toward,
                                 length: road.totalLength, turn: result.choice.turn))
@@ -728,7 +754,19 @@ public final class DrivingSession {
 
     private func checkLane(events: inout [SimEvent]) {
         let y = truck.lateralOffset
-        if abs(y) > DrivingSession.offRoadOffset {
+        // Lane changes: signalling left while crossing the center line means you meant to (passing).
+        let leftNow = y < DrivingSession.centerLine
+        if leftNow != inLeftLane {
+            inLeftLane = leftNow
+            if leftNow {
+                if truck.signal == .on(.left) { targetLane = DrivingSession.leftLaneCenter }
+            } else {
+                targetLane = 0
+            }
+            events.append(.changedLane(toLeft: leftNow, oncoming: !road.leftLaneSameDirection))
+        }
+        let offRoad = y > DrivingSession.offRoadOffset || y < DrivingSession.leftOffRoadOffset
+        if offRoad {
             let side: Side = y > 0 ? .right : .left
             if truck.speed > DrivingSession.shoulderSafeSpeed || !assist.usesSimpleHandling {
                 events.append(.crashed(.leftRoad(side)))
@@ -737,7 +775,7 @@ public final class DrivingSession {
                 return
             }
             // Slow enough: the truck rolls onto the gravel shoulder instead of crashing.
-            truck.lateralOffset = DrivingSession.offRoadOffset * (y > 0 ? 1 : -1)
+            truck.lateralOffset = y > 0 ? DrivingSession.offRoadOffset : DrivingSession.leftOffRoadOffset
             if truck.lateralVelocity * y > 0 { truck.lateralVelocity = 0 }
             truck.speed *= 0.995
             truck.headingError = 0
@@ -746,7 +784,7 @@ public final class DrivingSession {
                 events.append(.onShoulder(side))
             }
         }
-        let side: Side? = abs(y) > DrivingSession.rumbleOffset ? (y > 0 ? .right : .left) : nil
+        let side: Side? = y > DrivingSession.rumbleOffset ? .right : (y < DrivingSession.leftRumbleOffset ? .left : nil)
         if side != rumbleSide {
             rumbleSide = side
             events.append(.rumbleStrip(side))
@@ -766,5 +804,143 @@ public final class DrivingSession {
             lastTooFastWarning = time
             events.append(.tooFastForCurve)
         }
+    }
+}
+
+// MARK: - Traffic
+
+/// Another vehicle on the road.
+public struct TrafficVehicle: Equatable, Sendable {
+    public let id: Int
+    public let kind: VehicleKind
+    /// Driving toward you in the left lane.
+    public let oncoming: Bool
+    /// Lateral centre of its lane, metres (0 = your lane).
+    public var lane: Double
+    /// Metres along the road.
+    public var position: Double
+    public var speed: Double
+
+    public var length: Double { kind == .truck ? 14 : (kind == .pickup ? 5.5 : 4.5) }
+    public var halfWidth: Double { kind == .truck ? 1.25 : 0.95 }
+}
+
+/// Where a vehicle is relative to you, for 3D sound.
+public struct TrafficSound: Equatable, Sendable {
+    public var id: Int
+    public var kind: VehicleKind
+    /// Metres ahead (negative = behind).
+    public var distance: Double
+    /// Metres to the right (negative = left).
+    public var lateral: Double
+    /// How fast the gap is closing, m/s (negative = moving apart). Used for Doppler.
+    public var closingSpeed: Double
+}
+
+public extension DrivingSession {
+    /// Vehicles within earshot, nearest first (at most four), for the 3D traffic sound.
+    var trafficSounds: [TrafficSound] {
+        traffic.map { v -> TrafficSound in
+            let rel = v.position - truck.position
+            let approach = v.oncoming ? truck.speed + v.speed : truck.speed - v.speed
+            return TrafficSound(id: v.id, kind: v.kind, distance: rel, lateral: v.lane - truck.lateralOffset,
+                                closingSpeed: rel >= 0 ? approach : -approach)
+        }
+        .filter { abs($0.distance) < 500 }
+        .sorted { abs($0.distance) < abs($1.distance) }
+        .prefix(4)
+        .map { $0 }
+    }
+}
+
+extension DrivingSession {
+    static let truckLength = 16.0
+
+    func stepTraffic(dt: Double, events: inout [SimEvent]) {
+        guard trafficEnabled else { return }
+        let pos = truck.position
+        let roadAhead = road.loops ? Double.infinity : road.totalLength - pos
+        let limit = road.speedLimit
+
+        // Spawning: oncoming traffic on two-way roads, and now and then a slower vehicle ahead.
+        oncomingTimer -= dt
+        if oncomingTimer <= 0 {
+            oncomingTimer = Double.random(in: 25...70, using: &rng)
+            if !road.leftLaneSameDirection && roadAhead > 800 {
+                nextVehicleID += 1
+                traffic.append(TrafficVehicle(id: nextVehicleID, kind: randomKind(), oncoming: true,
+                                              lane: DrivingSession.leftLaneCenter, position: pos + 700,
+                                              speed: limit * Double.random(in: 0.85...1, using: &rng)))
+            }
+        }
+        slowTimer -= dt
+        if slowTimer <= 0 {
+            let hasSlowAhead = traffic.contains { !$0.oncoming && $0.position > pos }
+            if !hasSlowAhead && roadAhead > 900 && truck.speed > 5 {
+                nextVehicleID += 1
+                traffic.append(TrafficVehicle(id: nextVehicleID, kind: randomKind(), oncoming: false, lane: 0,
+                                              position: pos + 500,
+                                              speed: limit * Double.random(in: 0.55...0.75, using: &rng)))
+                slowTimer = Double.random(in: 70...160, using: &rng)
+            } else {
+                slowTimer = 10
+            }
+        }
+
+        // Moving, leaving, colliding and warning.
+        var remove: Set<Int> = []
+        let y = truck.lateralOffset
+        for i in traffic.indices {
+            let v = traffic[i]
+            traffic[i].position += (v.oncoming ? -v.speed : v.speed) * dt
+            let rel = traffic[i].position - pos
+            if rel < -300 || rel > 1_200 || (!road.loops && !v.oncoming && traffic[i].position > road.totalLength - 80) {
+                remove.insert(v.id)
+                continue
+            }
+            let lateralOverlap = abs(y - v.lane) < 1.25 + v.halfWidth
+            let front = traffic[i].position - v.length / 2, back = traffic[i].position + v.length / 2
+            if lateralOverlap && front < pos && back > pos - DrivingSession.truckLength {
+                events.append(.crashed(.collision(headOn: v.oncoming, vehicle: v.kind)))
+                remove.insert(v.id)
+                recover()
+                events.append(.rumbleStrip(nil))
+                continue
+            }
+            if v.oncoming {
+                if rel > 0 && rel < 250 && y < -1.2 && !honked.contains(v.id) {
+                    honked.insert(v.id)
+                    events.append(.oncomingHorn)
+                    if time - lastWrongSideWarning > 4 {
+                        lastWrongSideWarning = time
+                        events.append(.wrongSideOfRoad)
+                    }
+                }
+            } else if abs(y - v.lane) < 2 && rel > 0 {
+                let closing = truck.speed - v.speed
+                if rel < 160 && closing > 1.5 && !warnedAhead.contains(v.id) {
+                    warnedAhead.insert(v.id)
+                    events.append(.vehicleAhead(distance: rel, speed: v.speed, kind: v.kind))
+                }
+                let gap = rel - v.length / 2
+                if closing > 0.5 && gap < max(15, closing * 2.5) && time - lastTooClose > 3 {
+                    lastTooClose = time
+                    events.append(.tooClose)
+                }
+            }
+        }
+        if !remove.isEmpty { traffic.removeAll { remove.contains($0.id) } }
+    }
+
+    private func randomKind() -> VehicleKind {
+        let r = Double.random(in: 0...1, using: &rng)
+        return r < 0.55 ? .car : (r < 0.8 ? .pickup : .truck)
+    }
+
+    /// Clears traffic when the road changes (taking a junction).
+    func clearTraffic() {
+        traffic = []
+        warnedAhead = []
+        honked = []
     }
 }

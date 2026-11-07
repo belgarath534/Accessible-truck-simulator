@@ -55,7 +55,11 @@ public enum EngineState: Equatable, Sendable {
 
 public enum CrashReason: Equatable, Sendable {
     case leftRoad(Side)
+    /// Hit another vehicle: head-on (oncoming) or from behind.
+    case collision(headOn: Bool, vehicle: VehicleKind)
 }
+
+public enum VehicleKind: String, Equatable, Sendable { case car, pickup, truck }
 
 /// Things that happened during a simulation step. Audio, speech, haptics and visuals subscribe to these.
 public enum SimEvent: Equatable, Sendable {
@@ -95,6 +99,16 @@ public enum SimEvent: Equatable, Sendable {
     /// Left the planned route; the GPS found a new one.
     case rerouted(remaining: Double)
     case missedDropOff
+    // Lanes and traffic
+    /// Moved into the left lane (passing lane on interstates, oncoming lane elsewhere) or back.
+    case changedLane(toLeft: Bool, oncoming: Bool)
+    /// In the oncoming lane with traffic coming.
+    case wrongSideOfRoad
+    /// A slower vehicle ahead in your lane. Distance in metres, its speed in m/s.
+    case vehicleAhead(distance: Double, speed: Double, kind: VehicleKind)
+    case tooClose
+    /// An oncoming driver honking at you for being over the center line.
+    case oncomingHorn
     // Police
     /// Passed a parked police car (a radio crackle), whether or not you were speeding.
     case passedPolice

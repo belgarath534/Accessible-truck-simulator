@@ -52,9 +52,12 @@ final class DrivingController: NSObject, ObservableObject {
         case let .job(job):
             navigator = job.destination.flatMap { Navigator(map: .standard, origin: job.origin ?? town, destination: $0) }
         }
-        return DrivingSession(spec: truck, goal: drive.goal, cargoMassKg: drive.job?.cargo.massKg ?? 0,
-                              timeLimit: drive.job?.timeLimit, startingFuel: fuel, navigator: navigator,
-                              assist: settings.assist)
+        let session = DrivingSession(spec: truck, goal: drive.goal, cargoMassKg: drive.job?.cargo.massKg ?? 0,
+                                     timeLimit: drive.job?.timeLimit, startingFuel: fuel, navigator: navigator,
+                                     assist: settings.assist)
+        // Traffic on the map; the practice loop stays quiet for learning.
+        session.trafficEnabled = settings.traffic && navigator != nil
+        return session
     }
 
     /// Leaving or restarting a drive that didn't finish: keep the fuel level and charge any fuel or tow costs.

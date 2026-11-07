@@ -184,6 +184,12 @@ struct ControlsHelpView: View {
                 Text("In Free Drive, the GPS lists the choices before each junction. The three-finger tap tells you what's ahead.")
                 Text("After a delivery you're in the destination town, and the Job Board shows jobs from there.")
             }
+            Section("Traffic and lanes") {
+                Text("Roads have two lanes. You drive in the right one. On country and mountain roads the left lane is oncoming traffic; on Interstate 40 the left lane goes your way and is for passing.")
+                Text("You hear each vehicle in 3D: oncoming traffic comes at you on your left, rushes past and fades behind. Drift over the center line with someone coming and they honk, and you'll hear Oncoming traffic, get back in your lane. Hitting them is a crash.")
+                Text("Slower vehicles appear ahead in your lane: you'll hear Slow pickup ahead, with its distance and speed. Slow down behind it, or pass. To pass, signal left and steer into the left lane, then signal right and steer back. On two-lane roads only pass when you can't hear oncoming traffic.")
+                Text("The lane beeps guide you to the lane you mean to be in: your own, or the left lane after you signal left. Traffic can be turned off in Settings.")
+            }
             Section("Police and speed limits") {
                 Text("Police cars park in every town and along the interstate and country roads. Not every spot has a cop every time. When you pass one you'll hear a police radio crackle.")
                 Text("Go more than 8 kilometers or 5 miles per hour over the limit near a cop and you'll hear the siren and Pull over. Slow down and stop to get your ticket: $100 plus $25 for every kilometer per hour over. If you don't stop within 25 seconds, the fine is much bigger.")
@@ -227,6 +233,8 @@ struct SettingsView: View {
                 }
             }
             Section {
+                Toggle("Traffic", isOn: $settings.traffic)
+                    .accessibilityHint("Other vehicles on the map's roads. The practice loop never has traffic.")
                 Toggle("Lane guidance beeps", isOn: $settings.laneGuidanceTone)
                 Toggle("Call out speed", isOn: $settings.announceSpeed)
                 Toggle("Announce gear changes", isOn: $settings.announceGears)

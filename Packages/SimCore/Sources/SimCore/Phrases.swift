@@ -183,6 +183,21 @@ public struct Phrases {
         return "Your drivers: " + parts.joined(separator: ". ") + (reports.count > 1 ? ". Total \(Phrases.money(total))." : ".")
     }
 
+    // MARK: Traffic
+
+    public func changedLane(toLeft: Bool, oncoming: Bool) -> String {
+        if !toLeft { return "Back in your lane." }
+        return oncoming ? "Oncoming lane. Pass quickly and get back." : "Left lane."
+    }
+
+    public let wrongSideOfRoad = "Oncoming traffic! Get back in your lane!"
+
+    public func vehicleAhead(distance: Double, speed: Double, kind: VehicleKind) -> String {
+        "Slow \(kind.rawValue) ahead, \(units.distance(distance)), doing \(units.speed(speed)). Slow down or pass."
+    }
+
+    public let tooClose = "Too close! Brake!"
+
     // MARK: Police
 
     public func policeChase(speed: Double, limit: Double) -> String {
@@ -347,6 +362,9 @@ public struct Phrases {
         switch reason {
         case let .leftRoad(side):
             return "Crash! You ran off the \(side.rawValue) side of the road. Truck recovered to the lane."
+        case let .collision(headOn, vehicle):
+            return headOn ? "Crash! Head-on with an oncoming \(vehicle.rawValue). Stay in your lane when traffic is coming."
+                          : "Crash! You hit the \(vehicle.rawValue) in front of you. Slow down sooner behind traffic."
         }
     }
 }
