@@ -83,6 +83,18 @@ public enum SimEvent: Equatable, Sendable {
     case leftTruckStop
     /// Out of fuel: towed to the next truck stop for a fee, with a little fuel put in.
     case towed(cost: Int, fuelCost: Int)
+    // Map and GPS
+    case enteredTown(name: String, speedLimit: Double)
+    case leftTown(name: String, speedLimit: Double)
+    /// "In 1 kilometer, turn right onto Highway 9 toward Cedar Falls."
+    case navInstruction(NavInstruction)
+    /// Free roaming: the ways you can go at the coming junction.
+    case junctionAhead(choices: [JunctionChoice], distance: Double)
+    /// Took a junction onto a new road.
+    case tookRoad(roadName: String, toward: String, length: Double, turn: Turn)
+    /// Left the planned route; the GPS found a new one.
+    case rerouted(remaining: Double)
+    case missedDropOff
     case dashboard(DashboardReading)
     case roadAhead(UpcomingCurve?, remaining: Double?, timeLeft: Double?, truckStop: Double?)
     /// Delivery deadline reminders (5 minutes and 1 minute left).

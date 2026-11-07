@@ -104,6 +104,11 @@ final class CareerStore: ObservableObject {
         save()
     }
 
+    func move(to town: String) {
+        state.move(to: town)
+        save()
+    }
+
     func refreshBoard() {
         state.refreshBoard()
         save()

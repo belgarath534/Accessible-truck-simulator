@@ -17,6 +17,7 @@ struct MainMenuView: View {
                     if career.state.jobsCompleted > 0 {
                         Text("Jobs delivered: \(career.state.jobsCompleted)")
                     }
+                    Text("You're in \(career.state.currentTownName).")
                     Text("Driving: \(career.truck.name). Fuel \(Int((career.fuelLiters / career.truck.fuelCapacityLiters * 100).rounded())) percent.")
                 }
                 Section {
@@ -28,7 +29,7 @@ struct MainMenuView: View {
                     .accessibilityHint("Pick a delivery. Jobs pay the most.")
                     Button("Free Drive") { drive = .freeDrive }
                         .font(.title2)
-                        .accessibilityHint("Drive the loop as long as you like. Pays \(Phrases.money(Int(Payout.freeDriveRatePerKm))) per kilometer.")
+                        .accessibilityHint("Roam the map from \(career.state.currentTownName) as long as you like. Pays \(Phrases.money(Int(Payout.freeDriveRatePerKm))) per kilometer.")
                     NavigationLink {
                         GarageView()
                     } label: {
@@ -39,7 +40,7 @@ struct MainMenuView: View {
                         .font(.title2)
                         .accessibilityHint("One lap of the country road, then stop at the drop-off. No pay.")
                 } footer: {
-                    Text("Jobs pay the most, with bonuses for arriving on time, not crashing and a perfect stop. Free Drive pays a little for every kilometer. Practice Drive doesn't pay.")
+                    Text("Jobs go from the town you're in to another town and pay the most, with bonuses for arriving on time, not crashing and a perfect stop. Free Drive roams the map and pays a little for every kilometer. Practice Drive is the practice loop and doesn't pay.")
                 }
                 Section {
                     NavigationLink("How to Drive") { ControlsHelpView() }
@@ -138,9 +139,16 @@ struct ControlsHelpView: View {
                 Text("While driving a job, the three-finger tap tells you the distance and time left. You'll hear reminders at 5 minutes and 1 minute.")
                 Text("Free Drive pays a little for every kilometer. Pause and choose End Drive and Get Paid, or Quit to Main Menu, which also pays. Each crash costs a repair fee.")
             }
+            Section("The map and GPS") {
+                Text("Six places: Millbrook, your home yard; Cedar Falls in lumber country, up the mountain Highway 9; Ridgeport, a port town; Ironton, with its mines and steel mill; Bayview, with its farms; and Central Junction, where Interstate 40 meets the roads to Ridgeport and Ironton.")
+                Text("Interstate 40 is fast, with a 100 kilometer per hour limit and gentle curves. Country roads are 80 with more curves. Mountain roads are 60 with sharp curves. Towns are 50: you'll hear when you enter and leave them.")
+                Text("On a job, the GPS tells you each turn at 1 kilometer and again at 300 meters. Signal left or right before the junction to turn, or no signal to go straight. Take a wrong turn and the GPS recalculates a new route.")
+                Text("In Free Drive, the GPS lists the choices before each junction. The three-finger tap tells you what's ahead.")
+                Text("After a delivery you're in the destination town, and the Job Board shows jobs from there.")
+            }
             Section("Fuel and truck stops") {
                 Text("Fuel stays in your truck between drives. A full tank lasts about an hour of driving. The dashboard, two-finger double tap, says how far your fuel will take you.")
-                Text("There are three truck stops on the loop. When your fuel is under half you'll hear one coming, and the three-finger tap always tells you the distance to the next one.")
+                Text("Truck stops are on Interstate 40 and the longer country roads, and there are three on the practice loop. When your fuel is under half you'll hear one coming, and the three-finger tap always tells you the distance to the next one.")
                 Text("To fill up: signal right before the truck stop and slow below 50 kilometers or 30 miles per hour as you reach it. Stop at the pump and wait while it fills. Press the gas to leave early.")
                 Text("You're warned at a quarter tank and at 10 percent. If you run out, a tow truck takes you to the next truck stop for a fee and puts in a quarter tank. That costs 5 minutes too.")
                 Text("Fuel at truck stops costs less than filling up at your yard in the Garage. Fuel and tow costs come off your pay.")

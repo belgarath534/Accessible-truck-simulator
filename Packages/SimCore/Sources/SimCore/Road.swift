@@ -73,6 +73,8 @@ public struct Road: Sendable {
 
     /// Positions (metres along the road) of truck stops with fuel pumps.
     public var truckStops: [Double] = []
+    /// Stretches with their own speed limit (towns).
+    public var speedZones: [SpeedZone] = []
 
     public init(segments: [RoadSegment], loops: Bool = true, speedLimit: Double = 80 / 3.6,
                 truckStops: [Double] = []) {

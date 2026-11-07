@@ -1,13 +1,14 @@
-New: fuel and truck stops! Headphones recommended.
+New: the map! Towns, highways and GPS turn by turn. Headphones recommended.
 
-• Fuel stays in your truck between drives, and a full tank lasts about an hour. The dashboard (two-finger double tap) says how far you can go.
-• Three truck stops on the loop. Under half a tank you'll hear one coming; the three-finger tap always says the distance to the next one.
-• To fill up: signal right before the truck stop and slow below 50 km/h (30 mph). Stop at the pump and listen to it fill. Press the gas to leave early.
-• Warnings at a quarter tank and 10 percent. Running out gets you towed to the next truck stop: a tow fee, a quarter tank, and 5 minutes lost.
-• Truck stops are cheaper than filling up at the yard in the Garage. Fuel costs come off your pay.
-• Also new: truck upgrades (engine, brakes, tires, fuel tank) and the Garage with three trucks.
+• Six places: Millbrook (your home yard), Cedar Falls (lumber, up the mountain), Ridgeport (port), Ironton (mines and steel), Bayview (farms), and Central Junction.
+• Roads feel different: Interstate 40 at 100 km/h with gentle curves, country roads at 80, mountain roads at 60 with sharp curves, and towns at 50. You hear when you enter and leave a town.
+• Jobs go from the town you're in to another town, with cargo that fits where it's from. After a delivery you're in the new town.
+• GPS: each turn is announced at 1 km and 300 m. Signal left or right before the junction to turn, or no signal to go straight. Take a wrong turn and it recalculates.
+• Free Drive roams the map: before each junction you hear the choices. The three-finger tap says what's ahead and the next turn.
+• Practice Drive is still the practice loop.
 
 Please check:
-• Is pulling into a truck stop easy to do by ear?
-• Does a tank last a good amount of time?
-• Are fuel prices fair compared with what jobs pay?
+• Are the GPS turn instructions clear and early enough?
+• Is turning with the signal easy?
+• Do the roads feel different from each other?
+• How long are the jobs now? Too long or too short?

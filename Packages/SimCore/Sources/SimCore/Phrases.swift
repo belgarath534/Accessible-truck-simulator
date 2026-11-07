@@ -115,6 +115,60 @@ public struct Phrases {
         "Next truck stop in \(units.distance(distance))."
     }
 
+    // MARK: Map and GPS
+
+    private func turnPhrase(_ turn: Turn) -> String {
+        switch turn {
+        case .left: return "turn left"
+        case .right: return "turn right"
+        case .straight: return "go straight"
+        case .uTurn: return "turn around"
+        }
+    }
+
+    public func navInstruction(_ n: NavInstruction) -> String {
+        let signal: String
+        switch n.turn {
+        case .left: signal = " Signal left."
+        case .right: signal = " Signal right."
+        case .straight: signal = " No signal needed."
+        case .uTurn: signal = ""
+        }
+        return "In \(units.distance(n.distance)), \(turnPhrase(n.turn)) onto \(n.roadName) toward \(n.toward).\(signal)"
+    }
+
+    public func junctionAhead(_ choices: [JunctionChoice], distance: Double) -> String {
+        let order: [Turn] = [.left, .straight, .right, .uTurn]
+        let parts = choices.sorted { order.firstIndex(of: $0.turn)! < order.firstIndex(of: $1.turn)! }.map { c -> String in
+            switch c.turn {
+            case .left: return "left on \(c.roadName) to \(c.toward)"
+            case .right: return "right on \(c.roadName) to \(c.toward)"
+            case .straight: return "straight on \(c.roadName) to \(c.toward)"
+            case .uTurn: return "turn around to \(c.toward)"
+            }
+        }
+        if parts.count == 1 { return "In \(units.distance(distance)), the road continues: \(parts[0])." }
+        return "Junction in \(units.distance(distance)): " + parts.joined(separator: ", ") + ". Signal to choose."
+    }
+
+    public func tookRoad(roadName: String, toward: String, length: Double) -> String {
+        "\(roadName) toward \(toward), \(units.distance(length))."
+    }
+
+    public func rerouted(_ remaining: Double) -> String {
+        "That's off the route. Recalculating. New route: \(units.distance(remaining)) to the drop-off."
+    }
+
+    public let missedDropOff = "You drove past the drop-off. Recalculating a way back."
+
+    public func enteredTown(_ name: String, speedLimit: Double) -> String {
+        "Entering \(name). Speed limit \(units.speed(speedLimit))."
+    }
+
+    public func leftTown(_ name: String, speedLimit: Double) -> String {
+        "Leaving \(name). Speed limit \(units.speed(speedLimit))."
+    }
+
     public func onShoulder(_ side: Side) -> String {
         "On the \(side.rawValue) shoulder. Steer \(side == .left ? "right" : "left") to get back on the road."
     }
@@ -141,7 +195,8 @@ public struct Phrases {
     }
 
     public func job(_ job: DeliveryJob) -> String {
-        var parts = ["\(job.cargo.name), \(units.distance(job.distance))",
+        let route = job.destinationName.map { " to \($0)" } ?? ""
+        var parts = ["\(job.cargo.name)\(route), \(units.distance(job.distance))",
                      "pays \(Phrases.money(job.pay))",
                      "time limit \(duration(job.timeLimit, roundToMinutes: true))",
                      weight(job.cargo.massKg)]
@@ -151,7 +206,8 @@ public struct Phrases {
     }
 
     public func jobIntro(_ job: DeliveryJob) -> String {
-        var text = "Job: deliver \(job.cargo.name.lowercased()), \(weight(job.cargo.massKg)), "
+        let towns = job.originName.flatMap { o in job.destinationName.map { "from \(o) to \($0), " } } ?? ""
+        var text = "Job: deliver \(job.cargo.name.lowercased()), \(weight(job.cargo.massKg)), \(towns)"
             + "\(units.distance(job.distance)) to the drop-off. "
             + "Time limit \(duration(job.timeLimit, roundToMinutes: true)). Pays \(Phrases.money(job.pay))."
         if job.cargo.fragile { text += " Fragile: crashes damage this load badly." }

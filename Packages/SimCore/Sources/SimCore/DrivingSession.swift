@@ -75,7 +75,9 @@ public struct TruckState: Equatable, Sendable {
 /// The driving simulation for one trip. Pure logic: feed it input every tick, get events back.
 public final class DrivingSession {
     public let spec: TruckSpec
-    public let road: Road
+    public private(set) var road: Road
+    /// Present when driving on the map (towns and highways) instead of a single road.
+    public let navigator: Navigator?
     public let goal: TripGoal
     /// Cargo weight on the trailer; heavier loads accelerate and stop more slowly.
     public let cargoMassKg: Double
@@ -121,6 +123,8 @@ public final class DrivingSession {
     private var announcedAtDestination = false
     private var wasStopped = true
     private var announcedTimeWarnings: Set<Double> = []
+    private var currentZone: String?
+    private var navAnnounced: Set<Int> = []
     private var lastShoulderWarning: Double = -100
 
     private enum TruckStopState: Equatable {
@@ -142,9 +146,10 @@ public final class DrivingSession {
 
     public init(spec: TruckSpec = .starter, road: Road = .practiceLoop, goal: TripGoal = .freeDrive,
                 cargoMassKg: Double = 0, timeLimit: Double? = nil, startingFuel: Double? = nil,
-                assist: SteeringAssist = .medium) {
+                navigator: Navigator? = nil, assist: SteeringAssist = .medium) {
         self.spec = spec
-        self.road = road
+        self.navigator = navigator
+        self.road = navigator?.road ?? road
         self.goal = goal
         self.cargoMassKg = cargoMassKg
         self.timeLimit = timeLimit
@@ -180,8 +185,17 @@ public final class DrivingSession {
         case .speakDashboard:
             return [.dashboard(dashboard)]
         case .speakRoadAhead:
-            return [.roadAhead(road.nextCurve(after: truck.position, within: 3_000), remaining: remaining,
-                               timeLeft: timeLeft, truckStop: road.nextTruckStop(after: truck.position)?.distance)]
+            var events: [SimEvent] = [.roadAhead(road.nextCurve(after: truck.position, within: 3_000), remaining: remaining,
+                                                 timeLeft: timeLeft, truckStop: road.nextTruckStop(after: truck.position)?.distance)]
+            if let navigator {
+                if navigator.destination != nil, let next = navigator.nextInstruction(at: truck.position) {
+                    events.append(.navInstruction(next))
+                } else if navigator.destination == nil {
+                    events.append(.junctionAhead(choices: navigator.junctionChoices,
+                                                 distance: road.totalLength - truck.position))
+                }
+            }
+            return events
         case .pause, .toggleRadio, .nextSong, .previousSong:
             return []
         }
@@ -196,7 +210,7 @@ public final class DrivingSession {
             engineTempC: truck.engineTempC,
             signal: truck.signal,
             engine: truck.engine,
-            speedLimit: road.speedLimit,
+            speedLimit: currentSpeedLimit,
             range: range
         )
     }
@@ -219,8 +233,12 @@ public final class DrivingSession {
 
     /// Metres left to the drop-off (negative once past it), or nil on a free drive.
     public var remaining: Double? {
-        goal.distance.map { $0 - truck.odometer }
+        if let navigator { return navigator.remaining(at: truck.position) }
+        return goal.distance.map { $0 - truck.odometer }
     }
+
+    /// Speed limit where the truck is now (towns are slower).
+    public var currentSpeedLimit: Double { road.speedLimit(at: truck.position) }
 
     /// Puts the truck back in the centre of its lane, stopped. Used after a crash.
     public func recover() {
@@ -255,6 +273,7 @@ public final class DrivingSession {
         stepTemperatureAndFuel(dt: dt, events: &events)
         checkLane(events: &events)
         checkCurves(events: &events)
+        checkMap(events: &events)
         checkTruckStops(dt: dt, input: input, events: &events)
         checkTow(dt: dt, events: &events)
         updateStats(dt: dt, events: events)
@@ -409,7 +428,9 @@ public final class DrivingSession {
         truck.speed = max(0, truck.speed + accel * dt)
         if truck.speed < 0.05 && input.throttle < 0.05 { truck.speed = 0 }
 
-        truck.position = road.normalized(truck.position + truck.speed * dt)
+        // Looping roads wrap; map roads run past their end into the next junction (see checkMap).
+        let advanced = truck.position + truck.speed * dt
+        truck.position = road.loops ? road.normalized(advanced) : advanced
         truck.odometer += truck.speed * dt
     }
 
@@ -484,6 +505,64 @@ public final class DrivingSession {
         } else if !warnedQuarter && fraction < 0.25 {
             warnedQuarter = true
             events.append(.fuelLow(fraction: fraction, nextStop: road.nextTruckStop(after: truck.position)?.distance, urgent: false))
+        }
+    }
+
+    // MARK: - Map
+
+    private func checkMap(events: inout [SimEvent]) {
+        guard let nav = navigator else { return }
+        let position = truck.position
+
+        // Towns: speed limit changes.
+        let zone = road.speedZone(at: position)
+        if zone?.name != currentZone {
+            if let zone {
+                events.append(.enteredTown(name: zone.name, speedLimit: zone.limit))
+            } else if let old = currentZone {
+                events.append(.leftTown(name: old, speedLimit: road.speedLimit(at: position)))
+            }
+            currentZone = zone?.name
+        }
+
+        // GPS: the next junction at 1 km and 300 m (free roaming: the choices at 800 m).
+        let toEnd = road.totalLength - position
+        if truck.speed > 1 {
+            if nav.destination != nil {
+                for mark in [1_000, 300] where toEnd <= Double(mark) && !navAnnounced.contains(mark) {
+                    navAnnounced.insert(mark)
+                    if road.totalLength > Double(mark) + 200, let instruction = nav.nextInstruction(at: position) {
+                        events.append(.navInstruction(instruction))
+                    }
+                }
+            } else if toEnd <= 800 && !navAnnounced.contains(800) {
+                navAnnounced.insert(800)
+                events.append(.junctionAhead(choices: nav.junctionChoices, distance: toEnd))
+            }
+        }
+
+        // End of the road: take the junction (or, at the destination, allow a little room to stop).
+        guard position >= road.totalLength else { return }
+        if nav.onFinalRoad {
+            guard position > road.totalLength + 150 else { return }
+            events.append(.missedDropOff)
+        }
+        let oldLength = road.totalLength
+        let signal = truck.signal
+        let result = nav.takeJunction(signal: signal)
+        road = nav.road
+        truck.position = position - oldLength
+        if result.choice.turn != .straight { truck.signal = .off }
+        announcedCurveIndex = nil
+        announcedStop = nil
+        exitChecked = nil
+        truckStopState = .driving
+        navAnnounced = []
+        currentZone = road.speedZone(at: truck.position)?.name
+        events.append(.tookRoad(roadName: result.choice.roadName, toward: result.choice.toward,
+                                length: road.totalLength, turn: result.choice.turn))
+        if !result.onRoute, let remaining {
+            events.append(.rerouted(remaining: remaining))
         }
     }
 

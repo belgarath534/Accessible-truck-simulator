@@ -11,6 +11,8 @@ final class FeedbackCoordinator {
     private var onRumbleStrip = false
     private var lastSpokenSpeedStep: Int?
     private var wasMoving = false
+    /// Town name for the Free Drive intro; set before start().
+    var freeDriveTown = "Millbrook"
     /// The current truck's engine voice; set before start().
     var engineSound: EngineSound = .recorded
 
@@ -86,7 +88,7 @@ final class FeedbackCoordinator {
         case .practice:
             trip = "Practice Drive: \(settings.units.distance(Road.practiceLoop.totalLength)) to the drop-off. Stop there to finish. Practice drives don't pay."
         case .freeDrive:
-            trip = "Free Drive: no destination. You earn \(Phrases.money(Int(Payout.freeDriveRatePerKm))) per kilometer. Pause and choose End Drive to get paid."
+            trip = "Free Drive from \(freeDriveTown). Roam the map: at each junction you'll hear the choices; signal left or right to turn, or no signal to go straight. You earn \(Phrases.money(Int(Payout.freeDriveRatePerKm))) per kilometer. Pause and choose End Drive to get paid."
         case let .job(job):
             trip = phrases.jobIntro(job) + " Stop at the drop-off to deliver."
         }
@@ -126,6 +128,21 @@ final class FeedbackCoordinator {
             audio.setRumble(side)
         case let .curveAhead(curve):
             speech.speak(phrases.curve(curve), priority: .normal)
+        case let .navInstruction(instruction):
+            // Queued, so it follows the road-ahead summary instead of cutting it off.
+            speech.speak(phrases.navInstruction(instruction), priority: .normal)
+        case let .junctionAhead(choices, distance):
+            speech.speak(phrases.junctionAhead(choices, distance: distance), priority: .normal)
+        case let .tookRoad(roadName, toward, length, _):
+            speech.speak(phrases.tookRoad(roadName: roadName, toward: toward, length: length), priority: .normal)
+        case let .rerouted(remaining):
+            speech.speak(phrases.rerouted(remaining), priority: .high)
+        case .missedDropOff:
+            speech.speak(phrases.missedDropOff, priority: .high)
+        case let .enteredTown(name, limit):
+            speech.speak(phrases.enteredTown(name, speedLimit: limit), priority: .normal)
+        case let .leftTown(name, limit):
+            speech.speak(phrases.leftTown(name, speedLimit: limit), priority: .normal)
         case let .onShoulder(side):
             speech.speak(phrases.onShoulder(side), priority: .high)
             haptics.tap(intensity: 0.8, sharpness: 0.3)

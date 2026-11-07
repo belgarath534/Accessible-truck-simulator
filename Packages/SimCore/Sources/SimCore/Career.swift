@@ -45,16 +45,27 @@ public struct DeliveryJob: Codable, Equatable, Hashable, Identifiable, Sendable 
     public var pay: Int
     /// Seconds allowed.
     public var timeLimit: Double
+    /// Map town ids (nil for jobs from before the map).
+    public var origin: String?
+    public var destination: String?
 
-    public init(id: UUID = UUID(), cargo: Cargo, distance: Double, pay: Int, timeLimit: Double) {
+    public init(id: UUID = UUID(), cargo: Cargo, distance: Double, pay: Int, timeLimit: Double,
+                origin: String? = nil, destination: String? = nil) {
         self.id = id
         self.cargo = cargo
         self.distance = distance
         self.pay = pay
         self.timeLimit = timeLimit
+        self.origin = origin
+        self.destination = destination
     }
 
-    public var goal: TripGoal { .destination(name: "\(cargo.name) delivery", distance: distance) }
+    public var destinationName: String? { destination.flatMap { WorldMap.standard.node($0)?.name } }
+    public var originName: String? { origin.flatMap { WorldMap.standard.node($0)?.name } }
+
+    public var goal: TripGoal {
+        .destination(name: destinationName.map { "\(cargo.name) to \($0)" } ?? "\(cargo.name) delivery", distance: distance)
+    }
 }
 
 /// Small deterministic random generator, so the job board can be tested and reproduced.
@@ -75,21 +86,34 @@ public enum JobBoard {
     /// Average speed a fair deadline assumes, m/s (about 50 km/h including curves).
     static let fairSpeed = 50 / 3.6
 
-    public static func makeJob<R: RandomNumberGenerator>(using rng: inout R) -> DeliveryJob {
-        let cargo = Cargo.catalog.randomElement(using: &rng)!
-        let distance = (Double(Int.random(in: 8...40, using: &rng)) * 500) // 4 km to 20 km
+    /// A job from `origin` to another town. Cargo is usually something the origin town ships.
+    public static func makeJob<R: RandomNumberGenerator>(using rng: inout R, map: WorldMap = .standard,
+                                                        from origin: String) -> DeliveryJob {
+        let others = map.towns.filter { $0.id != origin }
+        let destination = others.randomElement(using: &rng)!
+        let exports = map.node(origin)?.exports ?? []
+        let local = Cargo.catalog.filter { exports.contains($0.name) }
+        let cargo = (!local.isEmpty && Double.random(in: 0...1, using: &rng) < 0.7 ? local : Cargo.catalog)
+            .randomElement(using: &rng)!
+        let distance = map.route(from: origin, to: destination.id).map(map.length(of:)) ?? 10_000
         let pay = Int((distance / 1_000 * cargo.ratePerKm / 10).rounded()) * 10
         let slack = cargo.urgent ? 1.35 : 1.7
         let timeLimit = ((distance / fairSpeed * slack + 120) / 60).rounded(.up) * 60
-        return DeliveryJob(cargo: cargo, distance: distance, pay: pay, timeLimit: timeLimit)
+        return DeliveryJob(cargo: cargo, distance: distance, pay: pay, timeLimit: timeLimit,
+                           origin: origin, destination: destination.id)
     }
 
-    public static func makeBoard<R: RandomNumberGenerator>(using rng: inout R) -> [DeliveryJob] {
+    public static func makeBoard<R: RandomNumberGenerator>(using rng: inout R, map: WorldMap = .standard,
+                                                          from origin: String) -> [DeliveryJob] {
         var jobs: [DeliveryJob] = []
+        var tries = 0
         while jobs.count < size {
-            let job = makeJob(using: &rng)
-            // Keep the board varied: no two jobs with the same cargo.
-            if !jobs.contains(where: { $0.cargo == job.cargo }) { jobs.append(job) }
+            let job = makeJob(using: &rng, map: map, from: origin)
+            tries += 1
+            // Keep the board varied: different cargo and, where possible, different destinations.
+            let sameCargo = jobs.contains { $0.cargo == job.cargo }
+            let sameTown = jobs.contains { $0.destination == job.destination }
+            if !sameCargo && (!sameTown || tries > 30) { jobs.append(job) }
         }
         return jobs
     }
@@ -193,6 +217,9 @@ public struct CareerState: Codable, Equatable, Sendable {
     public var upgrades: [String: UpgradeLevels]
     /// Litres in each truck's tank, by truck id (missing = full).
     public var fuel: [String: Double]
+    /// The town the truck is parked in (map town id).
+    public var currentTown: String
+    public static let homeTown = "millbrook"
 
     /// Dollars per litre to fill up at your own yard (truck stops are cheaper).
     public static let yardFuelPrice = 3.0
@@ -205,8 +232,9 @@ public struct CareerState: Codable, Equatable, Sendable {
         kilometersDriven = 0
         totalEarned = 0
         self.seed = seed
+        currentTown = CareerState.homeTown
         var rng = SeededRandom(seed: seed)
-        jobBoard = JobBoard.makeBoard(using: &rng)
+        jobBoard = JobBoard.makeBoard(using: &rng, from: CareerState.homeTown)
         ownedTrucks = [TruckSpec.starter.id]
         selectedTruck = TruckSpec.starter.id
         upgrades = [:]
@@ -215,7 +243,7 @@ public struct CareerState: Codable, Equatable, Sendable {
 
     // Saves from before the garage existed have no truck fields: give them the starter truck.
     enum CodingKeys: String, CodingKey {
-        case money, jobsCompleted, kilometersDriven, totalEarned, jobBoard, seed, ownedTrucks, selectedTruck, upgrades, fuel
+        case money, jobsCompleted, kilometersDriven, totalEarned, jobBoard, seed, ownedTrucks, selectedTruck, upgrades, fuel, currentTown
     }
 
     public init(from decoder: Decoder) throws {
@@ -230,6 +258,9 @@ public struct CareerState: Codable, Equatable, Sendable {
         selectedTruck = try c.decodeIfPresent(String.self, forKey: .selectedTruck) ?? TruckSpec.starter.id
         upgrades = try c.decodeIfPresent([String: UpgradeLevels].self, forKey: .upgrades) ?? [:]
         fuel = try c.decodeIfPresent([String: Double].self, forKey: .fuel) ?? [:]
+        currentTown = try c.decodeIfPresent(String.self, forKey: .currentTown) ?? CareerState.homeTown
+        // Jobs saved before the map (or from another town) are replaced with jobs from here.
+        if jobBoard.contains(where: { $0.origin != currentTown }) { refreshBoard() }
     }
 
     /// Litres in the selected truck's tank.
@@ -310,28 +341,26 @@ public struct CareerState: Codable, Equatable, Sendable {
     }
 
     /// Removes a finished job and puts a new one on the board.
+    /// Delivering a job moves you to its destination town, where there are new jobs.
     public mutating func completeJob(_ job: DeliveryJob) {
         jobsCompleted += 1
-        replaceJob(job)
+        if let destination = job.destination { currentTown = destination }
+        refreshBoard()
     }
 
-    public mutating func replaceJob(_ job: DeliveryJob) {
-        seed = seed &* 6_364_136_223_846_793_005 &+ 1
-        var rng = SeededRandom(seed: seed)
-        guard let index = jobBoard.firstIndex(where: { $0.id == job.id }) else { return }
-        var fresh = JobBoard.makeJob(using: &rng)
-        var tries = 0
-        while jobBoard.contains(where: { $0.cargo == fresh.cargo }) && tries < 20 {
-            fresh = JobBoard.makeJob(using: &rng)
-            tries += 1
-        }
-        jobBoard[index] = fresh
+    /// Moves to a town (after a Free Drive) and refreshes the jobs there.
+    public mutating func move(to town: String) {
+        guard town != currentTown, WorldMap.standard.node(town)?.isTown == true else { return }
+        currentTown = town
+        refreshBoard()
     }
 
-    /// A whole new set of jobs.
+    /// A whole new set of jobs from the current town.
     public mutating func refreshBoard() {
         seed = seed &* 6_364_136_223_846_793_005 &+ 1
         var rng = SeededRandom(seed: seed)
-        jobBoard = JobBoard.makeBoard(using: &rng)
+        jobBoard = JobBoard.makeBoard(using: &rng, from: currentTown)
     }
+
+    public var currentTownName: String { WorldMap.standard.node(currentTown)?.name ?? "Millbrook" }
 }

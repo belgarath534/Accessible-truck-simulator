@@ -34,7 +34,8 @@ final class DrivingController: NSObject, ObservableObject {
         self.settings = settings
         self.career = career
         self.drive = drive
-        session = DrivingController.makeSession(drive, settings, career.truck, fuel: career.fuelLiters)
+        session = DrivingController.makeSession(drive, settings, career.truck, fuel: career.fuelLiters,
+                                                town: career.state.currentTown)
         touch = TouchInterpreter(mode: settings.steeringMode, areaWidth: 800)
         feedback = FeedbackCoordinator(settings: settings)
         super.init()
@@ -42,9 +43,18 @@ final class DrivingController: NSObject, ObservableObject {
     }
 
     private static func makeSession(_ drive: DriveMode, _ settings: AppSettings, _ truck: TruckSpec,
-                                    fuel: Double) -> DrivingSession {
-        DrivingSession(spec: truck, goal: drive.goal, cargoMassKg: drive.job?.cargo.massKg ?? 0,
-                       timeLimit: drive.job?.timeLimit, startingFuel: fuel, assist: settings.assist)
+                                    fuel: Double, town: String) -> DrivingSession {
+        // Jobs and Free Drive happen on the map; Practice Drive stays on the practice loop.
+        let navigator: Navigator?
+        switch drive {
+        case .practice: navigator = nil
+        case .freeDrive: navigator = Navigator(map: .standard, origin: town, destination: nil)
+        case let .job(job):
+            navigator = job.destination.flatMap { Navigator(map: .standard, origin: job.origin ?? town, destination: $0) }
+        }
+        return DrivingSession(spec: truck, goal: drive.goal, cargoMassKg: drive.job?.cargo.massKg ?? 0,
+                              timeLimit: drive.job?.timeLimit, startingFuel: fuel, navigator: navigator,
+                              assist: settings.assist)
     }
 
     /// Leaving or restarting a drive that didn't finish: keep the fuel level and charge any fuel or tow costs.
@@ -67,6 +77,7 @@ final class DrivingController: NSObject, ObservableObject {
         tilt.invert = settings.invertTilt
         if settings.steeringMode == .tilt { tilt.start() }
         feedback.engineSound = session.spec.sound
+        feedback.freeDriveTown = career.state.currentTownName
         feedback.start()
         hardware.start()
 
@@ -147,7 +158,9 @@ final class DrivingController: NSObject, ObservableObject {
         career.saveFuel(session.truck.fuelLiters)
         switch drive {
         case .practice: result = Payout.practice(summary.stats)
-        case .freeDrive: result = Payout.freeDrive(summary.stats)
+        case .freeDrive:
+            result = Payout.freeDrive(summary.stats)
+            if let town = session.navigator?.lastTown { career.move(to: town) }
         case let .job(job): result = Payout.delivery(job, summary: summary)
         }
         payout = result
@@ -156,7 +169,8 @@ final class DrivingController: NSObject, ObservableObject {
 
     func restart() {
         if finished == nil { closeOutUnfinished() }
-        session = DrivingController.makeSession(drive, settings, career.truck, fuel: career.fuelLiters)
+        session = DrivingController.makeSession(drive, settings, career.truck, fuel: career.fuelLiters,
+                                                town: career.state.currentTown)
         payout = nil
         feedback.reset()
         touch.reset()

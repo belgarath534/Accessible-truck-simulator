@@ -296,15 +296,19 @@ final class TripTests: XCTestCase {
 final class CareerTests: XCTestCase {
     func testJobBoardIsVariedAndSensible() {
         var rng = SeededRandom(seed: 42)
-        for _ in 0..<50 {
-            let board = JobBoard.makeBoard(using: &rng)
-            XCTAssertEqual(board.count, 3)
-            XCTAssertEqual(Set(board.map(\.cargo)).count, 3, "no duplicate cargo")
-            for job in board {
-                XCTAssertTrue((4_000...20_000).contains(job.distance))
-                XCTAssertGreaterThan(job.pay, 0)
-                // A fair driver at 50 km/h always makes it in time.
-                XCTAssertGreaterThan(job.timeLimit, job.distance / (50 / 3.6))
+        for town in WorldMap.standard.towns {
+            for _ in 0..<10 {
+                let board = JobBoard.makeBoard(using: &rng, from: town.id)
+                XCTAssertEqual(board.count, 3)
+                XCTAssertEqual(Set(board.map(\.cargo)).count, 3, "no duplicate cargo")
+                for job in board {
+                    XCTAssertEqual(job.origin, town.id)
+                    XCTAssertNotEqual(job.destination, town.id)
+                    XCTAssertTrue((4_000...25_000).contains(job.distance), "\(job.distance)")
+                    XCTAssertGreaterThan(job.pay, 0)
+                    // A fair driver at 50 km/h always makes it in time.
+                    XCTAssertGreaterThan(job.timeLimit, job.distance / (50 / 3.6))
+                }
             }
         }
     }
@@ -347,6 +351,8 @@ final class CareerTests: XCTestCase {
         career.completeJob(job)
         XCTAssertEqual(career.money, CareerState.startingMoney + 1_200)
         XCTAssertEqual(career.jobsCompleted, 1)
+        XCTAssertEqual(career.currentTown, job.destination, "delivering moves you to the destination")
+        XCTAssertTrue(career.jobBoard.allSatisfy { $0.origin == career.currentTown })
         XCTAssertFalse(career.jobBoard.contains(job))
         XCTAssertEqual(career.jobBoard.count, 3)
 
@@ -362,6 +368,9 @@ final class CareerTests: XCTestCase {
                               distance: 12_000, pay: 1_920, timeLimit: 1_620)
         XCTAssertEqual(Phrases(units: .metric).job(job),
                        "Glassware, 12 kilometers, pays $1,920, time limit 27 minutes, 4 tonnes, fragile.")
+        let mapJob = DeliveryJob(cargo: job.cargo, distance: 12_000, pay: 1_920, timeLimit: 1_620,
+                                 origin: "ridgeport", destination: "bayview")
+        XCTAssertTrue(Phrases(units: .metric).job(mapJob).hasPrefix("Glassware to Bayview, 12 kilometers"))
     }
 
     func testHeavyCargoBrakesLonger() {
@@ -619,5 +628,115 @@ final class FuelTests: XCTestCase {
         for stop in Road.practiceLoop.truckStops {
             XCTAssertEqual(Road.practiceLoop.curvature(at: stop), 0, "truck stops are on straights")
         }
+    }
+}
+
+final class MapTests: XCTestCase {
+    let map = WorldMap.standard
+
+    func testEveryTownCanReachEveryOther() {
+        for a in map.towns {
+            for b in map.towns where a.id != b.id {
+                let r = map.route(from: a.id, to: b.id)
+                XCTAssertNotNil(r, "\(a.id) -> \(b.id)")
+                if let r {
+                    XCTAssertEqual(map.from(r.first!), a.id)
+                    XCTAssertEqual(map.to(r.last!), b.id)
+                    for (x, y) in zip(r, r.dropFirst()) { XCTAssertEqual(map.to(x), map.from(y), "route is connected") }
+                }
+            }
+        }
+    }
+
+    func testGeneratedRoadsHaveExactLengthAndStraightEnds() {
+        for e in map.edges {
+            let road = e.road
+            XCTAssertEqual(road.totalLength, road.totalLength.rounded(), accuracy: 1)
+            XCTAssertEqual(road.curvature(at: 100), 0, "\(e.name) starts straight")
+            XCTAssertEqual(road.curvature(at: road.totalLength - 100), 0, "\(e.name) ends straight")
+            for stop in road.truckStops { XCTAssertEqual(road.curvature(at: stop), 0) }
+        }
+        XCTAssertGreaterThan(map.edges.filter { !$0.road.truckStops.isEmpty }.count, 2)
+    }
+
+    func testReversedRoadMirrorsCurves() {
+        let road = map.edges[1].road
+        let back = road.reversed()
+        XCTAssertEqual(back.totalLength, road.totalLength, accuracy: 0.001)
+        for s in stride(from: 0.0, to: road.totalLength, by: 97) {
+            XCTAssertEqual(back.curvature(at: road.totalLength - s), -road.curvature(at: s), accuracy: 1e-9)
+        }
+    }
+
+    func testJunctionTurns() {
+        // Coming from Millbrook along Route 1 into Millbrook Junction: Highway 9 to Cedar Falls is a left
+        // (north), Interstate 40 is straight on (east).
+        let route1 = map.outgoing(from: "millbrook").first!
+        let choices = map.choices(after: route1)
+        XCTAssertEqual(choices.first { $0.toward == "Cedar Falls" }?.turn, .left)
+        XCTAssertEqual(choices.first { $0.roadName == "Interstate 40" }?.turn, .straight)
+        XCTAssertFalse(choices.contains { $0.turn == .uTurn }, "no U-turns at junctions")
+    }
+
+    func testTownSpeedZones() {
+        let e = map.outgoing(from: "millbrook").first!
+        let road = map.road(e)
+        XCTAssertEqual(road.speedLimit(at: 100), townSpeedLimit, accuracy: 0.01)
+        XCTAssertEqual(road.speedLimit(at: 2_000), RoadStyle.country.speedLimit, accuracy: 0.01)
+    }
+
+    /// Drives a whole job on the map, following the GPS with the turn signal, like a player would.
+    func testDriveAJobFollowingTheGPS() {
+        guard let nav = Navigator(map: map, origin: "millbrook", destination: "ridgeport") else { return XCTFail() }
+        let planned = map.length(of: map.route(from: "millbrook", to: "ridgeport")!)
+        let s = DrivingSession(goal: .destination(name: "Test", distance: planned), navigator: nav)
+        XCTAssertEqual(s.remaining ?? 0, planned, accuracy: 1)
+        _ = s.perform(.toggleEngine)
+        var events: [SimEvent] = []
+        var t = 0.0
+        while s.summary == nil && t < 3_000 {
+            // Signal as instructed at 300 m.
+            if case let .navInstruction(n)? = events.last, n.distance <= 300 {
+                switch n.turn {
+                case .left: _ = s.perform(.signal(.left))
+                case .right: _ = s.perform(.signal(.right))
+                default: _ = s.perform(.cancelSignal)
+                }
+            }
+            var target = min(20, s.currentSpeedLimit)
+            if let c = s.road.nextCurve(after: s.truck.position, within: 250) { target = min(target, c.advisorySpeed) }
+            if let r = s.remaining { target = min(target, (3 * max(0, r)).squareRoot()) }
+            let steer = -(1.2 * s.truck.lateralOffset + 6 * s.truck.headingError)
+            let input = DrivingInput(throttle: s.truck.speed < target - 1 ? 0.6 : 0,
+                                     brake: s.truck.speed > target + 1 || (s.remaining ?? 1) <= 0 ? 0.6 : 0, steer: steer)
+            events += s.step(dt: 1.0 / 60, input: input)
+            t += 1.0 / 60
+        }
+        XCTAssertNotNil(s.summary, "arrived")
+        XCTAssertFalse(events.contains { if case .rerouted = $0 { return true }; return false }, "never left the route")
+        XCTAssertTrue(events.contains { if case .navInstruction = $0 { return true }; return false })
+        XCTAssertTrue(events.contains { if case .enteredTown("Ridgeport", _) = $0 { return true }; return false })
+        XCTAssertEqual(s.stats.distance, planned, accuracy: 80)
+    }
+
+    func testWrongTurnReroutes() {
+        guard let nav = Navigator(map: map, origin: "millbrook", destination: "ridgeport") else { return XCTFail() }
+        // Route 1 then Interstate 40 is the plan; turning left at Millbrook Junction goes to Cedar Falls instead.
+        nav.takeJunction(signal: .on(.left))
+        XCTAssertEqual(map.to(nav.edge), "cedar_falls")
+        let remaining = nav.remaining(at: 0)!
+        XCTAssertEqual(map.to(nav.route.last!), "ridgeport", "new route still ends at Ridgeport")
+        XCTAssertGreaterThan(remaining, 0)
+    }
+
+    func testOldSavesGetJobsFromTheCurrentTown() throws {
+        var json = try JSONSerialization.jsonObject(with: JSONEncoder().encode(CareerState(seed: 8))) as! [String: Any]
+        json.removeValue(forKey: "currentTown")
+        var jobs = json["jobBoard"] as! [[String: Any]]
+        for i in jobs.indices { jobs[i].removeValue(forKey: "origin"); jobs[i].removeValue(forKey: "destination") }
+        json["jobBoard"] = jobs
+        let loaded = try JSONDecoder().decode(CareerState.self, from: JSONSerialization.data(withJSONObject: json))
+        XCTAssertEqual(loaded.currentTown, "millbrook")
+        XCTAssertTrue(loaded.jobBoard.allSatisfy { $0.origin == "millbrook" })
     }
 }
