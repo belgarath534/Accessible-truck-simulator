@@ -252,28 +252,16 @@ def _():
     info = editable_app_info()
     decl = call("GET", f"/appInfos/{info['id']}/ageRatingDeclaration")["data"]
     current = decl["attributes"]
-    attrs = {}
-    for k, v in current.items():
-        # Every "how much" question is NONE and every yes/no question is false: it's a driving game
-        # with no violence, chat, web access, purchases or user-generated content.
-        if k in ("kidsAgeBand", "ageRatingOverride", "koreaAgeRatingOverride", "ageRatingOverrideV2"):
-            continue
-        if isinstance(v, bool) or v is None and k.startswith(("gambling", "unrestricted", "lootBox", "messaging",
-                                                               "userGenerated", "advertising", "ageAssurance",
-                                                               "healthOrWellness", "parentalControls")):
-            attrs[k] = False
-        elif isinstance(v, str) or v is None:
-            attrs[k] = "NONE"
-    try:
-        patch("ageRatingDeclarations", decl["id"], attrs)
-    except ApiError:
-        # Retry without fields Apple rejects for this account's API version.
-        attrs = {k: v for k, v in attrs.items() if v is False or k in (
-            "alcoholTobaccoOrDrugUseOrReferences", "contests", "gamblingSimulated", "horrorOrFearThemes",
-            "matureOrSuggestiveThemes", "medicalOrTreatmentInformation", "profanityOrCrudeHumor",
-            "sexualContentGraphicAndNudity", "sexualContentOrNudity", "violenceCartoonOrFantasy",
-            "violenceRealistic", "violenceRealisticProlongedGraphicOrSadistic")}
-        patch("ageRatingDeclarations", decl["id"], attrs)
+    # It's a driving game: no violence, chat, web access, purchases or user-generated content.
+    how_much = ("alcoholTobaccoOrDrugUseOrReferences", "contests", "gamblingSimulated", "gunsOrOtherWeapons",
+                "horrorOrFearThemes", "matureOrSuggestiveThemes", "medicalOrTreatmentInformation",
+                "profanityOrCrudeHumor", "sexualContentGraphicAndNudity", "sexualContentOrNudity",
+                "violenceCartoonOrFantasy", "violenceRealistic", "violenceRealisticProlongedGraphicOrSadistic")
+    yes_no = ("gambling", "unrestrictedWebAccess", "lootBox", "messagingAndChat", "userGeneratedContent",
+              "advertising", "healthOrWellnessTopics", "parentalControls", "ageAssurance")
+    attrs = {k: "NONE" for k in how_much if k in current}
+    attrs.update({k: False for k in yes_no if k in current})
+    patch("ageRatingDeclarations", decl["id"], attrs)
     return f"{len(attrs)} answers"
 
 
