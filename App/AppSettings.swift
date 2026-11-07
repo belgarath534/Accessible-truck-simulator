@@ -17,6 +17,11 @@ final class AppSettings: ObservableObject {
     @Published var speechOutput: SpeechOutput { didSet { defaults.set(speechOutput.rawValue, forKey: "speechOutput") } }
     @Published var haptics: Bool { didSet { defaults.set(haptics, forKey: "haptics") } }
     @Published var volume: Double { didSet { defaults.set(volume, forKey: "volume") } }
+    @Published var musicVolume: Double {
+        didSet { defaults.set(musicVolume, forKey: "musicVolume"); MusicPlayer.shared.volume = Float(musicVolume) }
+    }
+    @Published var menuMusic: Bool { didSet { defaults.set(menuMusic, forKey: "menuMusic") } }
+    @Published var radioOnStart: Bool { didSet { defaults.set(radioOnStart, forKey: "radioOnStart") } }
 
     init() {
         let d = UserDefaults.standard
@@ -32,5 +37,9 @@ final class AppSettings: ObservableObject {
         speechOutput = SpeechOutput(rawValue: d.string(forKey: "speechOutput") ?? "") ?? .gameVoice
         haptics = d.object(forKey: "haptics") as? Bool ?? true
         volume = d.object(forKey: "volume") as? Double ?? 0.8
+        musicVolume = d.object(forKey: "musicVolume") as? Double ?? 0.45
+        menuMusic = d.object(forKey: "menuMusic") as? Bool ?? true
+        radioOnStart = d.object(forKey: "radioOnStart") as? Bool ?? true
+        MusicPlayer.shared.volume = Float(musicVolume)
     }
 }

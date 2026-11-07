@@ -36,6 +36,10 @@ public enum DrivingAction: Equatable, Sendable {
     case speakDashboard
     case speakRoadAhead
     case pause
+    // Radio (handled by the app, not the simulation).
+    case toggleRadio
+    case nextSong
+    case previousSong
 }
 
 public enum SignalState: Equatable, Sendable {

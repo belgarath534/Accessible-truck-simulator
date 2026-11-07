@@ -4,10 +4,12 @@ import SimCore
 /// Game controllers (Xbox, PlayStation, MFi) and Bluetooth keyboards.
 ///
 /// Keyboard: Up / W accelerate, Down / S brake, Left / A and Right / D steer,
-/// [ and ] turn signals, Backspace cancel signal, I dashboard, G GPS, N engine, H horn, Escape pause.
+/// [ and ] turn signals, Backspace cancel signal, I dashboard, G GPS, N engine, H horn, Escape pause,
+/// R radio on/off, comma and period previous/next song.
 ///
 /// Controller: right trigger accelerate, left trigger brake, left stick steer,
-/// L1 / R1 turn signals, A dashboard, X GPS, Y engine, B horn, Menu pause.
+/// L1 / R1 turn signals, A dashboard, X GPS, Y engine, B horn, Menu pause,
+/// D-pad up radio on/off, D-pad left/right previous/next song.
 final class HardwareInput {
     var onAction: ((DrivingAction) -> Void)?
     private var observers: [NSObjectProtocol] = []
@@ -47,6 +49,9 @@ final class HardwareInput {
         case .keyN: return .toggleEngine
         case .keyH: return .horn
         case .escape: return .pause
+        case .keyR: return .toggleRadio
+        case .period: return .nextSong
+        case .comma: return .previousSong
         default: return nil
         }
     }
@@ -65,6 +70,9 @@ final class HardwareInput {
         bind(pad.buttonY, .toggleEngine)
         bind(pad.buttonB, .horn)
         bind(pad.buttonMenu, .pause)
+        bind(pad.dpad.up, .toggleRadio)
+        bind(pad.dpad.right, .nextSong)
+        bind(pad.dpad.left, .previousSong)
     }
 
     /// Continuous controls, polled every frame.

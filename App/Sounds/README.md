@@ -1,0 +1,9 @@
+# Engine and truck recordings
+
+Drop recordings here (m4a, wav, caf or mp3) and the game uses them instead of its synthesized engine:
+
+- `engine_idle`, `engine_low`, `engine_mid`, `engine_high`: seamless loops at steady RPM
+  (about 600, 1000, 1400 and 1850 RPM; see `SampledEngine.loops` to adjust)
+- `engine_start`, `engine_stop`, `air_brake`, `horn`: one-shot sounds (each optional)
+
+`engine_idle` is required; without it the synthesized engine is used.

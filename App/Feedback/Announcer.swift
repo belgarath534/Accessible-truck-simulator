@@ -17,9 +17,32 @@ enum SpeechOutput: String, CaseIterable {
     case voiceOver
 }
 
-final class Announcer {
+final class Announcer: NSObject, AVSpeechSynthesizerDelegate {
     private let synthesizer = AVSpeechSynthesizer()
     var output: SpeechOutput = .gameVoice
+    /// Called with true when speech starts and false when it ends (the radio ducks under speech).
+    var onSpeakingChanged: ((Bool) -> Void)?
+    private var announcementObserver: NSObjectProtocol?
+
+    override init() {
+        super.init()
+        synthesizer.delegate = self
+        announcementObserver = NotificationCenter.default.addObserver(
+            forName: UIAccessibility.announcementDidFinishNotification, object: nil, queue: .main
+        ) { [weak self] _ in self?.onSpeakingChanged?(false) }
+    }
+
+    func speechSynthesizer(_ s: AVSpeechSynthesizer, didStart utterance: AVSpeechUtterance) {
+        onSpeakingChanged?(true)
+    }
+
+    func speechSynthesizer(_ s: AVSpeechSynthesizer, didFinish utterance: AVSpeechUtterance) {
+        if !s.isSpeaking { onSpeakingChanged?(false) }
+    }
+
+    func speechSynthesizer(_ s: AVSpeechSynthesizer, didCancel utterance: AVSpeechUtterance) {
+        if !s.isSpeaking { onSpeakingChanged?(false) }
+    }
 
     func speak(_ text: String, priority: SpeechPriority = .normal) {
         if output == .voiceOver && UIAccessibility.isVoiceOverRunning {
@@ -27,6 +50,7 @@ final class Announcer {
                 string: text,
                 attributes: [.accessibilitySpeechQueueAnnouncement: priority != .high]
             )
+            onSpeakingChanged?(true)
             UIAccessibility.post(notification: .announcement, argument: attributed)
             return
         }

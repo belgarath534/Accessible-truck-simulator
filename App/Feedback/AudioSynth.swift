@@ -21,6 +21,10 @@ final class SynthState {
     var shiftSeconds: Float = 0
     var volume: Float = 0.8
     var muted = false
+    /// Recorded engine loops are playing, so the synthesized engine stays quiet.
+    var useSampledEngine = false
+    /// A recorded starter sound exists, so the synthesized starter stays quiet too.
+    var hasStartSample = false
 }
 
 private protocol Voice: AnyObject {
@@ -55,7 +59,10 @@ private final class EngineVoice: Voice {
     init(state: SynthState, sampleRate: Float) { self.state = state; sr = sampleRate }
 
     func render(_ out: UnsafeMutablePointer<Float>, frames: Int) {
-        let targetAmp: Float = (state.engineRunning || state.cranking) && !state.muted ? 1 : 0
+        let synthOn = state.useSampledEngine
+            ? (state.cranking && !state.hasStartSample)
+            : (state.engineRunning || state.cranking)
+        let targetAmp: Float = synthOn && !state.muted ? 1 : 0
         for i in 0..<frames {
             rpm += (state.rpm - rpm) * 0.0008
             load += (state.load - load) * 0.0006
@@ -215,6 +222,7 @@ final class AudioSynth {
     private var rumbleNode: AVAudioSourceNode?
     private var laneNode: AVAudioSourceNode?
     private var voices: [AnyObject] = []
+    private var sampled: SampledEngine?
     private var configObserver: NSObjectProtocol?
 
     func start() {
@@ -252,8 +260,13 @@ final class AudioSynth {
         laneNode = attach(lane)
         _ = attach(fx)
 
+        sampled = SampledEngine(engine: engine)
+        state.useSampledEngine = sampled != nil
+        state.hasStartSample = sampled?.has("engine_start") ?? false
+
         engine.prepare()
         try? engine.start()
+        sampled?.startLoops()
 
         // Restart if the route changes (e.g. headphones plugged in).
         configObserver = NotificationCenter.default.addObserver(
@@ -281,14 +294,22 @@ final class AudioSynth {
         state.laneOffset = Float(truck.lateralOffset)
         state.signalOn = truck.signal != .off
         laneNode?.pan = Float(max(-1, min(1, truck.lateralOffset / DrivingSession.rumbleOffset)))
+        sampled?.update(rpm: state.rpm, load: state.load, running: state.engineRunning,
+                        volume: state.muted ? 0 : state.volume)
     }
+
+    func engineStarting() { sampled?.play("engine_start", volume: state.volume) }
+    func engineStopped() { sampled?.play("engine_stop", volume: state.volume) }
+    func airBrake() { sampled?.play("air_brake", volume: state.volume * 0.8) }
 
     func setRumble(_ side: Side?) {
         state.rumble = side == nil ? 0 : 1
         if let side { rumbleNode?.pan = side == .left ? -0.9 : 0.9 }
     }
 
-    func honk() { state.hornSeconds = 0.7 }
+    func honk() {
+        if sampled?.play("horn", volume: state.volume) != true { state.hornSeconds = 0.7 }
+    }
     func crash() { state.crashSeconds = 1.5 }
     func gearShift() { state.shiftSeconds = 0.25 }
 }

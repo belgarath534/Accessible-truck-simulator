@@ -53,9 +53,12 @@ final class DrivingController: NSObject, ObservableObject {
         lastTime = 0
         UIApplication.shared.isIdleTimerDisabled = true
         feedback.announceIntro(mode: settings.steeringMode, goal: goal)
+        MusicPlayer.shared.stop()
+        if settings.radioOnStart { MusicPlayer.shared.startRadio() }
     }
 
     func stop() {
+        MusicPlayer.shared.stop()
         displayLink?.invalidate()
         displayLink = nil
         feedback.stop()
@@ -68,6 +71,7 @@ final class DrivingController: NSObject, ObservableObject {
         guard !isPaused, finished == nil else { return }
         tripStatus = feedback.phrasesForUI().tripStatus(goal: goal, stats: session.stats, remaining: session.remaining)
         isPaused = true
+        MusicPlayer.shared.setPaused(true)
         touch.reset()
         feedback.setPaused(true)
     }
@@ -79,6 +83,7 @@ final class DrivingController: NSObject, ObservableObject {
         accumulator = 0
         tilt.recenter()
         feedback.setPaused(false)
+        MusicPlayer.shared.setPaused(false)
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
             guard let view = self?.view else { return }
             UIAccessibility.post(notification: .screenChanged, argument: view)
@@ -92,6 +97,7 @@ final class DrivingController: NSObject, ObservableObject {
         tilt.recenter()
         if finished != nil {
             finished = nil
+            MusicPlayer.shared.setPaused(false)
             lastTime = 0
             accumulator = 0
             feedback.announceIntro(mode: settings.steeringMode, goal: goal)
@@ -133,7 +139,38 @@ final class DrivingController: NSObject, ObservableObject {
             return
         }
         guard !isPaused, finished == nil else { return }
+        switch action {
+        case .toggleRadio, .nextSong, .previousSong:
+            handleRadio(action)
+            return
+        default:
+            break
+        }
         feedback.handle(session.perform(action))
+    }
+
+    private func handleRadio(_ action: DrivingAction) {
+        let music = MusicPlayer.shared
+        guard music.hasRadio else {
+            feedback.speech.speak("No radio in this truck yet.", priority: .high)
+            return
+        }
+        switch action {
+        case .toggleRadio:
+            if music.mode == .radio {
+                music.stop()
+                feedback.speech.speak("Radio off.", priority: .high)
+                return
+            }
+            music.startRadio()
+        case .nextSong:
+            music.nextSong()
+        case .previousSong:
+            music.previousSong()
+        default:
+            return
+        }
+        feedback.speech.speak("Radio: \(music.currentSongName ?? "on").", priority: .high)
     }
 
     // MARK: Game loop
@@ -166,6 +203,7 @@ final class DrivingController: NSObject, ObservableObject {
         view?.setNeedsDisplay()
         if let summary = session.summary {
             touch.reset()
+            MusicPlayer.shared.setPaused(true)
             finished = summary
         }
     }

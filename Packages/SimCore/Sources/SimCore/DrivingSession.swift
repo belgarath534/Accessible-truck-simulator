@@ -110,7 +110,7 @@ public final class DrivingSession {
             return [.dashboard(dashboard)]
         case .speakRoadAhead:
             return [.roadAhead(road.nextCurve(after: truck.position, within: 3_000), remaining: remaining)]
-        case .pause:
+        case .pause, .toggleRadio, .nextSong, .previousSong:
             return []
         }
     }

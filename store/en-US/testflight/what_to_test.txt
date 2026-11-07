@@ -1,11 +1,12 @@
-New: drives now have an end! Headphones recommended.
+New: music and an in-truck radio, plus drives with an end. Headphones recommended.
 
-• Practice Drive: one 12 km lap. You hear the distance left at 10, 5, 2 and 1 km. At 400 m you're told to slow down. Stop at the drop-off to finish and get your results: stop accuracy, time, average and top speed, crashes and fuel.
-• Free Drive: the endless loop, for when you just want to cruise.
-• Pause menu (two-finger swipe down) now shows your trip: distance driven, distance left, percent done, time, speeds and crashes.
-• Three-finger tap (GPS) now also says the distance to the drop-off.
+• Music in the main menu.
+• Radio while driving: it comes on when you start (you can change that in Settings). Three-finger swipe up turns it on or off, three-finger swipe left or right changes the song. The radio gets quieter whenever the game speaks.
+• Settings, Music and radio: menu music, radio on start, music volume.
+• Practice Drive: one 12 km lap that ends when you stop at the drop-off, with a results screen. Free Drive is the endless loop.
+• The pause menu shows your trip: distance driven, distance left, time, speeds and crashes.
 
 Please check:
-• Is the drop-off stop easy to find by ear? Is the 400 m warning enough time to slow down?
-• Does the results screen read well with VoiceOver?
-• Anything still hard: lane beeps, curve warnings, tilt or joystick steering.
+• Is the music too loud or too quiet next to the engine, lane beeps and speech?
+• Do the three-finger swipes work with VoiceOver on?
+• Is the drop-off stop easy to find by ear?

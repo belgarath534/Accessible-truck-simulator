@@ -10,6 +10,7 @@ final class FeedbackCoordinator {
     private let settings: AppSettings
     private var onRumbleStrip = false
     private var lastSpokenSpeedStep: Int?
+    private var wasMoving = false
 
     init(settings: AppSettings) {
         self.settings = settings
@@ -22,6 +23,9 @@ final class FeedbackCoordinator {
         audio.state.laneToneEnabled = settings.laneGuidanceTone
         speech.output = settings.speechOutput
         haptics.enabled = settings.haptics
+        speech.onSpeakingChanged = { speaking in
+            DispatchQueue.main.async { MusicPlayer.shared.setDucked(speaking) }
+        }
         audio.start()
         haptics.start()
     }
@@ -77,11 +81,13 @@ final class FeedbackCoordinator {
     private func handle(_ event: SimEvent) {
         switch event {
         case .engineStarting:
+            audio.engineStarting()
             speech.speak("Starting engine.", priority: .normal)
         case .engineStarted:
             speech.speak("Engine running.", priority: .normal)
             haptics.tap(intensity: 0.6, sharpness: 0.3)
         case .engineStopped:
+            audio.engineStopped()
             speech.speak("Engine off.", priority: .high)
         case .engineNotRunning:
             speech.speak("The engine is off. Three-finger double tap to start it.", priority: .high)
@@ -148,6 +154,12 @@ final class FeedbackCoordinator {
             onRumbleStrip: onRumbleStrip && truck.speed > 1
         )
         announceSpeedIfNeeded(truck.speed)
+        // Air brakes hiss when the truck comes to a stop.
+        if truck.speed > 3 { wasMoving = true }
+        if wasMoving && truck.speed < 0.2 {
+            wasMoving = false
+            audio.airBrake()
+        }
     }
 
     /// Calls out the speed every 10 km/h (or mph), with a little hysteresis so it doesn't chatter.

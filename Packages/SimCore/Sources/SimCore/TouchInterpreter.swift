@@ -239,6 +239,9 @@ public enum GestureMap {
         case .tap(3, 2): return .toggleEngine
         case .swipe(2, .up): return .horn
         case .swipe(2, .down): return .pause
+        case .swipe(3, .up): return .toggleRadio
+        case .swipe(3, .right): return .nextSong
+        case .swipe(3, .left): return .previousSong
         default: return nil
         }
     }
@@ -258,5 +261,7 @@ public enum GestureMap {
         Help("Two-finger tap", "Cancel turn signal"),
         Help("Two-finger swipe up", "Horn"),
         Help("Two-finger swipe down", "Pause menu"),
+        Help("Three-finger swipe up", "Radio on or off"),
+        Help("Three-finger swipe left or right", "Previous or next song on the radio"),
     ]
 }
