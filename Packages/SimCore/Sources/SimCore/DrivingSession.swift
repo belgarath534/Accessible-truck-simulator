@@ -49,6 +49,10 @@ public final class DrivingSession {
     public let spec: TruckSpec
     public let road: Road
     public let goal: TripGoal
+    /// Cargo weight on the trailer; heavier loads accelerate and stop more slowly.
+    public let cargoMassKg: Double
+    /// Seconds allowed for a delivery job, if it has a deadline.
+    public let timeLimit: Double?
     public var assist: SteeringAssist
     public private(set) var truck: TruckState
     public private(set) var time: Double = 0
@@ -74,12 +78,16 @@ public final class DrivingSession {
     private var warnedDestination = false
     private var announcedAtDestination = false
     private var wasStopped = true
+    private var announcedTimeWarnings: Set<Double> = []
+    private var announcedLate = false
 
     public init(spec: TruckSpec = .starter, road: Road = .practiceLoop, goal: TripGoal = .freeDrive,
-                assist: SteeringAssist = .medium) {
+                cargoMassKg: Double = 0, timeLimit: Double? = nil, assist: SteeringAssist = .medium) {
         self.spec = spec
         self.road = road
         self.goal = goal
+        self.cargoMassKg = cargoMassKg
+        self.timeLimit = timeLimit
         self.assist = assist
         self.truck = TruckState(fuelLiters: spec.fuelCapacityLiters)
     }
@@ -109,7 +117,8 @@ public final class DrivingSession {
         case .speakDashboard:
             return [.dashboard(dashboard)]
         case .speakRoadAhead:
-            return [.roadAhead(road.nextCurve(after: truck.position, within: 3_000), remaining: remaining)]
+            return [.roadAhead(road.nextCurve(after: truck.position, within: 3_000), remaining: remaining,
+                               timeLeft: timeLeft)]
         case .pause, .toggleRadio, .nextSong, .previousSong:
             return []
         }
@@ -127,6 +136,13 @@ public final class DrivingSession {
             speedLimit: road.speedLimit
         )
     }
+
+    /// Seconds left before the delivery is late (negative once late), or nil without a deadline.
+    public var timeLeft: Double? {
+        timeLimit.map { $0 - stats.drivingTime }
+    }
+
+    public var totalMassKg: Double { spec.massKg + cargoMassKg }
 
     /// Metres left to the drop-off (negative once past it), or nil on a free drive.
     public var remaining: Double? {
@@ -185,6 +201,16 @@ public final class DrivingSession {
     }
 
     private func checkTrip(events: inout [SimEvent]) {
+        if let timeLeft {
+            for warning in [300.0, 60.0] where timeLeft <= warning && !announcedTimeWarnings.contains(warning) {
+                announcedTimeWarnings.insert(warning)
+                if (timeLimit ?? 0) - warning > 60 { events.append(.timeLeft(seconds: warning)) }
+            }
+            if timeLeft < 0 && !announcedLate {
+                announcedLate = true
+                events.append(.lateForDelivery)
+            }
+        }
         guard let total = goal.distance, let remaining else { return }
         for m in DrivingSession.milestones where remaining <= m && !announcedMilestones.contains(m) {
             announcedMilestones.insert(m)
@@ -237,7 +263,7 @@ public final class DrivingSession {
     }
 
     private func stepLongitudinal(dt: Double, input: DrivingInput, events: inout [SimEvent]) {
-        let mass = spec.massKg
+        let mass = totalMassKg
         let g = 9.81
         let running = truck.engine == .running
         let wheelRPM = wheelRPM(speed: truck.speed)
@@ -297,7 +323,9 @@ public final class DrivingSession {
         // Resistances.
         let aero = 0.5 * 1.2 * spec.dragArea * truck.speed * truck.speed
         let rolling = truck.speed > 0.01 ? spec.rollingResistance * mass * g : 0
-        let brake = input.brake * spec.maxBrakeDecel * mass
+        // Brake force is sized for the truck with a light load, so heavy cargo takes longer to stop.
+        let brakeDecel = min(spec.maxBrakeDecel, spec.maxBrakeDecel * spec.massKg * 1.5 / mass)
+        let brake = input.brake * brakeDecel * mass
 
         var accel = (driveForce - aero - rolling) / mass
         let decelFromBrakes = brake / mass

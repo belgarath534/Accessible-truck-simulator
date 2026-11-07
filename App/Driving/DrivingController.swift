@@ -10,9 +10,13 @@ final class DrivingController: NSObject, ObservableObject {
     @Published private(set) var finished: TripSummary?
     /// Trip status for the pause menu, refreshed when pausing.
     @Published private(set) var tripStatus = ""
+    /// What the finished drive earned (nil for practice).
+    @Published private(set) var payout: Payout?
 
     let settings: AppSettings
-    let goal: TripGoal
+    let career: CareerStore
+    let drive: DriveMode
+    var goal: TripGoal { drive.goal }
     private(set) var session: DrivingSession
     let touch: TouchInterpreter
     private let tilt = TiltSteering()
@@ -26,14 +30,25 @@ final class DrivingController: NSObject, ObservableObject {
 
     weak var view: DrivingTouchView?
 
-    init(settings: AppSettings, goal: TripGoal) {
+    init(settings: AppSettings, career: CareerStore, drive: DriveMode) {
         self.settings = settings
-        self.goal = goal
-        session = DrivingSession(goal: goal, assist: settings.assist)
+        self.career = career
+        self.drive = drive
+        session = DrivingController.makeSession(drive, settings)
         touch = TouchInterpreter(mode: settings.steeringMode, areaWidth: 800)
         feedback = FeedbackCoordinator(settings: settings)
         super.init()
         hardware.onAction = { [weak self] action in self?.perform(action) }
+    }
+
+    private static func makeSession(_ drive: DriveMode, _ settings: AppSettings) -> DrivingSession {
+        DrivingSession(goal: drive.goal, cargoMassKg: drive.job?.cargo.massKg ?? 0,
+                       timeLimit: drive.job?.timeLimit, assist: settings.assist)
+    }
+
+    /// Free Drive's pay so far (nil for other drives).
+    var freeDriveEarnings: Int? {
+        drive == .freeDrive ? Payout.freeDrive(session.stats).total : nil
     }
 
     // MARK: Lifecycle
@@ -52,7 +67,7 @@ final class DrivingController: NSObject, ObservableObject {
         displayLink = link
         lastTime = 0
         UIApplication.shared.isIdleTimerDisabled = true
-        feedback.announceIntro(mode: settings.steeringMode, goal: goal)
+        feedback.announceIntro(mode: settings.steeringMode, drive: drive)
         MusicPlayer.shared.stop()
         if settings.radioOnStart { MusicPlayer.shared.startRadio() }
     }
@@ -69,7 +84,8 @@ final class DrivingController: NSObject, ObservableObject {
 
     func pause() {
         guard !isPaused, finished == nil else { return }
-        tripStatus = feedback.phrasesForUI().tripStatus(goal: goal, stats: session.stats, remaining: session.remaining)
+        tripStatus = feedback.phrasesForUI().tripStatus(goal: goal, stats: session.stats, remaining: session.remaining,
+                                                        timeLeft: session.timeLeft, earnedSoFar: freeDriveEarnings)
         isPaused = true
         MusicPlayer.shared.setPaused(true)
         touch.reset()
@@ -90,8 +106,40 @@ final class DrivingController: NSObject, ObservableObject {
         }
     }
 
+    /// Ends a Free Drive and pays for the distance driven.
+    func endFreeDrive() {
+        guard drive == .freeDrive, finished == nil else { return }
+        let summary = TripSummary(goalName: goal.name, stats: session.stats, stopError: 0)
+        settle(summary)
+        isPaused = false
+        feedback.setPaused(false)
+        feedback.finishFreeDrive(summary, payout: payout)
+        MusicPlayer.shared.setPaused(true)
+        finished = summary
+    }
+
+    /// Leaving mid-drive: Free Drive still pays for the distance; an unfinished job pays nothing.
+    func quit() {
+        if drive == .freeDrive && finished == nil && session.stats.distance > 0 {
+            settle(TripSummary(goalName: goal.name, stats: session.stats, stopError: 0))
+        }
+        stop()
+    }
+
+    private func settle(_ summary: TripSummary) {
+        let result: Payout?
+        switch drive {
+        case .practice: result = nil
+        case .freeDrive: result = Payout.freeDrive(summary.stats)
+        case let .job(job): result = Payout.delivery(job, summary: summary)
+        }
+        payout = result
+        if let result { career.record(result, distance: summary.stats.distance, completing: drive.job) }
+    }
+
     func restart() {
-        session = DrivingSession(goal: goal, assist: settings.assist)
+        session = DrivingController.makeSession(drive, settings)
+        payout = nil
         feedback.reset()
         touch.reset()
         tilt.recenter()
@@ -100,7 +148,7 @@ final class DrivingController: NSObject, ObservableObject {
             MusicPlayer.shared.setPaused(false)
             lastTime = 0
             accumulator = 0
-            feedback.announceIntro(mode: settings.steeringMode, goal: goal)
+            feedback.announceIntro(mode: settings.steeringMode, drive: drive)
             focusDrivingView()
         } else {
             resume()
@@ -202,6 +250,8 @@ final class DrivingController: NSObject, ObservableObject {
         feedback.update(session: session)
         view?.setNeedsDisplay()
         if let summary = session.summary {
+            settle(summary)
+            if let payout { feedback.announcePayout(payout) }
             touch.reset()
             MusicPlayer.shared.setPaused(true)
             finished = summary

@@ -38,6 +38,23 @@ final class FeedbackCoordinator {
 
     func phrasesForUI() -> Phrases { phrases }
 
+    /// Reads out the pay after a delivery (VoiceOver reads the results screen itself).
+    func announcePayout(_ payout: Payout) {
+        guard !UIAccessibility.isVoiceOverRunning else { return }
+        speech.speak(phrases.payout(payout), priority: .normal)
+    }
+
+    func finishFreeDrive(_ summary: TripSummary, payout: Payout?) {
+        audio.state.muted = true
+        haptics.update(engineRunning: false, rpmFraction: 0, load: 0, onRumbleStrip: false)
+        if UIAccessibility.isVoiceOverRunning {
+            speech.speak("Drive ended.", priority: .high)
+        } else {
+            speech.speak("Drive ended. " + phrases.tripResults(summary.stats) + " " + (payout.map(phrases.payout) ?? ""),
+                         priority: .high)
+        }
+    }
+
     func setPaused(_ paused: Bool) {
         audio.state.muted = paused
         if paused { haptics.update(engineRunning: false, rpmFraction: 0, load: 0, onRumbleStrip: false) }
@@ -54,7 +71,7 @@ final class FeedbackCoordinator {
         audio.setRumble(nil)
     }
 
-    func announceIntro(mode: TouchSteeringMode, goal: TripGoal) {
+    func announceIntro(mode: TouchSteeringMode, drive: DriveMode) {
         let controls: String
         switch mode {
         case .tilt:
@@ -63,10 +80,13 @@ final class FeedbackCoordinator {
             controls = "Put one finger anywhere. Slide up to accelerate, down to brake, left or right to steer. Lift your finger to coast."
         }
         let trip: String
-        if let distance = goal.distance {
-            trip = "\(goal.name): \(settings.units.distance(distance)) to the drop-off. Stop there to finish."
-        } else {
-            trip = "Free Drive: no destination, drive as long as you like."
+        switch drive {
+        case .practice:
+            trip = "Practice Drive: \(settings.units.distance(Road.practiceLoop.totalLength)) to the drop-off. Stop there to finish. Practice drives don't pay."
+        case .freeDrive:
+            trip = "Free Drive: no destination. You earn \(Phrases.money(Int(Payout.freeDriveRatePerKm))) per kilometer. Pause and choose End Drive to get paid."
+        case let .job(job):
+            trip = phrases.jobIntro(job) + " Stop at the drop-off to deliver."
         }
         speech.speak(
             "\(trip) Engine off. \(controls) Three-finger double tap starts the engine. Two-finger double tap reads the dashboard. Two-finger swipe down pauses.",
@@ -118,8 +138,12 @@ final class FeedbackCoordinator {
             speech.speak("Fuel low.", priority: .normal)
         case let .dashboard(reading):
             speech.speak(phrases.dashboard(reading), priority: .high)
-        case let .roadAhead(curve, remaining):
-            speech.speak(phrases.roadAhead(curve, remaining: remaining), priority: .high)
+        case let .roadAhead(curve, remaining, timeLeft):
+            speech.speak(phrases.roadAhead(curve, remaining: remaining, timeLeft: timeLeft), priority: .high)
+        case let .timeLeft(seconds):
+            speech.speak(phrases.timeLeft(seconds), priority: .normal)
+        case .lateForDelivery:
+            speech.speak(phrases.lateForDelivery, priority: .high)
         case let .tripProgress(remaining):
             speech.speak(phrases.tripProgress(remaining: remaining), priority: .normal)
         case let .destinationAhead(distance):

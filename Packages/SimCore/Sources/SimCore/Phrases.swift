@@ -43,16 +43,23 @@ public struct Phrases {
         return text + "."
     }
 
-    public func roadAhead(_ c: UpcomingCurve?, remaining: Double? = nil) -> String {
+    public func roadAhead(_ c: UpcomingCurve?, remaining: Double? = nil, timeLeft: Double? = nil) -> String {
         var text = ""
         if let remaining {
             text = remaining > 0 ? "\(units.distance(remaining)) to the drop-off. " : "You're at the drop-off. "
+        }
+        if let timeLeft {
+            text += timeLeft > 0 ? "\(duration(timeLeft, roundToMinutes: timeLeft >= 120)) left. " : "You're late. "
         }
         guard let c else { return text + "Straight road ahead." }
         return text + "Next: " + curve(c)
     }
 
-    public func duration(_ seconds: Double) -> String {
+    public func duration(_ seconds: Double, roundToMinutes: Bool = false) -> String {
+        if roundToMinutes {
+            let m = Int((seconds / 60).rounded())
+            return "\(m) minute\(m == 1 ? "" : "s")"
+        }
         let total = Int(seconds.rounded())
         let h = total / 3600, m = (total % 3600) / 60, s = total % 60
         func unit(_ n: Int, _ word: String) -> String { "\(n) \(word)\(n == 1 ? "" : "s")" }
@@ -75,8 +82,59 @@ public struct Phrases {
         "The drop-off is \(units.distance(remaining)) ahead. Keep going."
     }
 
+    // MARK: Money and jobs
+
+    /// "$12,450" (VoiceOver and the speech synthesizer both read this as dollars).
+    public static func money(_ amount: Int) -> String {
+        let digits = String(abs(amount))
+        var grouped = ""
+        for (i, ch) in digits.reversed().enumerated() {
+            if i > 0 && i % 3 == 0 { grouped.append(",") }
+            grouped.append(ch)
+        }
+        return (amount < 0 ? "minus $" : "$") + String(grouped.reversed())
+    }
+
+    public func weight(_ kg: Double) -> String {
+        units == .metric ? "\(Int((kg / 1_000).rounded())) tonnes" : "\(Int((kg * 2.204_62 / 2_000).rounded())) tons"
+    }
+
+    public func job(_ job: DeliveryJob) -> String {
+        var parts = ["\(job.cargo.name), \(units.distance(job.distance))",
+                     "pays \(Phrases.money(job.pay))",
+                     "time limit \(duration(job.timeLimit, roundToMinutes: true))",
+                     weight(job.cargo.massKg)]
+        if job.cargo.urgent { parts.append("urgent") }
+        if job.cargo.fragile { parts.append("fragile") }
+        return parts.joined(separator: ", ") + "."
+    }
+
+    public func jobIntro(_ job: DeliveryJob) -> String {
+        var text = "Job: deliver \(job.cargo.name.lowercased()), \(weight(job.cargo.massKg)), "
+            + "\(units.distance(job.distance)) to the drop-off. "
+            + "Time limit \(duration(job.timeLimit, roundToMinutes: true)). Pays \(Phrases.money(job.pay))."
+        if job.cargo.fragile { text += " Fragile: crashes damage this load badly." }
+        if job.cargo.massKg >= 18_000 { text += " Heavy load: give yourself extra room to brake." }
+        return text
+    }
+
+    public func timeLeft(_ seconds: Double) -> String {
+        seconds >= 120 ? "\(duration(seconds, roundToMinutes: true)) left to deliver." : "One minute left to deliver!"
+    }
+
+    public let lateForDelivery = "You're late. The pay drops a little for every minute."
+
+    public func payout(_ p: Payout) -> String {
+        let lines = p.lines.map { line in
+            line.amount < 0 ? "\(line.label): minus \(Phrases.money(-line.amount))."
+                            : "\(line.label): \(Phrases.money(line.amount))."
+        }
+        return (lines + ["You earned \(Phrases.money(p.total))."]).joined(separator: " ")
+    }
+
     /// The trip status shown in the pause menu.
-    public func tripStatus(goal: TripGoal, stats: TripStats, remaining: Double?) -> String {
+    public func tripStatus(goal: TripGoal, stats: TripStats, remaining: Double?, timeLeft: Double? = nil,
+                          earnedSoFar: Int? = nil) -> String {
         var parts: [String] = [goal.name + "."]
         if let total = goal.distance, let remaining {
             let left = max(0, remaining)
@@ -90,6 +148,10 @@ public struct Phrases {
             parts.append("Average speed \(units.speed(stats.averageSpeed)), top speed \(units.speed(stats.topSpeed)) \(units.speedUnitSpoken).")
         }
         parts.append(stats.crashes == 0 ? "No crashes." : "Crashes: \(stats.crashes).")
+        if let timeLeft {
+            parts.append(timeLeft > 0 ? "Time left: \(duration(timeLeft))." : "Late by \(duration(-timeLeft)).")
+        }
+        if let earnedSoFar { parts.append("Earned so far: \(Phrases.money(earnedSoFar)).") }
         return parts.joined(separator: " ")
     }
 

@@ -1,10 +1,14 @@
-New sound! Headphones recommended.
+New: money and delivery jobs! Headphones recommended.
 
-• Real truck engine: recorded diesel loops that blend together and rise in pitch with the RPM, a recorded starter when you start the engine, a shutdown sound, and an air brake hiss when you come to a stop.
-• New upbeat music: a loud menu theme and three new radio songs (country rock, classic rock, Southern groove). The radio plays quieter than the menu and drops lower whenever the game speaks.
-• Radio: three-finger swipe up for on or off, three-finger swipe left or right to change songs.
+• Bank balance on the main menu. You start with $500.
+• Job Board: three deliveries with cargo, distance, pay, time limit and weight. Pick one, drive to the drop-off and stop there to deliver.
+• Pay: bonuses for on time, no crashes and a perfect stop. Being late or crashing costs money, and fragile cargo is damaged more by crashes.
+• Heavy cargo (steel, gravel, lumber) speeds up slowly and needs more room to brake.
+• Time reminders at 5 minutes and 1 minute. The three-finger tap tells you the distance and time left.
+• Free Drive now pays a little per kilometer. Pause and choose End Drive and Get Paid.
+• Your money is saved, even after closing the app.
 
 Please check:
-• Does the engine sound like a big truck at idle, pulling away and at highway speed? Any clicks or jumps?
-• Does the starter line up with the engine catching?
-• Is the radio a good level next to the engine, lane beeps and speech?
+• Do the jobs feel worth doing? Too much or too little money? Are the time limits fair?
+• Can you feel the difference with heavy cargo?
+• Do the job board and results screen read well with VoiceOver?

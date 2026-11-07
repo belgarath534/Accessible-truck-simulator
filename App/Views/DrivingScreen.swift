@@ -5,8 +5,8 @@ struct DrivingScreen: View {
     @StateObject private var controller: DrivingController
     let onExit: () -> Void
 
-    init(settings: AppSettings, goal: TripGoal, onExit: @escaping () -> Void) {
-        _controller = StateObject(wrappedValue: DrivingController(settings: settings, goal: goal))
+    init(settings: AppSettings, career: CareerStore, drive: DriveMode, onExit: @escaping () -> Void) {
+        _controller = StateObject(wrappedValue: DrivingController(settings: settings, career: career, drive: drive))
         self.onExit = onExit
     }
 
@@ -19,8 +19,11 @@ struct DrivingScreen: View {
             if let summary = controller.finished {
                 TripCompleteView(
                     summary: summary,
+                    payout: controller.payout,
+                    balance: controller.career.money,
+                    isFreeDrive: controller.drive == .freeDrive,
                     units: controller.settings.units,
-                    driveAgain: controller.restart,
+                    driveAgain: controller.drive.job == nil ? controller.restart : nil,
                     quit: {
                         controller.stop()
                         onExit()
@@ -29,10 +32,12 @@ struct DrivingScreen: View {
             } else if controller.isPaused {
                 PauseMenuView(
                     status: controller.tripStatus,
+                    drive: controller.drive,
                     resume: controller.resume,
                     restart: controller.restart,
+                    endFreeDrive: controller.endFreeDrive,
                     quit: {
-                        controller.stop()
+                        controller.quit()
                         onExit()
                     }
                 )
@@ -47,8 +52,10 @@ struct DrivingScreen: View {
 
 struct PauseMenuView: View {
     let status: String
+    let drive: DriveMode
     let resume: () -> Void
     let restart: () -> Void
+    let endFreeDrive: () -> Void
     let quit: () -> Void
     @AccessibilityFocusState private var focused: Bool
 
@@ -69,10 +76,28 @@ struct PauseMenuView: View {
                 .accessibilityFocused($focused)
                 Button("Resume Driving", action: resume)
                     .buttonStyle(.borderedProminent)
-                Button("Restart from the Start", action: restart)
-                    .buttonStyle(.bordered)
-                Button("Quit to Main Menu", role: .destructive, action: quit)
-                    .buttonStyle(.bordered)
+                switch drive {
+                case .freeDrive:
+                    Button("End Drive and Get Paid", action: endFreeDrive)
+                        .buttonStyle(.bordered)
+                    Button("Restart from the Start", action: restart)
+                        .buttonStyle(.bordered)
+                        .accessibilityHint("Starts a new Free Drive. The distance so far is not paid.")
+                case .job:
+                    Button("Restart This Job", action: restart)
+                        .buttonStyle(.bordered)
+                    Button("Abandon Job", role: .destructive, action: quit)
+                        .buttonStyle(.bordered)
+                        .accessibilityHint("Returns to the main menu. Unfinished jobs don't pay.")
+                case .practice:
+                    Button("Restart from the Start", action: restart)
+                        .buttonStyle(.bordered)
+                }
+                if drive.job == nil {
+                    Button("Quit to Main Menu", role: .destructive, action: quit)
+                        .buttonStyle(.bordered)
+                        .accessibilityHint(drive == .freeDrive ? "You're paid for the distance driven so far." : "")
+                }
             }
             .font(.title2)
             .padding()
@@ -86,8 +111,11 @@ struct PauseMenuView: View {
 
 struct TripCompleteView: View {
     let summary: TripSummary
+    let payout: Payout?
+    let balance: Int
+    let isFreeDrive: Bool
     let units: UnitSystem
-    let driveAgain: () -> Void
+    let driveAgain: (() -> Void)?
     let quit: () -> Void
     @AccessibilityFocusState private var focused: Bool
 
@@ -99,18 +127,32 @@ struct TripCompleteView: View {
             ScrollView {
                 VStack(spacing: 20) {
                     VStack(spacing: 8) {
-                        Text("Delivered!")
+                        Text(isFreeDrive ? "Drive Ended" : "Delivered!")
                             .font(.largeTitle.bold())
-                        Text(phrases.arrived(summary).replacingOccurrences(of: "Delivered! ", with: ""))
+                        Text(isFreeDrive ? phrases.tripResults(summary.stats)
+                                         : phrases.arrived(summary).replacingOccurrences(of: "Delivered! ", with: ""))
                             .font(.body)
                             .multilineTextAlignment(.center)
+                        if let payout {
+                            Text(phrases.payout(payout))
+                                .font(.title3.bold())
+                                .multilineTextAlignment(.center)
+                            Text("Bank balance: \(Phrases.money(balance)).")
+                                .font(.body)
+                        } else {
+                            Text("Practice drives don't pay. Take a job from the Job Board to earn money.")
+                                .font(.body)
+                                .multilineTextAlignment(.center)
+                        }
                     }
                     .foregroundStyle(.white)
                     .accessibilityElement(children: .combine)
                     .accessibilityAddTraits(.isHeader)
                     .accessibilityFocused($focused)
-                    Button("Drive Again", action: driveAgain)
-                        .buttonStyle(.borderedProminent)
+                    if let driveAgain {
+                        Button("Drive Again", action: driveAgain)
+                            .buttonStyle(.borderedProminent)
+                    }
                     Button("Main Menu", action: quit)
                         .buttonStyle(.bordered)
                 }

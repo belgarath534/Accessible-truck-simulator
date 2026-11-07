@@ -73,7 +73,10 @@ public enum SimEvent: Equatable, Sendable {
     case outOfFuel
     case lowFuel
     case dashboard(DashboardReading)
-    case roadAhead(UpcomingCurve?, remaining: Double?)
+    case roadAhead(UpcomingCurve?, remaining: Double?, timeLeft: Double?)
+    /// Delivery deadline reminders (5 minutes and 1 minute left).
+    case timeLeft(seconds: Double)
+    case lateForDelivery
     /// Distance left to the drop-off at milestones (10 km, 5 km, 2 km, 1 km).
     case tripProgress(remaining: Double)
     /// The drop-off is close: slow down.

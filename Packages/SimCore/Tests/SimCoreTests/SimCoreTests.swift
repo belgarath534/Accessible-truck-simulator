@@ -292,3 +292,99 @@ final class TripTests: XCTestCase {
         XCTAssertEqual(p.roadAhead(nil, remaining: 7_800), "7.8 kilometers to the drop-off. Straight road ahead.")
     }
 }
+
+final class CareerTests: XCTestCase {
+    func testJobBoardIsVariedAndSensible() {
+        var rng = SeededRandom(seed: 42)
+        for _ in 0..<50 {
+            let board = JobBoard.makeBoard(using: &rng)
+            XCTAssertEqual(board.count, 3)
+            XCTAssertEqual(Set(board.map(\.cargo)).count, 3, "no duplicate cargo")
+            for job in board {
+                XCTAssertTrue((4_000...20_000).contains(job.distance))
+                XCTAssertGreaterThan(job.pay, 0)
+                // A fair driver at 50 km/h always makes it in time.
+                XCTAssertGreaterThan(job.timeLimit, job.distance / (50 / 3.6))
+            }
+        }
+    }
+
+    func testDeliveryPayout() {
+        let cargo = Cargo(name: "Test", massKg: 10_000, ratePerKm: 100)
+        let job = DeliveryJob(cargo: cargo, distance: 10_000, pay: 1_000, timeLimit: 900)
+        var stats = TripStats()
+        stats.drivingTime = 800
+        stats.distance = 10_000
+        let clean = Payout.delivery(job, summary: TripSummary(goalName: "x", stats: stats, stopError: 5))
+        XCTAssertEqual(clean.total, 1_000 + 100 + 100 + 50, "pay + on time + no crash + perfect stop")
+
+        stats.crashes = 2
+        stats.drivingTime = 1_000 // 100 s late -> 2 minutes -> 6%
+        let messy = Payout.delivery(job, summary: TripSummary(goalName: "x", stats: stats, stopError: 40))
+        XCTAssertEqual(messy.total, 1_000 - 60 - 200)
+
+        let fragileJob = DeliveryJob(cargo: Cargo(name: "Glass", massKg: 4_000, ratePerKm: 100, fragile: true),
+                                     distance: 10_000, pay: 1_000, timeLimit: 900)
+        stats.crashes = 5
+        let wrecked = Payout.delivery(fragileJob, summary: TripSummary(goalName: "x", stats: stats, stopError: 40))
+        XCTAssertEqual(wrecked.total, 1_000 - 60 - 600, "damage is capped at 60 percent")
+    }
+
+    func testFreeDrivePaysLessThanJobs() {
+        var stats = TripStats()
+        stats.distance = 10_000
+        XCTAssertEqual(Payout.freeDrive(stats).total, 350)
+        stats.crashes = 3
+        XCTAssertEqual(Payout.freeDrive(stats).total, 0, "never negative")
+        XCTAssertLessThan(Payout.freeDriveRatePerKm * 2, Cargo.catalog.map(\.ratePerKm).min()!)
+    }
+
+    func testCareerSavesAndReplacesJobs() throws {
+        var career = CareerState(seed: 7)
+        XCTAssertEqual(career.money, CareerState.startingMoney)
+        let job = career.jobBoard[1]
+        career.record(Payout(lines: [.init(label: "x", amount: 1_200)]), distance: 8_000)
+        career.completeJob(job)
+        XCTAssertEqual(career.money, CareerState.startingMoney + 1_200)
+        XCTAssertEqual(career.jobsCompleted, 1)
+        XCTAssertFalse(career.jobBoard.contains(job))
+        XCTAssertEqual(career.jobBoard.count, 3)
+
+        let data = try JSONEncoder().encode(career)
+        XCTAssertEqual(try JSONDecoder().decode(CareerState.self, from: data), career)
+    }
+
+    func testMoneyAndJobPhrases() {
+        XCTAssertEqual(Phrases.money(12_450), "$12,450")
+        XCTAssertEqual(Phrases.money(500), "$500")
+        XCTAssertEqual(Phrases.money(-150), "minus $150")
+        let job = DeliveryJob(cargo: Cargo(name: "Glassware", massKg: 4_000, ratePerKm: 160, fragile: true),
+                              distance: 12_000, pay: 1_920, timeLimit: 1_620)
+        XCTAssertEqual(Phrases(units: .metric).job(job),
+                       "Glassware, 12 kilometers, pays $1,920, time limit 27 minutes, 4 tonnes, fragile.")
+    }
+
+    func testHeavyCargoBrakesLonger() {
+        func stoppingDistance(cargo: Double) -> Double {
+            let s = DrivingSession(road: Road(segments: [.straight(90_000)]), cargoMassKg: cargo)
+            _ = s.perform(.toggleEngine)
+            for _ in 0..<(60 * 2) { _ = s.step(dt: 1.0 / 60, input: .idle) }
+            while s.truck.speed < 20 { _ = s.step(dt: 1.0 / 60, input: DrivingInput(throttle: 1)) }
+            let start = s.truck.odometer
+            while s.truck.speed > 0 { _ = s.step(dt: 1.0 / 60, input: DrivingInput(brake: 1)) }
+            return s.truck.odometer - start
+        }
+        XCTAssertGreaterThan(stoppingDistance(cargo: 24_000), stoppingDistance(cargo: 0) * 1.3)
+    }
+
+    func testDeadlineWarnings() {
+        let s = DrivingSession(road: Road(segments: [.straight(90_000)]), goal: .destination(name: "x", distance: 80_000),
+                               timeLimit: 400)
+        _ = s.perform(.toggleEngine)
+        var events: [SimEvent] = []
+        for _ in 0..<(60 * 420) { events += s.step(dt: 1.0 / 60, input: DrivingInput(throttle: 0.5)) }
+        XCTAssertTrue(events.contains(.timeLeft(seconds: 300)))
+        XCTAssertTrue(events.contains(.timeLeft(seconds: 60)))
+        XCTAssertTrue(events.contains(.lateForDelivery))
+    }
+}

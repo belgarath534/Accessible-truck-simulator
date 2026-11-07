@@ -3,25 +3,41 @@ import SwiftUI
 
 struct MainMenuView: View {
     @EnvironmentObject private var settings: AppSettings
-    @State private var trip: TripGoal?
+    @EnvironmentObject private var career: CareerStore
+    @State private var drive: DriveMode?
+    @State private var showingJobs = false
 
     var body: some View {
         NavigationStack {
             List {
                 Section {
-                    Button("Practice Drive") { trip = .practice(on: .practiceLoop) }
+                    Text("Bank: \(Phrases.money(career.money))")
                         .font(.title2.bold())
-                        .accessibilityHint("One lap of the country road, then stop at the drop-off.")
-                    Button("Free Drive") { trip = .freeDrive }
+                        .accessibilityLabel("Bank balance: \(Phrases.money(career.money))")
+                    if career.state.jobsCompleted > 0 {
+                        Text("Jobs delivered: \(career.state.jobsCompleted)")
+                    }
+                }
+                Section {
+                    NavigationLink {
+                        JobBoardView { job in drive = .job(job) }
+                    } label: {
+                        Text("Job Board").font(.title2.bold())
+                    }
+                    .accessibilityHint("Pick a delivery. Jobs pay the most.")
+                    Button("Free Drive") { drive = .freeDrive }
                         .font(.title2)
-                        .accessibilityHint("Drive the loop as long as you like, with no destination.")
+                        .accessibilityHint("Drive the loop as long as you like. Pays \(Phrases.money(Int(Payout.freeDriveRatePerKm))) per kilometer.")
+                    Button("Practice Drive") { drive = .practice }
+                        .font(.title2)
+                        .accessibilityHint("One lap of the country road, then stop at the drop-off. No pay.")
                 } footer: {
-                    Text("Practice Drive is one \(settings.units.distance(Road.practiceLoop.totalLength)) lap with curves of every kind, ending at a drop-off where you stop the truck. Free Drive never ends: pause and quit when you're done.")
+                    Text("Jobs pay the most, with bonuses for arriving on time, not crashing and a perfect stop. Free Drive pays a little for every kilometer. Practice Drive doesn't pay.")
                 }
                 Section {
                     NavigationLink("How to Drive") { ControlsHelpView() }
                     NavigationLink("Settings") { SettingsView() }
-                NavigationLink("Credits") { CreditsView() }
+                    NavigationLink("Credits") { CreditsView() }
                 }
             }
             .navigationTitle("Truck Sim")
@@ -30,13 +46,48 @@ struct MainMenuView: View {
         .onChange(of: settings.menuMusic) { _, on in
             if on { MusicPlayer.shared.playMenu() } else if MusicPlayer.shared.mode == .menu { MusicPlayer.shared.stop() }
         }
-        .fullScreenCover(isPresented: Binding(get: { trip != nil }, set: { if !$0 { trip = nil } }), onDismiss: {
+        .fullScreenCover(item: $drive, onDismiss: {
             if settings.menuMusic { MusicPlayer.shared.playMenu() }
-        }) {
-            if let trip {
-                DrivingScreen(settings: settings, goal: trip) { self.trip = nil }
+        }) { mode in
+            DrivingScreen(settings: settings, career: career, drive: mode) { drive = nil }
+        }
+    }
+}
+
+struct JobBoardView: View {
+    @EnvironmentObject private var settings: AppSettings
+    @EnvironmentObject private var career: CareerStore
+    let start: (DeliveryJob) -> Void
+
+    private var phrases: Phrases { Phrases(units: settings.units) }
+
+    var body: some View {
+        List {
+            Section {
+                ForEach(career.jobs) { job in
+                    Button {
+                        start(job)
+                    } label: {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("\(job.cargo.name): \(Phrases.money(job.pay))").font(.headline)
+                            Text(phrases.job(job)).font(.subheadline)
+                        }
+                    }
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel(phrases.job(job))
+                    .accessibilityHint("Starts this delivery.")
+                }
+            } header: {
+                Text("Available jobs")
+            } footer: {
+                Text("Heavy loads accelerate slowly and need more room to brake. Fragile loads are damaged more by crashes. Urgent loads have tighter time limits but pay more.")
+            }
+            Section {
+                Button("Get New Jobs") { career.refreshBoard() }
+                    .accessibilityHint("Replaces all three jobs with new ones.")
             }
         }
+        .navigationTitle("Job Board")
     }
 }
 
@@ -72,6 +123,13 @@ struct ControlsHelpView: View {
                 Text("Curves are announced ahead of time with a suggested speed. In a curve you must steer, or the truck drifts to the outside.")
                 Text("Speed is called out every 10 kilometers or miles per hour.")
                 Text("On a Practice Drive you hear the distance left at 10, 5, 2 and 1 kilometers. At 400 meters you're told to slow down; stop at the drop-off to finish. The three-finger tap also tells you the distance left, and the pause menu shows how far you've driven, how far is left, your time and crashes.")
+            }
+            Section("Money and jobs") {
+                Text("The Job Board offers three deliveries. Each one tells you the cargo, distance, pay, time limit and weight. Drive to the drop-off and stop there to deliver.")
+                Text("Bonuses: 10 percent for arriving on time, 10 percent for no crashes, and 5 percent for a perfect stop. Being late or crashing takes money off, and fragile cargo is damaged more.")
+                Text("Heavy cargo makes the truck slower to speed up and longer to stop.")
+                Text("While driving a job, the three-finger tap tells you the distance and time left. You'll hear reminders at 5 minutes and 1 minute.")
+                Text("Free Drive pays a little for every kilometer. Pause and choose End Drive and Get Paid, or Quit to Main Menu, which also pays. Each crash costs a repair fee.")
             }
             Section("Keyboard and controller") {
                 Text("Keyboard: Up or W accelerate, Down or S brake, Left and Right or A and D steer. Left and right bracket for signals, I dashboard, G GPS, N engine, H horn, Escape pause, R radio on or off, comma and period for the previous or next song.")
