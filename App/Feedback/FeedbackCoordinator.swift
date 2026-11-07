@@ -32,13 +32,15 @@ final class FeedbackCoordinator {
         speech.onSpeakingChanged = { speaking in
             DispatchQueue.main.async { MusicPlayer.shared.setDucked(speaking) }
         }
-        audio.start(sound: engineSound)
+        // The App Store screenshot simulator on the build Mac has no working sound device,
+        // and starting audio there aborts the app. Screenshots don't need sound.
+        if !ScreenshotMode.isOn { audio.start(sound: engineSound) }
         haptics.start()
     }
 
     func stop() {
         speech.stop()
-        audio.stop()
+        if !ScreenshotMode.isOn { audio.stop() }
         haptics.stop()
     }
 

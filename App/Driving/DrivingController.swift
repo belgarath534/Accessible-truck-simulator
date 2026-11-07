@@ -93,7 +93,7 @@ final class DrivingController: NSObject, ObservableObject {
         UIApplication.shared.isIdleTimerDisabled = true
         feedback.announceIntro(mode: settings.steeringMode, drive: drive)
         MusicPlayer.shared.stop()
-        if settings.radioOnStart { MusicPlayer.shared.startRadio() }
+        if settings.radioOnStart && !ScreenshotMode.isOn { MusicPlayer.shared.startRadio() }
     }
 
     func stop() {
