@@ -12,6 +12,11 @@ workflows:
       app_store_connect: Accessible Backrooms
     environment:
       ios_signing:
+        # Codemagic insists on at least one saved profile here before it will load the certificate.
+        # This one belongs to Dungeon Descent's Live Activity (a different bundle ID), so it is never
+        # used for Truck Sim; Truck Sim's own profile comes from Apple in the step below.
+        provisioning_profiles:
+          - Dungeon Descent Live Activity App Store
         certificates:
           - Accessible Backrooms Distribution
       vars:
