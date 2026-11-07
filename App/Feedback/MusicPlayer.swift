@@ -42,6 +42,7 @@ final class MusicPlayer: NSObject, AVAudioPlayerDelegate {
     // MARK: Menu
 
     func playMenu() {
+        guard !ScreenshotMode.isOn else { return } // no sound device in the screenshot simulator
         if mode == .menu {
             // Already the menu music; make sure it isn't left paused.
             if player?.isPlaying == false { player?.play() }
@@ -56,7 +57,7 @@ final class MusicPlayer: NSObject, AVAudioPlayerDelegate {
     // MARK: Radio
 
     func startRadio() {
-        guard hasRadio else { return }
+        guard hasRadio, !ScreenshotMode.isOn else { return }
         prepareSession()
         mode = .radio
         play(radioTracks[radioIndex % radioTracks.count], loop: false)
