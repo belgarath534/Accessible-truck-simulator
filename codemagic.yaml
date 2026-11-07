@@ -143,21 +143,19 @@ workflows:
         script: |
           set -e
           # The newest iOS, and the newest "Pro Max" iPhone it supports (the 6.9-inch size Apple asks for).
+          # The newest iOS that has a regular "Pro Max" iPhone (the 6.9-inch size Apple asks for).
           read RUNTIME TYPE <<< "$(xcrun simctl list runtimes -j | python3 -c '
           import json,re,sys
           rts=[r for r in json.load(sys.stdin)["runtimes"] if r["platform"]=="iOS" and r["isAvailable"]]
-          rt=rts[-1]
           def num(t):
               m=re.search(r"iPhone (\d+)", t["name"])
               return int(m.group(1)) if m else 0
-          phones=[t for t in rt.get("supportedDeviceTypes", []) if t["name"].startswith("iPhone")]
-          print("iPhones:", ", ".join(t["name"] for t in phones), file=sys.stderr)
-          pick=None
-          for word in ("Pro Max", "Max", "Plus", ""):
-              cands=[t for t in phones if word in t["name"]]
-              if cands:
-                  pick=max(cands, key=num); break
-          print(rt["identifier"], pick["identifier"])')"
+          for rt in reversed(rts):
+              phones=[t for t in rt.get("supportedDeviceTypes", []) if t["name"].startswith("iPhone")]
+              print(rt["name"], "->", ", ".join(t["name"] for t in phones), file=sys.stderr)
+              pm=[t for t in phones if "Pro Max" in t["name"]]
+              if pm:
+                  print(rt["identifier"], max(pm, key=num)["identifier"]); break')"
           echo "Device $TYPE on $RUNTIME"
           UDID=$(xcrun simctl create "Screenshots" "$TYPE" "$RUNTIME")
           xcrun simctl boot "$UDID"
