@@ -23,3 +23,14 @@ On its own, it registers the bundle ID `com.accessibletrucksim.TruckSim` with Ap
 The upload goes to App Store Connect, and Apple processes it in about 5 to 30 minutes. Internal testers get
 every build, so it appears in the TestFlight app on your iPhone. The first time, add yourself to an
 Internal Testing group under the app's TestFlight tab.
+
+## Store and TestFlight text
+
+The words live in `store/en-US/` and are sent to App Store Connect by `store/fill_store_info.py`. This
+includes the TestFlight description, "What to Test", review notes, and the App Store description,
+keywords and subtitle. The script runs in every TestFlight build. It also runs on its own as the quick
+**Truck Sim store info only** workflow. Run that one after Apple finishes processing a new build, so the
+build gets its "What to Test" text. Contact details (name, email, phone) are copied from Dungeon Descent.
+
+Apple's API can't do these, so they have to be done on the website before going public: App Privacy
+("Data Not Collected"), screenshots, and pricing and availability.
