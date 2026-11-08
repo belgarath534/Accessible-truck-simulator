@@ -52,8 +52,6 @@ workflows:
               | python3 -c 'import json,sys; print(json.load(sys.stdin)["id"])')
           fi
           echo "Bundle ID resource: $BID"
-          # Game Center (achievements and leaderboards). Already on is fine.
-          app-store-connect bundle-ids enable-capabilities "$BID" --capability "Game Center" || echo "Game Center capability: could not turn it on (it may already be on)"
 
           TMP=$(mktemp -d)
           app-store-connect profiles list --type IOS_APP_STORE --state ACTIVE --name "$PROFILE_NAME" --save --profiles-dir "$TMP" || true
@@ -62,6 +60,21 @@ workflows:
             cp "$TMP"/*.mobileprovision "$DEST/"
             exit 0
           fi
+
+          # A new profile is needed. Make sure the app ID has Game Center first (changing capabilities makes old
+          # profiles invalid, so this only happens here, never when a good profile already exists).
+          app-store-connect bundle-ids enable-capabilities "$BID" --capability "Game Center" || echo "Game Center capability: could not turn it on (it may already be on)"
+          # Remove invalid profiles with the same name, or Apple refuses to make a new one.
+          app-store-connect profiles list --name "$PROFILE_NAME" --json | python3 -c '
+          import json, sys
+          for p in json.load(sys.stdin):
+              state = (p.get("attributes") or p).get("profileState", "")
+              if state != "ACTIVE":
+                  print(p["id"])
+          ' | while read -r OLD; do
+            echo "Deleting invalid profile $OLD"
+            app-store-connect profiles delete "$OLD" || true
+          done
 
           # Find the Apple certificate that matches the distribution certificate Codemagic put in the keychain.
           PEM=$(security find-certificate -a -c "Apple Distribution" -p || true)
