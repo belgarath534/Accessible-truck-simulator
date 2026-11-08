@@ -22,7 +22,7 @@ workflows:
       vars:
         BUNDLE_ID: com.accessibletrucksim.TruckSim
         # The profile name changes when the app needs a new capability, so a fresh profile is made.
-        PROFILE_NAME: Truck Sim App Store GC
+        PROFILE_NAME: Truck Sim App Store Game Center
       xcode: 27.1  # same as The Last Signal; "latest" is not available on this plan
     scripts:
       - name: Run the driving simulation tests
@@ -53,7 +53,7 @@ workflows:
           fi
           echo "Bundle ID resource: $BID"
           # Game Center (achievements and leaderboards). Already on is fine.
-          app-store-connect bundle-ids enable-capabilities "$BID" --capability GAME_CENTER || echo "Game Center capability: already on or not needed"
+          app-store-connect bundle-ids enable-capabilities "$BID" --capability "Game Center" || echo "Game Center capability: could not turn it on (it may already be on)"
 
           TMP=$(mktemp -d)
           app-store-connect profiles list --type IOS_APP_STORE --state ACTIVE --name "$PROFILE_NAME" --save --profiles-dir "$TMP" || true
