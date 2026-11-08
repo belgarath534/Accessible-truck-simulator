@@ -1,3 +1,5 @@
+Steering fix: with tilt steering, the truck no longer creeps into the next lane when you hold the phone still. "Straight" is now set when you start the engine (averaged over half a second), small tilts do nothing, and with steering help on, the truck eases back to the middle of your lane when you're not steering. You still steer through curves.
+
 New in 1.1: weather, eight new trucks, achievements and Game Center.
 
 Weather: some drives now have rain or a storm. You hear rain on the cab, the wipers, your tires hissing through water, and thunder in a storm. Wet roads have less grip and take longer to stop, so curve warnings suggest slower speeds. Deliveries pay 10 percent extra in the rain and 20 percent in a storm. Turn it off in Settings if you want clear skies.

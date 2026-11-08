@@ -168,7 +168,7 @@ struct ControlsHelpView: View {
             Section("Driving") {
                 switch settings.steeringMode {
                 case .tilt:
-                    Text("Hold the phone sideways, at any angle: upright, tilted back or flat. Lower the right end to steer right, the left end to steer left. However you hold it when the drive starts counts as straight; it re-centers when you resume from pause.")
+                    Text("Hold the phone sideways, at any angle: upright, tilted back or flat. Lower the right end to steer right, the left end to steer left. However you hold it when you start the engine counts as straight (and again when you resume from pause), and small tilts you hold without meaning to slowly become the new straight, so the truck doesn't creep across the lane.")
                     Text("Hold anywhere on the right half of the screen to accelerate. The longer you hold, the harder you press.")
                     Text("Hold anywhere on the left half of the screen to brake.")
                 case .joystick:
@@ -277,7 +277,7 @@ struct SettingsView: View {
             } header: {
                 Text("Audio and feedback")
             } footer: {
-                Text("Steering assist Low, Medium or High: steering moves the truck sideways, and letting go stops the drift. Curves push you toward the outside, so steer into them, harder when you're faster. Leaving the road slowly puts you on the gravel shoulder; leaving it fast is a crash. Off: realistic steering, much harder by ear.")
+                Text("Steering assist Low, Medium or High: steering moves the truck sideways, and when you let go the truck eases back to the middle of your lane (most with High). Curves push you toward the outside, so steer into them, harder when you're faster. Leaving the road slowly puts you on the gravel shoulder; leaving it fast is a crash. Off: realistic steering, much harder by ear.")
             }
             Section {
                 Toggle("Captions", isOn: $settings.captions)

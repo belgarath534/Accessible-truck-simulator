@@ -30,6 +30,17 @@ public enum SteeringAssist: String, CaseIterable, Sendable {
         }
     }
 
+    /// Lane keeping: when you aren't steering, how strongly the truck eases back to the centre of its lane
+    /// (sideways m/s per metre off centre). Curves still push it out, so you still steer through them.
+    var laneKeeping: Double {
+        switch self {
+        case .off: return 0
+        case .low: return 0.15
+        case .medium: return 0.3
+        case .high: return 0.5
+        }
+    }
+
     /// How quickly the truck's heading settles back in line with the road when the player isn't steering (1/s).
     var alignRate: Double {
         switch self {
@@ -548,7 +559,9 @@ public final class DrivingSession {
         if overGrip > 0 { push *= 1 + 4 * overGrip }
         // Barely any sideways movement while crawling.
         let speedFactor = min(1, v / 4)
-        let target = (input.steer * assist.maxLateralSpeed + push) * speedFactor
+        // Lane keeping: hands off the wheel, the truck eases back to the middle of the lane it's meant to be in.
+        let keep = abs(input.steer) < 0.05 ? -laneGuidanceOffset * assist.laneKeeping : 0
+        let target = (input.steer * assist.maxLateralSpeed + push + keep) * speedFactor
         // The truck's weight: sideways speed changes smoothly, not instantly.
         truck.lateralVelocity += (target - truck.lateralVelocity) * min(1, dt / 0.35)
         truck.lateralOffset += truck.lateralVelocity * dt

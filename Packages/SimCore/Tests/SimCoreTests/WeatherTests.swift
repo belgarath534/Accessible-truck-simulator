@@ -95,3 +95,34 @@ final class WeatherTests: XCTestCase {
         XCTAssertLessThanOrEqual(s.stats.crashes, 2)
     }
 }
+
+final class LaneKeepingTests: XCTestCase {
+    private let dt = 1.0 / 60
+
+    private func driftAfter(_ assist: SteeringAssist, startOffset: Double, seconds: Double) -> Double {
+        let s = DrivingSession(road: Road(segments: [.straight(50_000)]), assist: assist, seed: 1)
+        _ = s.perform(.toggleEngine)
+        for _ in 0..<(60 * 3) { _ = s.step(dt: dt, input: .idle) }
+        while s.truck.speed < 15 { _ = s.step(dt: dt, input: DrivingInput(throttle: 1)) }
+        // Nudge the truck off centre, then let go of the wheel.
+        for _ in 0..<60 where s.truck.lateralOffset < startOffset {
+            _ = s.step(dt: dt, input: DrivingInput(throttle: 0.4, steer: 1))
+        }
+        for _ in 0..<Int(seconds * 60) { _ = s.step(dt: dt, input: DrivingInput(throttle: s.truck.speed < 15 ? 0.4 : 0)) }
+        return abs(s.truck.lateralOffset)
+    }
+
+    func testHandsOffTheTruckEasesBackToTheMiddle() {
+        XCTAssertLessThan(driftAfter(.medium, startOffset: 0.7, seconds: 8), 0.2)
+        XCTAssertLessThan(driftAfter(.high, startOffset: 0.7, seconds: 8), 0.1)
+    }
+
+    func testSteeringStillWinsOverLaneKeeping() {
+        let s = DrivingSession(road: Road(segments: [.straight(50_000)]), assist: .high, seed: 1)
+        _ = s.perform(.toggleEngine)
+        for _ in 0..<(60 * 3) { _ = s.step(dt: dt, input: .idle) }
+        while s.truck.speed < 15 { _ = s.step(dt: dt, input: DrivingInput(throttle: 1)) }
+        for _ in 0..<(60 * 2) { _ = s.step(dt: dt, input: DrivingInput(throttle: 0.4, steer: -0.6)) }
+        XCTAssertLessThan(s.truck.lateralOffset, -1, "steering moves you across, e.g. to pass")
+    }
+}

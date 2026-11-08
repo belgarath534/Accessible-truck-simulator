@@ -281,6 +281,8 @@ final class DrivingController: NSObject, ObservableObject {
         }
         guard !isPaused, finished == nil else { return }
         if tutorial != nil { recentActions.append(action) }
+        // Starting the engine: you're holding the phone the way you drive now, so that's straight.
+        if action == .toggleEngine && session.truck.engine == .off { tilt.recenter() }
         switch action {
         case .toggleRadio, .nextSong, .previousSong:
             handleRadio(action)

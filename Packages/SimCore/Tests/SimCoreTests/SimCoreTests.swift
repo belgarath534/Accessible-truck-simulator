@@ -62,14 +62,20 @@ final class DrivingSessionTests: XCTestCase {
         XCTAssertLessThan(abs(s.truck.lateralOffset), 0.01)
     }
 
-    func testCurveWithoutSteeringRunsOffTheOutside() {
-        // Right-hand curve: doing nothing should drift to the LEFT (outside) and crash.
+    func testCurveWithoutSteeringDriftsToTheOutside() {
+        // Right-hand curve: doing nothing drifts to the LEFT (outside), out of your lane into the oncoming one.
+        // Lane keeping slows the drift, but you still have to steer through curves.
         let s = DrivingSession(road: Road(segments: [.straight(600), .right(radius: 300, length: 2_000)], loops: false))
         startEngine(s)
         let events = drive(s, seconds: 90, input: DrivingInput(throttle: 0.7))
-        XCTAssertTrue(events.contains(.crashed(.leftRoad(.left))), "events: \(events)")
+        XCTAssertTrue(events.contains(.changedLane(toLeft: true, oncoming: true)), "events: \(events)")
         XCTAssertTrue(events.contains { if case .curveAhead(let c) = $0 { return c.direction == .right }; return false })
-        XCTAssertTrue(events.contains(.rumbleStrip(.left)))
+        XCTAssertLessThan(s.truck.lateralOffset, -1.5)
+        // With realistic steering (no lane keeping) it runs right off the road.
+        let real = DrivingSession(road: Road(segments: [.straight(600), .right(radius: 300, length: 2_000)], loops: false),
+                                  assist: .off)
+        startEngine(real)
+        XCTAssertTrue(drive(real, seconds: 90, input: DrivingInput(throttle: 0.7)).contains(.crashed(.leftRoad(.left))))
     }
 
     func testSteeringIntoCurveKeepsTruckInLane() {

@@ -9,6 +9,8 @@ import UIKit
 final class TiltSteering {
     private let manager = CMMotionManager()
     private var neutral: Double?
+    /// Readings collected while finding "straight": the average of the first half second, not one instant.
+    private var calibration: [Double] = []
 
     /// Degrees of tilt for full steering lock.
     var rangeDegrees: Double = 25
@@ -20,7 +22,7 @@ final class TiltSteering {
         guard isAvailable, !manager.isDeviceMotionActive else { return }
         manager.deviceMotionUpdateInterval = 1.0 / 60
         manager.startDeviceMotionUpdates()
-        neutral = nil
+        recenter()
     }
 
     func stop() {
@@ -30,6 +32,7 @@ final class TiltSteering {
     /// Treat the current phone position as straight ahead.
     func recenter() {
         neutral = nil
+        calibration = []
     }
 
     /// -1 (full left) ... 1 (full right)
@@ -43,13 +46,28 @@ final class TiltSteering {
         //   Port on the left (landscape left): top of the phone is on the right; lowering the right end makes g.y positive.
         let alongLongSide = orientation == .landscapeLeft ? g.y : -g.y
         let angle = asin(max(-1, min(1, alongLongSide)))
-        if neutral == nil { neutral = angle }
-        let delta = angle - (neutral ?? angle)
+        guard let center = neutral else {
+            // Finding straight: average half a second of readings, so a wobble at the start doesn't count.
+            calibration.append(angle)
+            if calibration.count >= 30 { neutral = calibration.reduce(0, +) / Double(calibration.count) }
+            return 0
+        }
+        let delta = angle - center
+        let degree = Double.pi / 180
 
-        let deadZone = 1.5 * Double.pi / 180
-        let range = max(5, rangeDegrees) * Double.pi / 180
+        // Auto-trim: a small tilt held for a long time (not meant as steering) slowly becomes the new straight,
+        // so the truck doesn't creep across the lane. Real steering (more than 6 degrees) is never trimmed.
+        if abs(delta) < 6 * degree {
+            neutral = center + delta * 0.003
+        }
+
+        // A dead zone for hands and tables that aren't perfectly level, then a gentle start: small tilts
+        // steer a little, bigger tilts steer much more.
+        let deadZone = 3 * degree
+        let range = max(8, rangeDegrees) * degree
         guard abs(delta) > deadZone else { return 0 }
-        let magnitude = min(1, (abs(delta) - deadZone) / (range - deadZone))
+        let linear = min(1, (abs(delta) - deadZone) / (range - deadZone))
+        let magnitude = pow(linear, 1.5)
         let value = delta > 0 ? magnitude : -magnitude
         return invert ? -value : value
     }
