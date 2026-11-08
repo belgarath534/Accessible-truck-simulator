@@ -120,6 +120,20 @@ workflows:
           python3 -m pip install --quiet --user pyjwt cryptography requests
           python3 store/fill_store_info.py
 
+  truck-sim-submit:
+    name: Truck Sim submit for App Review
+    # Sets the price to free, makes the app available everywhere, attaches the newest build to the
+    # version waiting for submission, and with SUBMIT=yes sends it to App Review. See store/submit_for_review.py.
+    max_build_duration: 15
+    instance_type: mac_mini_m2
+    integrations:
+      app_store_connect: Accessible Backrooms
+    scripts:
+      - name: Price, availability, build and submit
+        script: |
+          python3 -m pip install --quiet --user pyjwt cryptography requests
+          python3 store/submit_for_review.py
+
   truck-sim-screenshots:
     name: Truck Sim App Store screenshots
     # Runs the game in the largest iPhone simulator in screenshot mode and saves five screenshots as
