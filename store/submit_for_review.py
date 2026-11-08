@@ -138,11 +138,20 @@ try:
     if not editable:
         raise ApiError("no version is waiting for submission (already submitted?)")
     version = editable[0]
-    builds = call("GET", "/builds", params={"filter[app]": APP, "sort": "-uploadedDate", "limit": 5,
-                                            "filter[processingState]": "VALID"})["data"]
-    if not builds:
-        raise ApiError("no processed build yet")
-    build = builds[0]
+    # The newest build of this version, waiting (up to 30 minutes) while Apple processes it.
+    want = version["attributes"]["versionString"]
+    build = None
+    for attempt in range(31):
+        newest = call("GET", "/builds", params={"filter[app]": APP, "sort": "-uploadedDate", "limit": 1,
+                                                "filter[preReleaseVersion.version]": want})["data"]
+        if newest and newest[0]["attributes"]["processingState"] == "VALID":
+            build = newest[0]
+            break
+        state = newest[0]["attributes"]["processingState"] if newest else "no build yet"
+        print(f"   waiting for build of {want} ({state})...")
+        time.sleep(60)
+    if not build:
+        raise ApiError(f"no processed build of version {want}")
     call("PATCH", f"/appStoreVersions/{version['id']}/relationships/build", json=rel("builds", build["id"]))
     print(f"3. Build {build['attributes']['version']} attached to version {version['attributes']['versionString']}.")
 except Exception as e:

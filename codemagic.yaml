@@ -163,6 +163,36 @@ workflows:
           python3 -m pip install --quiet --user pyjwt cryptography requests
           python3 store/submit_for_review.py
 
+  truck-sim-release:
+    name: Truck Sim release to the App Store
+    # The whole release: creates the version from project.yml (MARKETING_VERSION), fills in the store text and
+    # What's New, takes and uploads iPhone and iPad screenshots, adds Game Center, waits for the newest build of
+    # that version to finish processing, attaches it and submits it for review. Run a TestFlight build first.
+    max_build_duration: 90
+    instance_type: mac_mini_m2
+    integrations:
+      app_store_connect: Accessible Backrooms
+    environment:
+      xcode: 27.1
+    scripts:
+      - name: Python packages
+        script: python3 -m pip install --quiet --user pyjwt cryptography requests
+      - name: Create the version and add Game Center
+        script: python3 store/prepare_version.py
+      - name: Store text and What's New
+        script: python3 store/fill_store_info.py
+      - name: Build and take screenshots
+        script: bash store/take_screenshots.sh
+      - name: Upload screenshots
+        script: |
+          set -e
+          python3 store/upload_screenshots.py shots/iphone APP_IPHONE_67
+          python3 store/upload_screenshots.py shots/ipad APP_IPAD_PRO_3GEN_129
+      - name: Attach the build and submit for review
+        script: SUBMIT=yes python3 store/submit_for_review.py
+    artifacts:
+      - shots/*/*.png
+
   truck-sim-screenshots:
     name: Truck Sim App Store screenshots
     # Runs the game in the largest iPhone simulator in screenshot mode and saves five screenshots as
@@ -174,64 +204,8 @@ workflows:
     environment:
       xcode: 27.1
     scripts:
-      - name: Build for the simulator
-        script: |
-          set -e
-          brew install xcodegen
-          xcodegen generate
-          xcodebuild -project TruckSim.xcodeproj -scheme TruckSim -configuration Debug \
-            -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
-            -derivedDataPath build CODE_SIGNING_ALLOWED=NO build | tail -5
-      - name: Take screenshots
-        script: |
-          set -e
-          # shoot KIND PATTERN: picks the newest iOS that has a device whose name contains PATTERN
-          # (the biggest iPhone or iPad Apple asks for), and takes the five screenshots into shots/KIND.
-          shoot() {
-            KIND=$1; PATTERN=$2
-            read RUNTIME TYPE <<< "$(PATTERN="$PATTERN" xcrun simctl list runtimes -j | PATTERN="$PATTERN" python3 -c '
-          import json, os, re, sys
-          want = os.environ["PATTERN"]
-          rts = [r for r in json.load(sys.stdin)["runtimes"] if r["platform"] == "iOS" and r["isAvailable"]]
-          def num(t):
-              m = re.findall(r"\d+", t["name"])
-              return [int(x) for x in m]
-          for rt in reversed(rts):
-              found = [t for t in rt.get("supportedDeviceTypes", []) if want in t["name"]]
-              if found:
-                  print(rt["identifier"], max(found, key=num)["identifier"]); break')"
-            echo "=== $KIND: device $TYPE on $RUNTIME"
-            UDID=$(xcrun simctl create "Screenshots $KIND" "$TYPE" "$RUNTIME")
-            xcrun simctl boot "$UDID"
-            xcrun simctl bootstatus "$UDID" -b
-            xcrun simctl status_bar "$UDID" override --time 9:41 --batteryState charged --batteryLevel 100 --cellularBars 4 --wifiBars 3 || true
-            xcrun simctl install "$UDID" build/Build/Products/Debug-iphonesimulator/TruckSim.app
-            mkdir -p "shots/$KIND"
-            n=1
-            for SCREEN in drive jobs garage company menu; do
-              xcrun simctl launch --terminate-running-process "$UDID" com.accessibletrucksim.TruckSim -screenshot $SCREEN
-              if [ "$SCREEN" = "drive" ]; then sleep 25; else sleep 6; fi
-              xcrun simctl io "$UDID" screenshot "shots/$KIND/raw_${n}_${SCREEN}.png"
-              n=$((n+1))
-            done
-            xcrun simctl shutdown "$UDID" || true
-            # The app is landscape-only; the simulator captures the portrait framebuffer. Turn each picture.
-            for f in shots/$KIND/raw_*.png; do
-              out="shots/$KIND/$(basename "$f" | sed 's/raw_//')"
-              w=$(sips -g pixelWidth "$f" | awk '/pixelWidth/{print $2}')
-              h=$(sips -g pixelHeight "$f" | awk '/pixelHeight/{print $2}')
-              if [ "$h" -gt "$w" ]; then sips -r ${ROTATE:-270} "$f" --out "$out" >/dev/null; else cp "$f" "$out"; fi
-              sips -g pixelWidth -g pixelHeight "$out" | tail -2
-            done
-            rm shots/$KIND/raw_*.png
-          }
-          shoot iphone "Pro Max"
-          shoot ipad "iPad Pro 13"
-          # If the app crashed, show why.
-          for r in ~/Library/Logs/DiagnosticReports/TruckSim*; do
-            [ -f "$r" ] || continue
-            echo "=== Crash report $r"; head -c 6000 "$r"; cp "$r" shots/ || true
-          done
+      - name: Build and take screenshots
+        script: bash store/take_screenshots.sh
       - name: Upload to App Store Connect
         script: |
           if [ "$UPLOAD" = "yes" ]; then

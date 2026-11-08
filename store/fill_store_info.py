@@ -305,6 +305,9 @@ def _():
     en = next((l for l in locs if l["attributes"]["locale"] == "en-US"), locs[0] if locs else None)
     attrs = {"description": text("description.txt"), "keywords": text("keywords.txt"),
              "promotionalText": text("promotional_text.txt"), "supportUrl": SUPPORT_URL, "marketingUrl": REPO}
+    # "What's New" exists only for updates (not the first version).
+    if v["attributes"]["versionString"] != "1.0":
+        attrs["whatsNew"] = text("whats_new.txt")
     if en:
         patch("appStoreVersionLocalizations", en["id"], attrs)
     else:
