@@ -55,6 +55,8 @@ final class SynthState {
     var turboAmount: Float = 0.3
     var bark: Float = 0.2
     var lope: Float = 0.1
+    /// Electric truck: a motor whine instead of an engine.
+    var electric = false
 }
 
 private protocol Voice: AnyObject {
@@ -85,6 +87,7 @@ private final class EngineVoice: Voice {
     var phase: Float = 0, crank: Float = 0, halfCrank: Float = 0, turbo: Float = 0, starter: Float = 0
     var cycleAmp: Float = 1
     var rpm: Float = 0, load: Float = 0, amp: Float = 0, lp: Float = 0, lp2: Float = 0
+    var motor: Float = 0, motor2: Float = 0, inverter: Float = 0, hum: Float = 0
     var noise = Noise()
 
     init(state: SynthState, sampleRate: Float) { self.state = state; sr = sampleRate }
@@ -98,6 +101,23 @@ private final class EngineVoice: Voice {
             rpm += (state.rpm - rpm) * 0.0008
             load += (state.load - load) * 0.0006
             amp += (targetAmp - amp) * (targetAmp > amp ? 0.002 : 0.00015)
+
+            if state.electric {
+                // Electric motor: a whine that rises with motor speed, a faint inverter whine under power,
+                // and a soft hum so you can tell it's switched on while standing still.
+                let f = max(rpm, 0) / 60 * 6
+                motor += f / sr; if motor >= 1 { motor -= 1 }
+                motor2 += f * 2.5 / sr; if motor2 >= 1 { motor2 -= 1 }
+                inverter += (1_900 + rpm * 0.35) / sr; if inverter >= 1 { inverter -= 1 }
+                hum += 100 / sr; if hum >= 1 { hum -= 1 }
+                let spin = min(1, rpm / state.maxRPM * 1.6)
+                var e = sinf(twoPi * motor) * 0.32 + sinf(twoPi * motor2) * 0.12
+                e *= spin * (0.55 + 0.45 * load)
+                e += sinf(twoPi * inverter) * 0.035 * load
+                e += sinf(twoPi * hum) * 0.05
+                out[i] = e * amp * state.volume * 0.7
+                continue
+            }
 
             let fire = max(rpm, 1) / 60 * state.cylinders / 2 * state.pitch
             phase += fire / sr
@@ -137,7 +157,7 @@ private final class EngineVoice: Voice {
                 let drive = 1 + state.bark * 2.5
                 s = tanhf(s * drive) / (0.6 + 0.4 * drive)
             }
-            if state.cranking {
+            if state.cranking && !state.electric {
                 starter += 110 / sr; if starter >= 1 { starter -= 1 }
                 s += (starter * 2 - 1) * 0.10 + noise.next() * 0.03
             }
@@ -385,6 +405,7 @@ final class AudioSynth {
         state.turboAmount = Float(sound.turbo)
         state.bark = Float(sound.bark)
         state.lope = Float(sound.lope)
+        state.electric = sound.electric
         let session = AVAudioSession.sharedInstance()
         try? session.setCategory(.playback, mode: .default, options: [])
         try? session.setActive(true)

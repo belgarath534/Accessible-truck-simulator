@@ -33,8 +33,15 @@ public enum UnitSystem: String, CaseIterable, Sendable {
 /// Builds the sentences the game speaks. Kept here (not in the app) so it is unit-testable.
 public struct Phrases {
     public var units: UnitSystem
+    /// Driving an electric truck: "battery" and "charge" instead of "fuel" and "fill up".
+    public var electric: Bool
 
-    public init(units: UnitSystem) { self.units = units }
+    public init(units: UnitSystem, electric: Bool = false) {
+        self.units = units
+        self.electric = electric
+    }
+
+    private var fuelWord: String { electric ? "battery" : "fuel" }
 
     public func curve(_ c: UpcomingCurve) -> String {
         let suggest = units.speed(c.advisorySpeed)
@@ -83,24 +90,33 @@ public struct Phrases {
     // MARK: Fuel and truck stops
 
     public func fuelLow(fraction: Double, nextStop: Double?, urgent: Bool) -> String {
-        var text = urgent ? "Fuel very low, \(Int((fraction * 100).rounded())) percent!" : "Fuel low, a quarter tank."
+        var text: String
+        if electric {
+            text = urgent ? "Battery very low, \(Int((fraction * 100).rounded())) percent!" : "Battery low, a quarter charge."
+        } else {
+            text = urgent ? "Fuel very low, \(Int((fraction * 100).rounded())) percent!" : "Fuel low, a quarter tank."
+        }
         if let nextStop { text += " Next truck stop in \(units.distance(nextStop)). Signal right before it and slow down to pull in." }
         return text
     }
 
     public func truckStopAhead(_ distance: Double) -> String {
-        "Truck stop in \(units.distance(distance)). To fill up, signal right and slow below \(units.speed(DrivingSession.truckStopExitSpeed)) before you reach it."
+        "Truck stop in \(units.distance(distance)). To \(electric ? "charge" : "fill up"), signal right and slow below \(units.speed(DrivingSession.truckStopExitSpeed)) before you reach it."
     }
 
-    public let pulledIntoTruckStop = "Pulling into the truck stop. Stop at the pump to fill up."
+    public var pulledIntoTruckStop: String {
+        electric ? "Pulling into the truck stop. Stop at the charger to charge up."
+                 : "Pulling into the truck stop. Stop at the pump to fill up."
+    }
 
     public func missedTruckStop(tooFast: Bool) -> String {
         tooFast ? "Too fast to take the truck stop exit. You missed it." : "You passed the truck stop."
     }
 
-    public let refuelStarted = "Filling up."
+    public var refuelStarted: String { electric ? "Charging." : "Filling up." }
 
     public func refueled(liters: Double, cost: Int) -> String {
+        if electric { return "Charged: \(Int(liters.rounded())) kilowatt hours for \(Phrases.money(cost)). Back on the road when you're ready." }
         let amount = units == .metric ? "\(Int(liters.rounded())) liters" : String(format: "%.0f gallons", liters * 0.264_17)
         return "Filled up: \(amount) for \(Phrases.money(cost)). Back on the road when you're ready."
     }
@@ -108,7 +124,7 @@ public struct Phrases {
     public let leftTruckStop = "Back on the road."
 
     public func towed(cost: Int, fuelCost: Int) -> String {
-        "A tow truck took you to the next truck stop and put in a quarter tank. Tow \(Phrases.money(cost)), fuel \(Phrases.money(fuelCost)). That took 2 minutes. Start the engine to go on."
+        "A tow truck took you to the next truck stop and \(electric ? "charged a quarter of the battery" : "put in a quarter tank"). Tow \(Phrases.money(cost)), \(fuelWord) \(Phrases.money(fuelCost)). That took 2 minutes. Start the engine to go on."
     }
 
     public func roadAheadTruckStop(_ distance: Double) -> String {
@@ -238,9 +254,14 @@ public struct Phrases {
     }
 
     /// Whether the fuel in the tank covers a trip.
-    public func fuelCheck(fuelLiters: Double, capacity: Double, distance: Double, cargoKg: Double = 0) -> String {
-        let needed = CareerState.fuelNeeded(forDistance: distance, cargoKg: cargoKg)
+    public func fuelCheck(fuelLiters: Double, capacity: Double, distance: Double, cargoKg: Double = 0,
+                          efficiency: Double = 1) -> String {
+        let needed = CareerState.fuelNeeded(forDistance: distance, cargoKg: cargoKg) * efficiency
         let percent = Int((fuelLiters / capacity * 100).rounded())
+        if electric {
+            if fuelLiters >= needed { return "Battery OK: \(percent) percent." }
+            return "Not enough charge: \(percent) percent. Charge up first, or stop at a truck stop on the way."
+        }
         if fuelLiters >= needed { return "Fuel OK: \(percent) percent." }
         return "Not enough fuel: \(percent) percent. Fill up first, or stop at a truck stop on the way."
     }
@@ -274,7 +295,8 @@ public struct Phrases {
 
     /// A truck's details for the garage.
     public func truck(_ t: TruckSpec) -> String {
-        let tank = units == .metric ? "\(Int(t.fuelCapacityLiters)) liter tank" : "\(Int((t.fuelCapacityLiters * 0.264_17).rounded())) gallon tank"
+        let tank = t.isElectric ? "\(Int(t.fuelCapacityLiters)) kilowatt hour battery"
+            : units == .metric ? "\(Int(t.fuelCapacityLiters)) liter tank" : "\(Int((t.fuelCapacityLiters * 0.264_17).rounded())) gallon tank"
         return "\(t.name). \(t.horsepower) horsepower, top speed \(units.speed(t.speedLimiter)) \(units.speedUnitSpoken), \(tank). \(t.summary)"
     }
 
@@ -328,8 +350,12 @@ public struct Phrases {
                      "Average speed \(units.speed(st.averageSpeed)), top speed \(units.speed(st.topSpeed)) \(units.speedUnitSpoken)."]
         parts.append(st.crashes == 0 ? "No crashes." : "Crashes: \(st.crashes).")
         if st.tooFastWarnings > 0 { parts.append("Too fast for a curve \(st.tooFastWarnings) time\(st.tooFastWarnings == 1 ? "" : "s").") }
-        parts.append(units == .metric ? String(format: "Fuel used %.0f liters.", st.fuelUsedLiters)
-                                      : String(format: "Fuel used %.1f gallons.", st.fuelUsedLiters * 0.264_17))
+        if electric {
+            parts.append(String(format: "Energy used %.0f kilowatt hours.", st.fuelUsedLiters))
+        } else {
+            parts.append(units == .metric ? String(format: "Fuel used %.0f liters.", st.fuelUsedLiters)
+                                          : String(format: "Fuel used %.1f gallons.", st.fuelUsedLiters * 0.264_17))
+        }
         return parts.joined(separator: " ")
     }
 
@@ -337,15 +363,17 @@ public struct Phrases {
         var parts: [String] = []
         parts.append("\(units.speed(d.speed)) \(units.speedUnitSpoken)")
         switch d.engine {
-        case .off: parts.append("engine off")
-        case .starting: parts.append("engine starting")
+        case .off: parts.append(electric ? "motor off" : "engine off")
+        case .starting: parts.append(electric ? "powering up" : "engine starting")
         case .running:
-            parts.append("gear \(d.gear)")
-            parts.append("\(Int((d.rpm / 50).rounded() * 50)) RPM")
+            if !electric {
+                parts.append("gear \(d.gear)")
+                parts.append("\(Int((d.rpm / 50).rounded() * 50)) RPM")
+            }
         }
-        parts.append("fuel \(Int((d.fuelFraction * 100).rounded())) percent, about \(units.distance(d.range)) left")
+        parts.append("\(fuelWord) \(Int((d.fuelFraction * 100).rounded())) percent, about \(units.distance(d.range)) left")
         let temp = units == .metric ? "\(Int(d.engineTempC.rounded())) degrees" : "\(Int((d.engineTempC * 9 / 5 + 32).rounded())) degrees"
-        parts.append("engine temperature \(temp)")
+        parts.append("\(electric ? "motor" : "engine") temperature \(temp)")
         if case let .on(side) = d.signal { parts.append("\(side.rawValue) signal on") }
         parts.append("limit \(units.speed(d.speedLimit))")
         return parts.joined(separator: ", ") + "."

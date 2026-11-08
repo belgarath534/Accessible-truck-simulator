@@ -27,6 +27,7 @@ public enum Achievement: String, CaseIterable, Codable, Sendable {
     case roadKing = "road_king"
     case firstDriver = "first_driver"
     case fleetOwner = "fleet_owner"
+    case collector
 
     public var gameCenterID: String { "trucksim." + rawValue }
 
@@ -54,6 +55,7 @@ public enum Achievement: String, CaseIterable, Codable, Sendable {
         case .roadKing: return "King of the Road"
         case .firstDriver: return "Now Hiring"
         case .fleetOwner: return "Fleet Owner"
+        case .collector: return "Collector"
         }
     }
 
@@ -82,6 +84,7 @@ public enum Achievement: String, CaseIterable, Codable, Sendable {
         case .roadKing: return "Buy the Road King."
         case .firstDriver: return "Hire your first driver."
         case .fleetOwner: return "Have two drivers working for you at once."
+        case .collector: return "Own every truck in the garage."
         }
     }
 
@@ -95,7 +98,7 @@ public enum Achievement: String, CaseIterable, Codable, Sendable {
         case .maxedOut, .thousandKilometers: return 50
         case .deliveries50, .allTowns, .fleetOwner: return 60
         case .roadKing, .earned50k: return 80
-        case .deliveries100: return 100
+        case .deliveries100, .collector: return 100
         }
     }
 
@@ -181,6 +184,7 @@ public extension CareerState {
         check(.roadKing, owns(.roadKing))
         check(.firstDriver, !drivers.isEmpty)
         check(.fleetOwner, drivers.filter { $0.truckID != nil }.count >= 2)
+        check(.collector, TruckSpec.catalog.allSatisfy { owns($0) })
         return earned
     }
 }

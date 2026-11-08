@@ -111,11 +111,11 @@ struct JobBoardView: View {
     @EnvironmentObject private var career: CareerStore
     let start: (DeliveryJob) -> Void
 
-    private var phrases: Phrases { Phrases(units: settings.units) }
+    private var phrases: Phrases { Phrases(units: settings.units, electric: career.truck.isElectric) }
 
     private func fuelText(_ job: DeliveryJob) -> String {
         phrases.fuelCheck(fuelLiters: career.fuelLiters, capacity: career.truck.fuelCapacityLiters, distance: job.distance,
-                          cargoKg: job.cargo.massKg)
+                          cargoKg: job.cargo.massKg, efficiency: career.truck.fuelEfficiency)
     }
 
     var body: some View {
@@ -142,9 +142,10 @@ struct JobBoardView: View {
             }
             Section {
                 let cost = career.state.yardFillCost(for: career.baseTruck)
-                Text("Fuel: \(Int((career.fuelLiters / career.truck.fuelCapacityLiters * 100).rounded())) percent.")
+                let electric = career.truck.isElectric
+                Text("\(electric ? "Battery" : "Fuel"): \(Int((career.fuelLiters / career.truck.fuelCapacityLiters * 100).rounded())) percent.")
                 if cost > 0 {
-                    Button("Fill Up at the Yard for \(Phrases.money(cost))") {
+                    Button("\(electric ? "Charge" : "Fill Up") at the Yard for \(Phrases.money(cost))") {
                         _ = career.fillAtYard(career.baseTruck)
                     }
                     .accessibilityHint("Truck stops on the road are cheaper.")
@@ -334,12 +335,13 @@ struct GarageView: View {
                         let capacity = career.upgraded(truck).fuelCapacityLiters
                         let percent = Int((career.state.fuelLiters(for: truck) / capacity * 100).rounded())
                         let fillCost = career.state.yardFillCost(for: truck)
-                        Text("Fuel: \(percent) percent.")
+                        Text("\(truck.isElectric ? "Battery" : "Fuel"): \(percent) percent.")
                         if fillCost > 0 {
-                            Button("Fill Up at the Yard for \(Phrases.money(fillCost))") {
+                            Button("\(truck.isElectric ? "Charge" : "Fill Up") at the Yard for \(Phrases.money(fillCost))") {
                                 let full = career.fillAtYard(truck)
-                                announce(full ? "Tank full. \(Phrases.money(career.money)) left in the bank."
-                                              : "Not enough money for a full tank. Filled what you could afford.")
+                                let what = truck.isElectric ? "Battery full" : "Tank full"
+                                announce(full ? "\(what). \(Phrases.money(career.money)) left in the bank."
+                                              : "Not enough money to fill up completely. Got what you could afford.")
                             }
                             .accessibilityHint("Truck stops on the road are cheaper.")
                         }

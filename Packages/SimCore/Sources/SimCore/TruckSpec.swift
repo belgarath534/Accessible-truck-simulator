@@ -19,6 +19,10 @@ public struct TruckSpec: Equatable, Sendable {
     /// One or two sentences for the garage.
     public var summary = ""
     public var sound = EngineSound.recorded
+    /// Electric trucks: one gear, a motor instead of an engine, a battery charged at truck stops.
+    public var isElectric = false
+    /// Fuel (or battery) used compared with a typical truck: below 1 goes further on a tank.
+    public var fuelEfficiency = 1.0
 
     // Mass
     public var massKg: Double
@@ -151,10 +155,13 @@ public struct EngineSound: Equatable, Sendable {
     public var bark: Double
     /// 0 steady idle ... 1 lumpy, rocking idle.
     public var lope: Double
+    /// An electric motor's whine instead of an engine.
+    public var electric: Bool
 
     public init(recorded: Bool = false, pitch: Double = 1, roughness: Double = 0.3, turbo: Double = 0.3,
-                bark: Double = 0.2, lope: Double = 0.1) {
+                bark: Double = 0.2, lope: Double = 0.1, electric: Bool = false) {
         self.recorded = recorded
+        self.electric = electric
         self.pitch = pitch
         self.roughness = roughness
         self.turbo = turbo
@@ -208,12 +215,202 @@ public extension TruckSpec {
         return t
     }()
 
+    /// A light farm truck: easy to handle and cheap to run, but slow.
+    static let farmRunner: TruckSpec = {
+        var t = TruckSpec.starter
+        t.name = "Farm Runner"
+        t.id = "farm_runner"
+        t.price = 3_500
+        t.summary = "A light farm truck. Easy to handle and cheap to run, but slow to get going. Rattly little four-cylinder."
+        t.massKg = 14_500
+        t.torqueCurve = [
+            .init(rpm: 600, torque: 900), .init(rpm: 1_000, torque: 1_450), .init(rpm: 1_400, torque: 1_550),
+            .init(rpm: 1_800, torque: 1_300), .init(rpm: 2_100, torque: 950),
+        ]
+        t.cylinders = 4
+        t.steeringLatAccel = 3.4
+        t.maxBrakeDecel = 4.2
+        t.fuelCapacityLiters = 300
+        t.fuelEfficiency = 0.85
+        t.speedLimiter = 85 / 3.6
+        t.sound = EngineSound(pitch: 1.35, roughness: 0.6, turbo: 0.1, bark: 0.3, lope: 0.3)
+        return t
+    }()
+
+    /// Small and nimble: the sharpest steering, but a small tank.
+    static let cityHauler: TruckSpec = {
+        var t = TruckSpec.starter
+        t.name = "City Hauler"
+        t.id = "city_hauler"
+        t.price = 10_000
+        t.summary = "Small and nimble, with the sharpest steering of any truck: great in towns and tight curves. The small tank means more truck stops. High-revving four with a turbo."
+        t.massKg = 15_000
+        t.torqueCurve = [
+            .init(rpm: 600, torque: 1_100), .init(rpm: 1_000, torque: 1_800), .init(rpm: 1_500, torque: 1_950),
+            .init(rpm: 1_900, torque: 1_700), .init(rpm: 2_300, torque: 1_250),
+        ]
+        t.maxRPM = 2_300
+        t.shiftUpRPM = 1_900
+        t.cylinders = 4
+        t.wheelbase = 3.6
+        t.steeringLatAccel = 3.9
+        t.maxSteerAngle = 0.7
+        t.steerRate = 0.8
+        t.maxBrakeDecel = 4.6
+        t.fuelCapacityLiters = 280
+        t.speedLimiter = 90 / 3.6
+        t.sound = EngineSound(pitch: 1.25, roughness: 0.25, turbo: 0.6, bark: 0.2, lope: 0.05)
+        return t
+    }()
+
+    /// Made for the mountains: the strongest brakes and engine brake, planted in curves, slow on the highway.
+    static let mountainGoat: TruckSpec = {
+        var t = TruckSpec.starter
+        t.name = "Mountain Goat"
+        t.id = "mountain_goat"
+        t.price = 14_000
+        t.summary = "Made for the mountains. The strongest brakes and engine brake, and it hugs the road in curves, but its top speed is low. Growly six with a barking exhaust brake."
+        t.massKg = 16_500
+        t.torqueCurve = [
+            .init(rpm: 600, torque: 1_400), .init(rpm: 1_000, torque: 2_100), .init(rpm: 1_400, torque: 2_100),
+            .init(rpm: 1_800, torque: 1_600), .init(rpm: 2_100, torque: 1_200),
+        ]
+        t.engineBrakeFraction = 0.3
+        t.maxBrakeDecel = 5.8
+        t.steeringLatAccel = 3.6
+        t.fuelCapacityLiters = 450
+        t.speedLimiter = 85 / 3.6
+        t.sound = EngineSound(pitch: 0.95, roughness: 0.55, turbo: 0.4, bark: 0.8, lope: 0.4)
+        return t
+    }()
+
+    /// The quickest truck at highway speeds.
+    static let highwayStar: TruckSpec = {
+        var t = TruckSpec.starter
+        t.name = "Highway Star"
+        t.id = "highway_star"
+        t.price = 24_000
+        t.summary = "Built for the interstate: the quickest truck at highway speeds, smooth and a little thrifty. Smooth six with a loud turbo whistle."
+        t.massKg = 16_800
+        t.torqueCurve = [
+            .init(rpm: 600, torque: 1_300), .init(rpm: 1_000, torque: 2_200), .init(rpm: 1_400, torque: 2_600),
+            .init(rpm: 1_800, torque: 2_550), .init(rpm: 2_100, torque: 2_100),
+        ]
+        t.tractionLimitAccel = 2.7
+        t.maxBrakeDecel = 4.8
+        t.steeringLatAccel = 3.1
+        t.fuelCapacityLiters = 550
+        t.fuelEfficiency = 0.95
+        t.speedLimiter = 100 / 3.6
+        t.sound = EngineSound(pitch: 0.9, roughness: 0.15, turbo: 0.9, bark: 0.3, lope: 0.05)
+        return t
+    }()
+
+    /// The road-trip truck: a huge tank and great fuel economy, but heavy in the curves.
+    static let longHauler: TruckSpec = {
+        var t = TruckSpec.starter
+        t.name = "Long Hauler"
+        t.id = "long_hauler"
+        t.price = 28_000
+        t.summary = "The road-trip truck. A huge 900 liter tank and the best fuel economy of any diesel: it can cross the map without stopping. Heavy in the curves. Deep, calm, low rumble."
+        t.massKg = 18_000
+        t.torqueCurve = [
+            .init(rpm: 600, torque: 1_400), .init(rpm: 1_000, torque: 2_300), .init(rpm: 1_400, torque: 2_400),
+            .init(rpm: 1_800, torque: 2_000), .init(rpm: 2_100, torque: 1_500),
+        ]
+        t.maxBrakeDecel = 4.6
+        t.steeringLatAccel = 2.9
+        t.fuelCapacityLiters = 900
+        t.fuelEfficiency = 0.75
+        t.speedLimiter = 95 / 3.6
+        t.sound = EngineSound(pitch: 0.78, roughness: 0.2, turbo: 0.35, bark: 0.25, lope: 0.15)
+        return t
+    }()
+
+    /// A torque monster for the heaviest loads, but thirsty.
+    static let ironBull: TruckSpec = {
+        var t = TruckSpec.starter
+        t.name = "Iron Bull"
+        t.id = "iron_bull"
+        t.price = 34_000
+        t.summary = "A torque monster that pulls the heaviest loads like they're empty, but it drinks fuel. Lumpy, barking V8."
+        t.massKg = 19_000
+        t.torqueCurve = [
+            .init(rpm: 600, torque: 2_000), .init(rpm: 1_000, torque: 3_200), .init(rpm: 1_400, torque: 3_300),
+            .init(rpm: 1_800, torque: 2_700), .init(rpm: 2_100, torque: 2_000),
+        ]
+        t.cylinders = 8
+        t.tractionLimitAccel = 3.0
+        t.maxBrakeDecel = 5.2
+        t.steeringLatAccel = 3.0
+        t.fuelCapacityLiters = 700
+        t.fuelEfficiency = 1.1
+        t.speedLimiter = 95 / 3.6
+        t.sound = EngineSound(pitch: 0.72, roughness: 0.5, turbo: 0.7, bark: 0.9, lope: 0.5)
+        return t
+    }()
+
+    /// Electric: instant power, no gears, charged at truck stops, cheap to run.
+    static let volt: TruckSpec = {
+        var t = TruckSpec.starter
+        t.name = "Volt"
+        t.id = "volt"
+        t.price = 40_000
+        t.summary = "An electric truck. Instant power and no gear changes: you hear a motor whine that rises with your speed. Charge it at truck stops; it costs about half as much to run."
+        t.isElectric = true
+        t.massKg = 18_500
+        t.torqueCurve = [
+            .init(rpm: 0, torque: 2_200), .init(rpm: 2_500, torque: 2_200), .init(rpm: 4_000, torque: 1_500),
+            .init(rpm: 6_000, torque: 900),
+        ]
+        t.idleRPM = 0
+        t.maxRPM = 6_000
+        t.cylinders = 0
+        t.engineStartSeconds = 0.4
+        t.gearRatios = [10.0]
+        t.finalDrive = 1.0
+        t.drivetrainEfficiency = 0.95
+        t.shiftUpRPM = 6_000
+        t.shiftDownRPM = 0
+        t.engineBrakeFraction = 0.25 // regenerative braking
+        t.tractionLimitAccel = 2.8
+        t.maxBrakeDecel = 5.0
+        t.steeringLatAccel = 3.3
+        t.fuelCapacityLiters = 500
+        t.fuelEfficiency = 0.55
+        t.speedLimiter = 100 / 3.6
+        t.sound = EngineSound(pitch: 1, roughness: 0, turbo: 0, bark: 0, lope: 0, electric: true)
+        return t
+    }()
+
+    /// The flagship: the best at everything.
+    static let titan: TruckSpec = {
+        var t = TruckSpec.starter
+        t.name = "Titan"
+        t.id = "titan"
+        t.price = 60_000
+        t.summary = "The flagship. The most power, the best brakes and grip, and a big tank: the best at everything. A screaming V12 with straight pipes."
+        t.massKg = 18_000
+        t.torqueCurve = [
+            .init(rpm: 600, torque: 2_200), .init(rpm: 1_000, torque: 3_300), .init(rpm: 1_400, torque: 3_600),
+            .init(rpm: 1_800, torque: 3_300), .init(rpm: 2_100, torque: 2_600),
+        ]
+        t.cylinders = 12
+        t.tractionLimitAccel = 3.2
+        t.maxBrakeDecel = 5.5
+        t.steeringLatAccel = 3.4
+        t.fuelCapacityLiters = 800
+        t.speedLimiter = 100 / 3.6
+        t.sound = EngineSound(pitch: 0.68, roughness: 0.2, turbo: 0.8, bark: 1, lope: 0.2)
+        return t
+    }()
+
     /// Every truck in the garage, cheapest first.
     static let catalog: [TruckSpec] = [{
         var t = TruckSpec.starter
         t.summary = "Your first truck. Steady six-cylinder with a little turbo: nothing fancy, never lets you down."
         return t
-    }(), .workhorse, .roadKing]
+    }(), .farmRunner, .workhorse, .cityHauler, .mountainGoat, .roadKing, .highwayStar, .longHauler, .ironBull, .volt, .titan]
 
     /// Peak engine power, horsepower.
     var horsepower: Int {

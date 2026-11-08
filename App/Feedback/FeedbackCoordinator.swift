@@ -17,12 +17,14 @@ final class FeedbackCoordinator {
     var freeDriveTown = "Millbrook"
     /// The current truck's engine voice; set before start().
     var engineSound: EngineSound = .recorded
+    /// The current truck's fuel use compared with a typical truck; set before start().
+    var fuelEfficiency = 1.0
 
     init(settings: AppSettings) {
         self.settings = settings
     }
 
-    private var phrases: Phrases { Phrases(units: settings.units) }
+    private var phrases: Phrases { Phrases(units: settings.units, electric: engineSound.electric) }
 
     func start() {
         audio.state.volume = Float(settings.volume)
@@ -97,8 +99,11 @@ final class FeedbackCoordinator {
             trip = "Free Drive from \(freeDriveTown). Roam the map: at each junction you'll hear the choices; signal left or right to turn, or no signal to go straight. You earn \(Phrases.money(Int(Payout.freeDriveRatePerKm))) per kilometer. Pause and choose End Drive to get paid."
         case let .job(job):
             trip = phrases.jobIntro(job) + " Stop at the drop-off to deliver."
-            if let fuel = startingFuel, fuel < CareerState.fuelNeeded(forDistance: job.distance, cargoKg: job.cargo.massKg) {
-                trip += " Warning: you may not have enough fuel. Listen for truck stops and fill up on the way."
+            if let fuel = startingFuel,
+               fuel < CareerState.fuelNeeded(forDistance: job.distance, cargoKg: job.cargo.massKg) * fuelEfficiency {
+                trip += engineSound.electric
+                    ? " Warning: you may not have enough charge. Listen for truck stops and charge on the way."
+                    : " Warning: you may not have enough fuel. Listen for truck stops and fill up on the way."
             }
         }
         speech.speak(
@@ -115,13 +120,13 @@ final class FeedbackCoordinator {
         switch event {
         case .engineStarting:
             audio.engineStarting()
-            speech.speak("Starting engine.", priority: .normal)
+            speech.speak(engineSound.electric ? "Powering up." : "Starting engine.", priority: .normal)
         case .engineStarted:
-            speech.speak("Engine running.", priority: .normal)
+            speech.speak(engineSound.electric ? "Ready to drive." : "Engine running.", priority: .normal)
             haptics.tap(intensity: 0.6, sharpness: 0.3)
         case .engineStopped:
             audio.engineStopped()
-            speech.speak("Engine off.", priority: .high)
+            speech.speak(engineSound.electric ? "Power off." : "Engine off.", priority: .high)
         case .engineNotRunning:
             speech.speak("The engine is off. Three-finger double tap to start it.", priority: .high)
         case let .gearChanged(gear, _):
@@ -185,7 +190,7 @@ final class FeedbackCoordinator {
             speech.speak(phrases.crash(reason), priority: .high)
             lastSpokenSpeedStep = 0
         case .outOfFuel:
-            speech.speak("Out of fuel.", priority: .high)
+            speech.speak(engineSound.electric ? "Battery empty." : "Out of fuel.", priority: .high)
         case let .fuelLow(fraction, nextStop, urgent):
             speech.speak(phrases.fuelLow(fraction: fraction, nextStop: nextStop, urgent: urgent), priority: urgent ? .high : .normal)
             if urgent { haptics.tap(intensity: 0.9, sharpness: 0.6) }

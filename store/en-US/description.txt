@@ -25,9 +25,10 @@ A WORLD TO DRIVE
 BUILD YOUR COMPANY
 • Pick jobs from the Job Board: cargo, distance, pay, time limit and weight are read out for each one
 • Bonuses for arriving on time, not crashing and a perfect stop
-• Three trucks, from the trusty starter to the Road King, each with its own engine sound
+• Eleven trucks, each with its own engine sound and its own feel: a nimble city truck, a mountain truck with mighty brakes, a long-range road-tripper, a torque monster, an electric truck with a motor whine, and the V12 Titan
 • Upgrades for the engine, brakes, tires and fuel tank
 • Hire drivers who deliver for you and earn money, even while the game is closed
+• 23 achievements and Game Center leaderboards
 
 PLAY YOUR WAY
 • Tilt the phone like a steering wheel, or use a one-finger joystick

@@ -543,7 +543,7 @@ public final class DrivingSession {
 
         guard running else { return }
         let powerKW = spec.torque(atRPM: truck.rpm) * truck.engineLoad * truck.rpm * 2 * .pi / 60 / 1000
-        let litersPerSecond = (0.0005 + powerKW * 0.252 / 3600) * DrivingSession.fuelGameScale
+        let litersPerSecond = (0.0005 + powerKW * 0.252 / 3600) * DrivingSession.fuelGameScale * spec.fuelEfficiency
         let burned = min(truck.fuelLiters, litersPerSecond * dt)
         truck.fuelLiters -= burned
         stats.fuelUsedLiters += burned

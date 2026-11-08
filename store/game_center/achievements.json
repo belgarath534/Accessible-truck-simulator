@@ -20,5 +20,6 @@
   {"id": "workhorse", "title": "Second Truck", "detail": "Buy the Workhorse.", "points": 30, "group": "business"},
   {"id": "road_king", "title": "King of the Road", "detail": "Buy the Road King.", "points": 80, "group": "business"},
   {"id": "first_driver", "title": "Now Hiring", "detail": "Hire your first driver.", "points": 30, "group": "business"},
-  {"id": "fleet_owner", "title": "Fleet Owner", "detail": "Have two drivers working for you at once.", "points": 60, "group": "business"}
+  {"id": "fleet_owner", "title": "Fleet Owner", "detail": "Have two drivers working for you at once.", "points": 60, "group": "business"},
+  {"id": "collector", "title": "Collector", "detail": "Own every truck in the garage.", "points": 100, "group": "business"}
 ]

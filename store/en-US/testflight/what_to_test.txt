@@ -1,5 +1,7 @@
-New: achievements and Game Center. There are 22 achievements, from finishing the tutorial and your first delivery to a perfect stop, a heavy load, buying the Road King and hiring a fleet of drivers. When you earn one during a drive, the game says "Achievement unlocked" and its name; earned in a menu (like buying a truck), an alert shows it. The new Achievements screen on the main menu lists every achievement, earned or not, and how to earn it.
+New in 1.1: eight new trucks, achievements and Game Center.
 
-If you're signed in to Game Center, achievements are also sent there, along with two leaderboards: money earned and deliveries. Achievements you already qualify for (like deliveries you've made) unlock on your next drive or purchase.
+Trucks: the garage now has 11 trucks, each with its own engine sound and its own feel. Farm Runner ($3,500), City Hauler ($10,000, sharpest steering), Mountain Goat ($14,000, strongest brakes), Highway Star ($24,000), Long Hauler ($28,000, huge tank), Iron Bull ($34,000, for heavy loads), Volt ($40,000, electric: no gears, a motor whine, charges at truck stops) and Titan ($60,000, the best at everything). Use "Hear the engine" in the garage to listen to each one.
 
-Please tell us: Did any achievement unlock when it shouldn't, or not unlock when it should? Is the spoken announcement clear and at a good moment?
+Achievements: 23 achievements, spoken when you earn them during a drive, or shown in an alert in the menus. The Achievements screen on the main menu lists them all. If you're signed in to Game Center, they're sent there too, with two leaderboards: money earned and deliveries.
+
+Please tell us: Does each truck sound and drive different enough? Does the Volt's whine tell you your speed? Did any achievement unlock when it shouldn't?
