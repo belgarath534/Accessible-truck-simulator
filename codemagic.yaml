@@ -120,6 +120,19 @@ workflows:
           python3 -m pip install --quiet --user pyjwt cryptography requests
           python3 store/fill_store_info.py
 
+  truck-sim-game-center:
+    name: Truck Sim Game Center setup
+    # Creates the achievements and leaderboards in App Store Connect. See store/setup_game_center.py.
+    max_build_duration: 15
+    instance_type: mac_mini_m2
+    integrations:
+      app_store_connect: Accessible Backrooms
+    scripts:
+      - name: Achievements and leaderboards
+        script: |
+          python3 -m pip install --quiet --user pyjwt cryptography requests
+          python3 store/setup_game_center.py
+
   truck-sim-submit:
     name: Truck Sim submit for App Review
     # Sets the price to free, makes the app available everywhere, attaches the newest build to the

@@ -78,7 +78,9 @@ final class DrivingController: NSObject, ObservableObject {
         guard drive != .tutorial else { return }
         career.saveFuel(session.truck.fuelLiters)
         let costs = Payout.expenses(session.stats)
-        if !costs.isEmpty { career.charge(Payout(lines: costs)) }
+        let trip = TripResult(job: nil, summary: nil, stats: session.stats)
+        if !costs.isEmpty { career.charge(Payout(lines: costs), trip: trip) }
+        // Anything earned is announced by the next drive, or by the menu after quitting.
     }
 
     /// Free Drive's pay so far (nil for other drives).
@@ -156,6 +158,7 @@ final class DrivingController: NSObject, ObservableObject {
         isPaused = false
         feedback.setPaused(false)
         feedback.finishFreeDrive(summary, payout: payout)
+        announceAchievements()
         MusicPlayer.shared.setPaused(true)
         finished = summary
     }
@@ -185,7 +188,17 @@ final class DrivingController: NSObject, ObservableObject {
         case let .job(job): result = Payout.delivery(job, summary: summary)
         }
         payout = result
-        if let result { career.record(result, distance: summary.stats.distance, completing: drive.job) }
+        let trip = TripResult(job: drive.job, summary: drive.job == nil ? nil : summary, stats: summary.stats)
+        if let result {
+            career.record(result, distance: summary.stats.distance, completing: drive.job, trip: trip)
+        }
+    }
+
+    /// Speaks achievements just earned, after whatever is being said now.
+    private func announceAchievements() {
+        for achievement in career.takeUnlocked() {
+            feedback.speech.speak(achievement.announcement, priority: .normal)
+        }
     }
 
     func restart() {
@@ -197,6 +210,7 @@ final class DrivingController: NSObject, ObservableObject {
         tutorialFinishedAt = nil
         recentActions = []
         feedback.reset()
+        announceAchievements()
         touch.reset()
         tilt.recenter()
         if finished != nil {
@@ -314,6 +328,7 @@ final class DrivingController: NSObject, ObservableObject {
         if let summary = session.summary {
             settle(summary)
             if let payout { feedback.announcePayout(payout) }
+            announceAchievements()
             touch.reset()
             MusicPlayer.shared.setPaused(true)
             finished = summary
@@ -332,6 +347,8 @@ final class DrivingController: NSObject, ObservableObject {
         if tutorialFinishedAt == nil {
             tutorialFinishedAt = now
             settings.tutorialDone = true
+            career.unlock(.tutorial)
+            announceAchievements()
         }
         // Let the closing words play before the results screen takes VoiceOver's focus.
         if let at = tutorialFinishedAt, now - at > 9 {

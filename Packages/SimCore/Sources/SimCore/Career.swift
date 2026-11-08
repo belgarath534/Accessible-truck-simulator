@@ -225,6 +225,10 @@ public struct CareerState: Codable, Equatable, Sendable {
     /// Your hired drivers, and drivers looking for work.
     public var drivers: [Driver]
     public var candidates: [Driver]
+    /// Achievement ids earned (see Achievement), in the order they were earned.
+    public var achievements: [String]
+    /// Towns the truck has been to (for the Seen It All achievement).
+    public var visitedTowns: [String]
     public static let homeTown = "millbrook"
 
     /// Dollars per litre to fill up at your own yard (truck stops are cheaper).
@@ -247,11 +251,13 @@ public struct CareerState: Codable, Equatable, Sendable {
         fuel = [:]
         drivers = []
         candidates = Company.candidates(using: &rng)
+        achievements = []
+        visitedTowns = [CareerState.homeTown]
     }
 
     // Saves from before the garage existed have no truck fields: give them the starter truck.
     enum CodingKeys: String, CodingKey {
-        case money, jobsCompleted, kilometersDriven, totalEarned, jobBoard, seed, ownedTrucks, selectedTruck, upgrades, fuel, currentTown, drivers, candidates
+        case money, jobsCompleted, kilometersDriven, totalEarned, jobBoard, seed, ownedTrucks, selectedTruck, upgrades, fuel, currentTown, drivers, candidates, achievements, visitedTowns
     }
 
     public init(from decoder: Decoder) throws {
@@ -274,6 +280,9 @@ public struct CareerState: Codable, Equatable, Sendable {
             var rng = SeededRandom(seed: seed &+ 99)
             candidates = Company.candidates(using: &rng)
         }
+        achievements = try c.decodeIfPresent([String].self, forKey: .achievements) ?? []
+        visitedTowns = try c.decodeIfPresent([String].self, forKey: .visitedTowns)
+            ?? Array(Set([CareerState.homeTown, currentTown])).sorted()
         // Jobs saved before the map (or from another town) are replaced with jobs from here.
         if jobBoard.contains(where: { $0.origin != currentTown }) { refreshBoard() }
     }
@@ -372,6 +381,7 @@ public struct CareerState: Codable, Equatable, Sendable {
     public mutating func completeJob(_ job: DeliveryJob) {
         jobsCompleted += 1
         if let destination = job.destination { currentTown = destination }
+        visit(currentTown)
         refreshBoard()
     }
 
@@ -379,7 +389,12 @@ public struct CareerState: Codable, Equatable, Sendable {
     public mutating func move(to town: String) {
         guard town != currentTown, WorldMap.standard.node(town)?.isTown == true else { return }
         currentTown = town
+        visit(town)
         refreshBoard()
+    }
+
+    private mutating func visit(_ town: String) {
+        if !visitedTowns.contains(town) { visitedTowns.append(town) }
     }
 
     /// A whole new set of jobs from the current town.

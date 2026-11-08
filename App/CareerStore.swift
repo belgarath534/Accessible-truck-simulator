@@ -40,6 +40,8 @@ enum DriveMode: Equatable, Identifiable {
 /// Saved as JSON in Application Support, so it survives closing the game and app updates.
 final class CareerStore: ObservableObject {
     @Published private(set) var state: CareerState
+    /// Achievements earned but not yet announced. The driving screen speaks them; the menu shows an alert.
+    @Published var justUnlocked: [Achievement] = []
 
     private let url: URL = {
         let dir = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
@@ -66,10 +68,31 @@ final class CareerStore: ObservableObject {
     var jobs: [DeliveryJob] { state.jobBoard }
 
     /// Pays the player for a drive and, for a delivery, swaps in a new job.
-    func record(_ payout: Payout, distance: Double, completing job: DeliveryJob?) {
+    func record(_ payout: Payout, distance: Double, completing job: DeliveryJob?, trip: TripResult? = nil) {
         state.record(payout, distance: distance)
         if let job { state.completeJob(job) }
+        save(trip: trip)
+        if !isDemo { GameCenter.shared.submitScores(state) }
+    }
+
+    /// Earns an achievement that isn't about the career itself (like finishing the tutorial).
+    func unlock(_ achievement: Achievement) {
+        guard !isDemo, state.unlock(achievement) else { return }
+        justUnlocked.append(achievement)
+        GameCenter.shared.report([achievement])
         save()
+    }
+
+    /// Hands over the achievements waiting to be announced.
+    func takeUnlocked() -> [Achievement] {
+        defer { justUnlocked = [] }
+        return justUnlocked
+    }
+
+    /// After signing in to Game Center: send everything earned so far.
+    func syncGameCenter() {
+        guard !isDemo else { return }
+        GameCenter.shared.sync(state)
     }
 
     var truck: TruckSpec { state.truck }
@@ -89,9 +112,9 @@ final class CareerStore: ObservableObject {
     }
 
     /// Charges a drive's costs without pay (abandoned job, restarted drive, practice).
-    func charge(_ payout: Payout) {
+    func charge(_ payout: Payout, trip: TripResult? = nil) {
         state.record(payout, distance: 0)
-        save()
+        save(trip: trip)
     }
 
     func buy(_ truck: TruckSpec) -> CareerState.PurchaseResult {
@@ -151,8 +174,15 @@ final class CareerStore: ObservableObject {
         save()
     }
 
-    private func save() {
-        guard !isDemo, let data = try? JSONEncoder().encode(state) else { return }
+    /// Checks for new achievements, then saves.
+    private func save(trip: TripResult? = nil) {
+        guard !isDemo else { return }
+        let new = state.checkAchievements(after: trip)
+        if !new.isEmpty {
+            justUnlocked += new
+            GameCenter.shared.report(new)
+        }
+        guard let data = try? JSONEncoder().encode(state) else { return }
         try? data.write(to: url, options: .atomic)
     }
 }

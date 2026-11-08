@@ -1,5 +1,5 @@
-New: the Tutorial. Open the game and choose "Start Here: Tutorial" at the top of the main menu. It's a guided first drive on the practice loop that teaches every control one step at a time and waits for you at each step: starting the engine, accelerating, staying in your lane, the dashboard, the GPS, turn signals, curves, the horn and stopping. If you don't do a step, it reminds you. The tutorial is free: no fuel or costs. After you finish it, it moves down the menu next to Practice Drive, so you can take it again.
+New: achievements and Game Center. There are 22 achievements, from finishing the tutorial and your first delivery to a perfect stop, a heavy load, buying the Road King and hiring a fleet of drivers. When you earn one during a drive, the game says "Achievement unlocked" and its name; earned in a menu (like buying a truck), an alert shows it. The new Achievements screen on the main menu lists every achievement, earned or not, and how to earn it.
 
-Also: traffic is now off by default. Turn it on in Settings if you want other vehicles on the map's roads.
+If you're signed in to Game Center, achievements are also sent there, along with two leaderboards: money earned and deliveries. Achievements you already qualify for (like deliveries you've made) unlock on your next drive or purchase.
 
-Please tell us: Was any step confusing? Did any instruction get cut off or talk over something else? Did the tutorial ever get stuck?
+Please tell us: Did any achievement unlock when it shouldn't, or not unlock when it should? Is the spoken announcement clear and at a good moment?

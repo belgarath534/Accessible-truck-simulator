@@ -20,6 +20,10 @@ struct TruckSimApp: App {
             }
             .environmentObject(settings)
             .environmentObject(career)
+            .onAppear {
+                GameCenter.shared.onAuthenticated = { [career] in career.syncGameCenter() }
+                GameCenter.shared.authenticate()
+            }
         }
     }
 }

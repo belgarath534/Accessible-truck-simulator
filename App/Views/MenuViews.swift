@@ -9,6 +9,10 @@ struct MainMenuView: View {
     @State private var driverReport: String?
     @Environment(\.scenePhase) private var scenePhase
 
+    private var achievementTitle: String {
+        career.justUnlocked.count == 1 ? "Achievement Unlocked!" : "\(career.justUnlocked.count) Achievements Unlocked!"
+    }
+
     /// Pays out the drivers' work since last time and tells the player about it.
     private func reportDrivers() {
         guard drive == nil, let report = career.collectDriverEarnings() else { return }
@@ -69,6 +73,7 @@ struct MainMenuView: View {
                     Text("Jobs go from the town you're in to another town and pay the most, with bonuses for arriving on time, not crashing and a perfect stop. Free Drive roams the map and pays a little for every kilometer. Practice Drive is the practice loop and doesn't pay.")
                 }
                 Section {
+                    NavigationLink("Achievements") { AchievementsView() }
                     NavigationLink("How to Drive") { ControlsHelpView() }
                     NavigationLink("Settings") { SettingsView() }
                     NavigationLink("Credits") { CreditsView() }
@@ -86,6 +91,12 @@ struct MainMenuView: View {
         }
         .onChange(of: settings.menuMusic) { _, on in
             if on { MusicPlayer.shared.playMenu() } else if MusicPlayer.shared.mode == .menu { MusicPlayer.shared.stop() }
+        }
+        .alert(achievementTitle, isPresented: Binding(get: { drive == nil && !career.justUnlocked.isEmpty },
+                                                       set: { if !$0 { career.justUnlocked = [] } })) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(career.justUnlocked.map { "\($0.title): \($0.detail)" }.joined(separator: "\n"))
         }
         .fullScreenCover(item: $drive, onDismiss: {
             if settings.menuMusic { MusicPlayer.shared.playMenu() }
