@@ -544,7 +544,7 @@ final class AudioSynth {
         engine.prepare()
         try? engine.start()
         sampled?.startLoops()
-        setWeather(weather)
+        setWeather(self.weather)
 
         // Restart if the route changes (e.g. headphones plugged in).
         configObserver = NotificationCenter.default.addObserver(
