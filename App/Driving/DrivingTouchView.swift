@@ -71,12 +71,18 @@ final class DrivingTouchView: UIView {
         let w = bounds.width, h = bounds.height
         let ppm = min(w / 22, h / 26) // pixels per metre: the truck and some road ahead fit in landscape
         let laneCenterX = w / 2
+        // Increase Contrast: black road, pure white lines, bright truck.
+        let contrast = UIAccessibility.isDarkerSystemColorsEnabled
 
+        if contrast {
+            ctx.setFillColor(UIColor(red: 0, green: 0.25, blue: 0, alpha: 1).cgColor)
+            ctx.fill(bounds)
+        }
         // Road: our lane is centred; the oncoming lane is to the left.
         let laneW = road.laneWidth * ppm
         let roadLeft = laneCenterX - laneW * 1.5
         let roadRight = laneCenterX + laneW * 0.5
-        ctx.setFillColor(UIColor(white: 0.25, alpha: 1).cgColor)
+        ctx.setFillColor(UIColor(white: contrast ? 0 : 0.25, alpha: 1).cgColor)
         ctx.fill(CGRect(x: roadLeft, y: 0, width: roadRight - roadLeft, height: h))
 
         // Rumble strips.
@@ -85,7 +91,8 @@ final class DrivingTouchView: UIView {
 
         // Lane markings scroll with distance travelled.
         let dash = 4 * ppm, gap = 8 * ppm
-        let offset = CGFloat(truck.position.truncatingRemainder(dividingBy: 12)) * ppm
+        // Reduce Motion: the lane markings stay still instead of scrolling past.
+        let offset = UIAccessibility.isReduceMotionEnabled ? 0 : CGFloat(truck.position.truncatingRemainder(dividingBy: 12)) * ppm
         ctx.setFillColor(UIColor.white.cgColor)
         var y = -dash - gap + offset
         while y < h {
@@ -99,7 +106,7 @@ final class DrivingTouchView: UIView {
         let k = road.curvature(at: truck.position + 60)
         if abs(k) > 0.0005 {
             let arrow = k > 0 ? "Curve right ➡︎" : "⬅︎ Curve left"
-            drawText(arrow, at: CGPoint(x: laneCenterX, y: 20), size: 22, color: .yellow, centered: true)
+            drawText(arrow, at: CGPoint(x: laneCenterX, y: 20), size: 22, color: contrast ? .white : .yellow, centered: true)
         }
 
         // Other vehicles: oncoming in the left lane, slower ones ahead.
@@ -111,6 +118,9 @@ final class DrivingTouchView: UIView {
             let carW = CGFloat(v.halfWidth * 2) * ppm, carL = CGFloat(v.length) * ppm
             ctx.setFillColor((v.oncoming ? UIColor.systemBlue : UIColor.systemOrange).cgColor)
             ctx.fill(CGRect(x: carX - carW / 2, y: carY - carL / 2, width: carW, height: carL))
+            // Not just color: a label and an arrow for which way it's going.
+            let label = v.oncoming ? "▼ Oncoming" : "▲ Ahead"
+            drawText(label, at: CGPoint(x: carX, y: carY - carL / 2 - 22), size: 13, color: .white, centered: true)
         }
 
         // Truck.
@@ -120,9 +130,9 @@ final class DrivingTouchView: UIView {
         ctx.translateBy(x: truckX, y: truckY)
         ctx.rotate(by: CGFloat(truck.headingError))
         let truckW = 2.5 * ppm, truckL = 7 * ppm
-        ctx.setFillColor(UIColor.systemRed.cgColor)
+        ctx.setFillColor((contrast ? UIColor.systemYellow : UIColor.systemRed).cgColor)
         ctx.fill(CGRect(x: -truckW / 2, y: -truckL / 2, width: truckW, height: truckL * 0.3))
-        ctx.setFillColor(UIColor(white: 0.85, alpha: 1).cgColor)
+        ctx.setFillColor(UIColor(white: contrast ? 1 : 0.85, alpha: 1).cgColor)
         ctx.fill(CGRect(x: -truckW / 2, y: -truckL / 2 + truckL * 0.33, width: truckW, height: truckL * 0.67))
         ctx.restoreGState()
 
@@ -142,12 +152,15 @@ final class DrivingTouchView: UIView {
         if let remaining = controller.session.remaining {
             status.append("Drop-off: \(units.distance(max(0, remaining)))")
         }
-        drawText(status.joined(separator: "   "), at: CGPoint(x: 20, y: 64), size: 17, color: .white, centered: false)
+        let statusY = 24 + min(68, UIFontMetrics(forTextStyle: .body).scaledValue(for: 34)) + 6
+        drawText(status.joined(separator: "   "), at: CGPoint(x: 20, y: statusY), size: 17, color: .white, centered: false)
     }
 
     private func drawText(_ text: String, at point: CGPoint, size: CGFloat, color: UIColor, centered: Bool) {
+        // Follows the player's text size (Larger Text), up to double.
+        let scaled = min(size * 2, UIFontMetrics(forTextStyle: .body).scaledValue(for: size))
         let attrs: [NSAttributedString.Key: Any] = [
-            .font: UIFont.monospacedDigitSystemFont(ofSize: size, weight: .semibold),
+            .font: UIFont.monospacedDigitSystemFont(ofSize: scaled, weight: .semibold),
             .foregroundColor: color,
         ]
         let str = NSAttributedString(string: text, attributes: attrs)

@@ -6,4 +6,6 @@ Trucks: the garage now has 11 trucks, each with its own engine sound and its own
 
 Achievements: 23 achievements, spoken when you earn them during a drive, or shown in an alert in the menus. The Achievements screen on the main menu lists them all. If you're signed in to Game Center, they're sent there too, with two leaderboards: money earned and deliveries.
 
+Accessibility: Settings has a new Accessibility section. Captions show everything the game says as text on the driving screen. Driving buttons add big on-screen buttons for every action (Engine, Faster, Slower, Stop, Steer Left and Right, signals, Dashboard, GPS, Horn, Pause) for Voice Control, Switch Control or anyone who likes buttons; Faster and Slower work like cruise control. The driving screen follows Larger Text, Increase Contrast and Reduce Motion, and traffic is labeled, not just colored. The game now also runs on iPad.
+
 Please tell us: Does each truck sound and drive different enough? Does the Volt's whine tell you your speed? Did any achievement unlock when it shouldn't?

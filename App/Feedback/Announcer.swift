@@ -22,6 +22,8 @@ final class Announcer: NSObject, AVSpeechSynthesizerDelegate {
     var output: SpeechOutput = .gameVoice
     /// Called with true when speech starts and false when it ends (the radio ducks under speech).
     var onSpeakingChanged: ((Bool) -> Void)?
+    /// Called with every sentence that is actually spoken, for on-screen captions.
+    var onCaption: ((String) -> Void)?
     private var announcementObserver: NSObjectProtocol?
 
     override init() {
@@ -51,6 +53,7 @@ final class Announcer: NSObject, AVSpeechSynthesizerDelegate {
                 attributes: [.accessibilitySpeechQueueAnnouncement: priority != .high]
             )
             onSpeakingChanged?(true)
+            onCaption?(text)
             UIAccessibility.post(notification: .announcement, argument: attributed)
             return
         }
@@ -62,6 +65,7 @@ final class Announcer: NSObject, AVSpeechSynthesizerDelegate {
         case .normal:
             break
         }
+        onCaption?(text)
         let utterance = AVSpeechUtterance(string: text)
         utterance.prefersAssistiveTechnologySettings = true
         synthesizer.speak(utterance)

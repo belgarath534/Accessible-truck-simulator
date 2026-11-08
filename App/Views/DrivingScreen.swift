@@ -10,11 +10,33 @@ struct DrivingScreen: View {
         self.onExit = onExit
     }
 
+    private var showButtons: Bool { controller.settings.drivingButtons || UIAccessibility.isSwitchControlRunning }
+
     var body: some View {
         ZStack {
-            DrivingSurface(controller: controller, isPaused: controller.isPaused || controller.finished != nil)
-                .ignoresSafeArea()
-                .accessibilityHidden(controller.isPaused || controller.finished != nil)
+            HStack(spacing: 0) {
+                DrivingSurface(controller: controller, isPaused: controller.isPaused || controller.finished != nil)
+                    .ignoresSafeArea()
+                    .accessibilityHidden(controller.isPaused || controller.finished != nil)
+                if showButtons && controller.finished == nil && !controller.isPaused {
+                    DrivingButtons(controller: controller)
+                }
+            }
+            if controller.settings.captions && !controller.caption.isEmpty && controller.finished == nil {
+                VStack {
+                    Spacer()
+                    Text(controller.caption)
+                        .font(.title3.weight(.semibold))
+                        .foregroundStyle(.white)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 16).padding(.vertical, 10)
+                        .background(.black.opacity(0.8), in: RoundedRectangle(cornerRadius: 12))
+                        .padding(.bottom, 18).padding(.horizontal, 40)
+                        // VoiceOver and the game voice already say this out loud.
+                        .accessibilityHidden(true)
+                }
+                .allowsHitTesting(false)
+            }
 
             if let summary = controller.finished {
                 TripCompleteView(
@@ -178,5 +200,55 @@ struct TripCompleteView: View {
             // The spoken summary plays first; then VoiceOver lands on the results.
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { focused = true }
         }
+    }
+}
+
+/// Big buttons for every driving action: for Voice Control ("Tap Faster"), Switch Control, or anyone who prefers buttons.
+struct DrivingButtons: View {
+    @ObservedObject var controller: DrivingController
+
+    private struct Item: Identifiable {
+        let id: String
+        let hint: String
+        let action: () -> Void
+    }
+
+    private var items: [Item] {
+        let c = controller
+        return [
+            Item(id: "Engine", hint: "Start or stop the engine.") { c.perform(.toggleEngine) },
+            Item(id: "Faster", hint: "Speed up by 10 and hold that speed.") { c.buttonFaster() },
+            Item(id: "Slower", hint: "Slow down by 10.") { c.buttonSlower() },
+            Item(id: "Stop", hint: "Brake to a stop.") { c.buttonStop() },
+            Item(id: "Steer Left", hint: "A short nudge to the left.") { c.buttonSteer(-1) },
+            Item(id: "Steer Right", hint: "A short nudge to the right.") { c.buttonSteer(1) },
+            Item(id: "Signal Left", hint: "Turn signal left.") { c.perform(.signal(.left)) },
+            Item(id: "Signal Right", hint: "Turn signal right.") { c.perform(.signal(.right)) },
+            Item(id: "Cancel Signal", hint: "Turn the signal off.") { c.perform(.cancelSignal) },
+            Item(id: "Dashboard", hint: "Speed, gear, fuel and more.") { c.perform(.speakDashboard) },
+            Item(id: "GPS", hint: "What's on the road ahead.") { c.perform(.speakRoadAhead) },
+            Item(id: "Horn", hint: "Sound the horn.") { c.perform(.horn) },
+            Item(id: "Pause", hint: "The pause menu.") { c.perform(.pause) },
+        ]
+    }
+
+    var body: some View {
+        ScrollView {
+            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
+                ForEach(items) { item in
+                    Button(action: item.action) {
+                        Text(item.id)
+                            .font(.headline)
+                            .frame(maxWidth: .infinity, minHeight: 52)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(item.id == "Stop" ? .red : .blue)
+                    .accessibilityHint(item.hint)
+                }
+            }
+            .padding(8)
+        }
+        .frame(width: 280)
+        .background(Color.black)
     }
 }

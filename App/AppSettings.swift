@@ -1,3 +1,4 @@
+import UIKit
 import Foundation
 import SimCore
 
@@ -23,6 +24,10 @@ final class AppSettings: ObservableObject {
     @Published var menuMusic: Bool { didSet { defaults.set(menuMusic, forKey: "menuMusic") } }
     @Published var radioOnStart: Bool { didSet { defaults.set(radioOnStart, forKey: "radioOnStart") } }
     @Published var traffic: Bool { didSet { defaults.set(traffic, forKey: "traffic") } }
+    /// Show what the game says as text while driving (for deaf and hard-of-hearing players).
+    @Published var captions: Bool { didSet { defaults.set(captions, forKey: "captions") } }
+    /// On-screen buttons for every driving action (Voice Control, Switch Control, or anyone who prefers buttons).
+    @Published var drivingButtons: Bool { didSet { defaults.set(drivingButtons, forKey: "drivingButtons") } }
     @Published var weather: Bool { didSet { defaults.set(weather, forKey: "weather") } }
     @Published var tutorialDone: Bool { didSet { defaults.set(tutorialDone, forKey: "tutorialDone") } }
 
@@ -46,6 +51,9 @@ final class AppSettings: ObservableObject {
         traffic = d.object(forKey: "traffic") as? Bool ?? false
         tutorialDone = d.object(forKey: "tutorialDone") as? Bool ?? false
         weather = d.object(forKey: "weather") as? Bool ?? true
+        // Follow the iPhone's own settings the first time.
+        captions = d.object(forKey: "captions") as? Bool ?? UIAccessibility.isClosedCaptioningEnabled
+        drivingButtons = d.object(forKey: "drivingButtons") as? Bool ?? UIAccessibility.isSwitchControlRunning
         MusicPlayer.shared.volume = Float(musicVolume)
     }
 }

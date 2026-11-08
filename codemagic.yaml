@@ -185,65 +185,62 @@ workflows:
       - name: Take screenshots
         script: |
           set -e
-          # The newest iOS, and the newest "Pro Max" iPhone it supports (the 6.9-inch size Apple asks for).
-          # The newest iOS that has a regular "Pro Max" iPhone (the 6.9-inch size Apple asks for).
-          read RUNTIME TYPE <<< "$(xcrun simctl list runtimes -j | python3 -c '
-          import json,re,sys
-          rts=[r for r in json.load(sys.stdin)["runtimes"] if r["platform"]=="iOS" and r["isAvailable"]]
+          # shoot KIND PATTERN: picks the newest iOS that has a device whose name contains PATTERN
+          # (the biggest iPhone or iPad Apple asks for), and takes the five screenshots into shots/KIND.
+          shoot() {
+            KIND=$1; PATTERN=$2
+            read RUNTIME TYPE <<< "$(PATTERN="$PATTERN" xcrun simctl list runtimes -j | PATTERN="$PATTERN" python3 -c '
+          import json, os, re, sys
+          want = os.environ["PATTERN"]
+          rts = [r for r in json.load(sys.stdin)["runtimes"] if r["platform"] == "iOS" and r["isAvailable"]]
           def num(t):
-              m=re.search(r"iPhone (\d+)", t["name"])
-              return int(m.group(1)) if m else 0
+              m = re.findall(r"\d+", t["name"])
+              return [int(x) for x in m]
           for rt in reversed(rts):
-              phones=[t for t in rt.get("supportedDeviceTypes", []) if t["name"].startswith("iPhone")]
-              print(rt["name"], "->", ", ".join(t["name"] for t in phones), file=sys.stderr)
-              pm=[t for t in phones if "Pro Max" in t["name"]]
-              if pm:
-                  print(rt["identifier"], max(pm, key=num)["identifier"]); break')"
-          echo "Device $TYPE on $RUNTIME"
-          UDID=$(xcrun simctl create "Screenshots" "$TYPE" "$RUNTIME")
-          xcrun simctl boot "$UDID"
-          xcrun simctl bootstatus "$UDID" -b
-          xcrun simctl status_bar "$UDID" override --time 9:41 --batteryState charged --batteryLevel 100 --cellularBars 4 --wifiBars 3 || true
-          xcrun simctl install "$UDID" build/Build/Products/Debug-iphonesimulator/TruckSim.app
-          mkdir -p shots
-          n=1
-          for SCREEN in drive jobs garage company menu; do
-            xcrun simctl launch --terminate-running-process "$UDID" com.accessibletrucksim.TruckSim -screenshot $SCREEN
-            if [ "$SCREEN" = "drive" ]; then
-              sleep 5
-              xcrun simctl io "$UDID" screenshot "shots/debug_drive_5s.png" || true
-              sleep 20
-              echo "=== Is the app still running?"
-              xcrun simctl spawn "$UDID" launchctl list | grep -i trucksim || echo "TruckSim is NOT running"
-              echo "=== App log"
-              xcrun simctl spawn "$UDID" log show --last 2m --style compact \
-                --predicate 'process == "TruckSim" OR eventMessage CONTAINS[c] "trucksim"' | tail -150 || true
-            else sleep 6; fi
-            xcrun simctl io "$UDID" screenshot "shots/raw_${n}_${SCREEN}.png"
-            n=$((n+1))
-          done
+              found = [t for t in rt.get("supportedDeviceTypes", []) if want in t["name"]]
+              if found:
+                  print(rt["identifier"], max(found, key=num)["identifier"]); break')"
+            echo "=== $KIND: device $TYPE on $RUNTIME"
+            UDID=$(xcrun simctl create "Screenshots $KIND" "$TYPE" "$RUNTIME")
+            xcrun simctl boot "$UDID"
+            xcrun simctl bootstatus "$UDID" -b
+            xcrun simctl status_bar "$UDID" override --time 9:41 --batteryState charged --batteryLevel 100 --cellularBars 4 --wifiBars 3 || true
+            xcrun simctl install "$UDID" build/Build/Products/Debug-iphonesimulator/TruckSim.app
+            mkdir -p "shots/$KIND"
+            n=1
+            for SCREEN in drive jobs garage company menu; do
+              xcrun simctl launch --terminate-running-process "$UDID" com.accessibletrucksim.TruckSim -screenshot $SCREEN
+              if [ "$SCREEN" = "drive" ]; then sleep 25; else sleep 6; fi
+              xcrun simctl io "$UDID" screenshot "shots/$KIND/raw_${n}_${SCREEN}.png"
+              n=$((n+1))
+            done
+            xcrun simctl shutdown "$UDID" || true
+            # The app is landscape-only; the simulator captures the portrait framebuffer. Turn each picture.
+            for f in shots/$KIND/raw_*.png; do
+              out="shots/$KIND/$(basename "$f" | sed 's/raw_//')"
+              w=$(sips -g pixelWidth "$f" | awk '/pixelWidth/{print $2}')
+              h=$(sips -g pixelHeight "$f" | awk '/pixelHeight/{print $2}')
+              if [ "$h" -gt "$w" ]; then sips -r ${ROTATE:-270} "$f" --out "$out" >/dev/null; else cp "$f" "$out"; fi
+              sips -g pixelWidth -g pixelHeight "$out" | tail -2
+            done
+            rm shots/$KIND/raw_*.png
+          }
+          shoot iphone "Pro Max"
+          shoot ipad "iPad Pro 13"
           # If the app crashed, show why.
           for r in ~/Library/Logs/DiagnosticReports/TruckSim*; do
             [ -f "$r" ] || continue
             echo "=== Crash report $r"; head -c 6000 "$r"; cp "$r" shots/ || true
           done
-          # The app is landscape-only; the simulator captures the portrait framebuffer. Turn each picture
-          # so it reads correctly, then make sure the size is one Apple accepts.
-          for f in shots/raw_*.png; do
-            out="shots/$(basename "$f" | sed 's/raw_//')"
-            w=$(sips -g pixelWidth "$f" | awk '/pixelWidth/{print $2}')
-            h=$(sips -g pixelHeight "$f" | awk '/pixelHeight/{print $2}')
-            if [ "$h" -gt "$w" ]; then sips -r ${ROTATE:-270} "$f" --out "$out" >/dev/null; else cp "$f" "$out"; fi
-            sips -g pixelWidth -g pixelHeight "$out" | tail -2
-          done
-          rm shots/raw_*.png
       - name: Upload to App Store Connect
         script: |
           if [ "$UPLOAD" = "yes" ]; then
             python3 -m pip install --quiet --user pyjwt cryptography requests
-            python3 store/upload_screenshots.py shots
+            python3 store/upload_screenshots.py shots/iphone APP_IPHONE_67
+            python3 store/upload_screenshots.py shots/ipad APP_IPAD_PRO_3GEN_129
           else
             echo "Not uploading (UPLOAD is not yes). Check the artifacts first."
           fi
     artifacts:
-      - shots/*.png
+      - shots/*/*.png
+      - shots/*.ips

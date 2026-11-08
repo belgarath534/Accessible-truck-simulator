@@ -280,6 +280,16 @@ struct SettingsView: View {
                 Text("Steering assist Low, Medium or High: steering moves the truck sideways, and letting go stops the drift. Curves push you toward the outside, so steer into them, harder when you're faster. Leaving the road slowly puts you on the gravel shoulder; leaving it fast is a crash. Off: realistic steering, much harder by ear.")
             }
             Section {
+                Toggle("Captions", isOn: $settings.captions)
+                    .accessibilityHint("Shows everything the game says as text on the driving screen.")
+                Toggle("Driving buttons", isOn: $settings.drivingButtons)
+                    .accessibilityHint("Big on-screen buttons for every action: engine, faster, slower, stop, steering, signals, dashboard, GPS, horn and pause.")
+            } header: {
+                Text("Accessibility")
+            } footer: {
+                Text("Driving buttons work with Voice Control (say \"Tap Faster\"), Switch Control and Full Keyboard Access. Faster and Slower change your speed by 10 and hold it, like cruise control; Steer Left and Steer Right nudge the truck. They turn on by themselves when Switch Control is running. Captions start on if Closed Captions is on in your iPhone's Accessibility settings. The driving screen also follows Larger Text, Increase Contrast and Reduce Motion.")
+            }
+            Section {
                 Toggle("Music in the menus", isOn: $settings.menuMusic)
                 Toggle("Radio on when you start driving", isOn: $settings.radioOnStart)
                 VStack(alignment: .leading) {

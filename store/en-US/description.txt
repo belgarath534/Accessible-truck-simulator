@@ -35,6 +35,9 @@ PLAY YOUR WAY
 • Tilt the phone like a steering wheel, or use a one-finger joystick
 • Simple gestures that work with VoiceOver on
 • Bluetooth keyboards and PlayStation, Xbox and MFi controllers supported
+• Voice Control and Switch Control: optional on-screen buttons for every action, with cruise-style speed control
+• Captions for everything the game says, and support for Larger Text, Increase Contrast and Reduce Motion
+• Plays on iPhone and iPad
 • A truck radio with its own songs, and vibration that follows the engine
 
 No ads, no account and no data collected. Feedback and ideas are very welcome: the game is updated often based on what players ask for.

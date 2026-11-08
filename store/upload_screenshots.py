@@ -46,6 +46,8 @@ def call(method, path, **kw):
 
 
 folder = sys.argv[1]
+# Which screenshot slot: APP_IPHONE_67 (6.9-inch iPhone) or APP_IPAD_PRO_3GEN_129 (13-inch iPad).
+DISPLAY = sys.argv[2] if len(sys.argv) > 2 else "APP_IPHONE_67"
 files = sorted(f for f in os.listdir(folder) if f.endswith(".png") and f[0].isdigit())
 if not files:
     sys.exit("No screenshots found")
@@ -58,10 +60,10 @@ locs = call("GET", f"/appStoreVersions/{version['id']}/appStoreVersionLocalizati
 loc = next((l for l in locs if l["attributes"]["locale"] == "en-US"), locs[0])
 
 sets = call("GET", f"/appStoreVersionLocalizations/{loc['id']}/appScreenshotSets")["data"]
-target = next((s for s in sets if s["attributes"]["screenshotDisplayType"] == "APP_IPHONE_67"), None)
+target = next((s for s in sets if s["attributes"]["screenshotDisplayType"] == DISPLAY), None)
 if not target:
     target = call("POST", "/appScreenshotSets", json={"data": {"type": "appScreenshotSets",
-                  "attributes": {"screenshotDisplayType": "APP_IPHONE_67"},
+                  "attributes": {"screenshotDisplayType": DISPLAY},
                   "relationships": {"appStoreVersionLocalization": {"data": {"type": "appStoreVersionLocalizations", "id": loc["id"]}}}}})["data"]
 for old in call("GET", f"/appScreenshotSets/{target['id']}/appScreenshots")["data"]:
     call("DELETE", f"/appScreenshots/{old['id']}")
@@ -81,4 +83,4 @@ for name in files:
     call("PATCH", f"/appScreenshots/{shot['id']}", json={"data": {"type": "appScreenshots", "id": shot["id"],
          "attributes": {"uploaded": True, "sourceFileChecksum": hashlib.md5(data).hexdigest()}}})
     print("Uploaded", name)
-print(f"Done: {len(files)} screenshots on version {version['attributes']['versionString']}")
+print(f"Done: {len(files)} {DISPLAY} screenshots on version {version['attributes']['versionString']}")

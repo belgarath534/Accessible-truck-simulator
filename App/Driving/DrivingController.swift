@@ -12,6 +12,14 @@ final class DrivingController: NSObject, ObservableObject {
     @Published private(set) var tripStatus = ""
     /// What the finished drive earned (nil for practice).
     @Published private(set) var payout: Payout?
+    /// The last thing the game said, for on-screen captions ("" when there's nothing to show).
+    @Published private(set) var caption = ""
+    private var captionToken = 0
+
+    // On-screen buttons (Voice Control, Switch Control): cruise to a speed, and short steering taps.
+    /// Speed the buttons are holding, m/s (nil = the buttons aren't driving).
+    private(set) var cruiseTarget: Double?
+    private var steerPulse: (direction: Double, until: CFTimeInterval)?
 
     let settings: AppSettings
     let career: CareerStore
@@ -46,6 +54,9 @@ final class DrivingController: NSObject, ObservableObject {
         feedback = FeedbackCoordinator(settings: settings)
         super.init()
         tutorial = makeTutorial()
+        feedback.speech.onCaption = { [weak self] text in
+            DispatchQueue.main.async { self?.showCaption(text) }
+        }
         hardware.onAction = { [weak self] action in self?.perform(action) }
     }
 
@@ -213,6 +224,8 @@ final class DrivingController: NSObject, ObservableObject {
         session = DrivingController.makeSession(drive, settings, career.truck, fuel: career.fuelLiters,
                                                 town: career.state.currentTown)
         payout = nil
+        cruiseTarget = nil
+        steerPulse = nil
         feedback.weather = session.weather
         tutorial = makeTutorial()
         tutorialFinishedAt = nil
@@ -318,6 +331,9 @@ final class DrivingController: NSObject, ObservableObject {
             input.steer = tilt.steer(orientation: orientation)
         }
         input = input.merged(with: hardware.poll())
+        // Pressing the brake yourself turns off the buttons' cruise.
+        if input.brake > 0.1 { cruiseTarget = nil }
+        input = input.merged(with: buttonInput(now: now))
         if ScreenshotMode.isOn {
             if session.truck.engine == .off { feedback.handle(session.perform(.toggleEngine)) }
             input = ScreenshotMode.autopilot(session)
@@ -330,6 +346,7 @@ final class DrivingController: NSObject, ObservableObject {
             accumulator -= fixedStep
         }
         feedback.handle(events)
+        if events.contains(where: { if case .crashed = $0 { return true }; return $0 == .engineStopped }) { cruiseTarget = nil }
         feedback.update(session: session)
         view?.setNeedsDisplay()
         updateTutorial(dt: dt, now: now)
@@ -341,6 +358,77 @@ final class DrivingController: NSObject, ObservableObject {
             MusicPlayer.shared.setPaused(true)
             finished = summary
         }
+    }
+
+    // MARK: Captions
+
+    private func showCaption(_ text: String) {
+        guard settings.captions else { return }
+        caption = text
+        captionToken += 1
+        let token = captionToken
+        // Long enough to read: about a third of a second per word, at least 4 seconds.
+        let seconds = max(4, Double(text.split(separator: " ").count) * 0.33)
+        DispatchQueue.main.asyncAfter(deadline: .now() + seconds) { [weak self] in
+            if self?.captionToken == token { self?.caption = "" }
+        }
+    }
+
+    // MARK: On-screen buttons
+
+    private var cruiseStep: Double { settings.units == .metric ? 10 / 3.6 : 10 * 0.447_04 }
+
+    /// Speeds up by 10 (km/h or mph), holding that speed.
+    func buttonFaster() {
+        guard !isPaused, finished == nil else { return }
+        if session.truck.engine != .running {
+            feedback.speech.speak("Start the engine first.", priority: .high)
+            return
+        }
+        let current = max(cruiseTarget ?? 0, (session.truck.speed / cruiseStep).rounded() * cruiseStep)
+        cruiseTarget = min(session.spec.speedLimiter, current + cruiseStep)
+        announceCruise()
+    }
+
+    /// Slows down by 10; at the bottom, stops.
+    func buttonSlower() {
+        guard !isPaused, finished == nil else { return }
+        let current = cruiseTarget ?? session.truck.speed
+        cruiseTarget = max(0, current - cruiseStep)
+        announceCruise()
+    }
+
+    func buttonStop() {
+        guard !isPaused, finished == nil else { return }
+        cruiseTarget = 0
+        feedback.speech.speak("Stopping.", priority: .high)
+    }
+
+    /// A short nudge to the side: about half a meter.
+    func buttonSteer(_ direction: Double) {
+        guard !isPaused, finished == nil else { return }
+        steerPulse = (direction, CACurrentMediaTime() + 0.35)
+    }
+
+    private func announceCruise() {
+        guard let target = cruiseTarget else { return }
+        let speed = settings.units.speed(target)
+        feedback.speech.speak(speed == 0 ? "Stopping." : "Cruise \(speed).", priority: .high)
+    }
+
+    /// The pedals and steering the buttons ask for this frame.
+    private func buttonInput(now: CFTimeInterval) -> DrivingInput {
+        var input = DrivingInput()
+        if let target = cruiseTarget {
+            let v = session.truck.speed
+            if v < target - 0.4 { input.throttle = min(1, 0.35 + (target - v) * 0.2) }
+            if v > target + 0.8 { input.brake = min(1, 0.2 + (v - target) * 0.15) }
+            if target == 0 && v < 0.3 { cruiseTarget = nil }
+        }
+        if let pulse = steerPulse {
+            if now < pulse.until { input.steer = pulse.direction } else { steerPulse = nil }
+        }
+        return input
     }
 
     // MARK: Tutorial
