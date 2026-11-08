@@ -14,7 +14,7 @@ final class EnginePreview: ObservableObject {
         MusicPlayer.shared.setPaused(true)
         let audio = AudioSynth()
         audio.state.volume = Float(volume)
-        audio.start(sound: truck.sound)
+        audio.start(sound: truck.sound, idleRPM: Float(truck.idleRPM), maxRPM: Float(truck.maxRPM))
         self.audio = audio
         playingTruckID = truck.id
         t = 0

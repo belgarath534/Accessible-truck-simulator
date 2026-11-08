@@ -157,6 +157,9 @@ public struct EngineSound: Equatable, Sendable {
     public var lope: Double
     /// An electric motor's whine instead of an engine.
     public var electric: Bool
+    /// A recording of this truck's engine (a seamless loop at idle, in the app's sounds), sped up with the
+    /// revs. When it's missing, the synthesizer settings above are used.
+    public var loopFile: String?
 
     public init(recorded: Bool = false, pitch: Double = 1, roughness: Double = 0.3, turbo: Double = 0.3,
                 bark: Double = 0.2, lope: Double = 0.1, electric: Bool = false) {
@@ -190,6 +193,7 @@ public extension TruckSpec {
         t.speedLimiter = 85 / 3.6
         t.cylinders = 6
         t.sound = EngineSound(pitch: 1.1, roughness: 0.9, turbo: 0, bark: 0.45, lope: 0.7)
+        t.sound.loopFile = "engine_loop_workhorse"
         return t
     }()
 
@@ -212,6 +216,7 @@ public extension TruckSpec {
         t.fuelCapacityLiters = 600
         t.speedLimiter = 100 / 3.6
         t.sound = EngineSound(pitch: 0.82, roughness: 0.35, turbo: 1, bark: 0.6, lope: 0.35)
+        t.sound.loopFile = "engine_loop_road_king"
         return t
     }()
 
@@ -234,6 +239,7 @@ public extension TruckSpec {
         t.fuelEfficiency = 0.85
         t.speedLimiter = 85 / 3.6
         t.sound = EngineSound(pitch: 1.35, roughness: 0.6, turbo: 0.1, bark: 0.3, lope: 0.3)
+        t.sound.loopFile = "engine_loop_farm_runner"
         return t
     }()
 
@@ -260,6 +266,7 @@ public extension TruckSpec {
         t.fuelCapacityLiters = 280
         t.speedLimiter = 90 / 3.6
         t.sound = EngineSound(pitch: 1.25, roughness: 0.25, turbo: 0.6, bark: 0.2, lope: 0.05)
+        t.sound.loopFile = "engine_loop_city_hauler"
         return t
     }()
 
@@ -281,6 +288,7 @@ public extension TruckSpec {
         t.fuelCapacityLiters = 450
         t.speedLimiter = 85 / 3.6
         t.sound = EngineSound(pitch: 0.95, roughness: 0.55, turbo: 0.4, bark: 0.8, lope: 0.4)
+        t.sound.loopFile = "engine_loop_mountain_goat"
         return t
     }()
 
@@ -303,6 +311,7 @@ public extension TruckSpec {
         t.fuelEfficiency = 0.95
         t.speedLimiter = 100 / 3.6
         t.sound = EngineSound(pitch: 0.9, roughness: 0.15, turbo: 0.9, bark: 0.3, lope: 0.05)
+        t.sound.loopFile = "engine_loop_highway_star"
         return t
     }()
 
@@ -324,6 +333,7 @@ public extension TruckSpec {
         t.fuelEfficiency = 0.75
         t.speedLimiter = 95 / 3.6
         t.sound = EngineSound(pitch: 0.78, roughness: 0.2, turbo: 0.35, bark: 0.25, lope: 0.15)
+        t.sound.loopFile = "engine_loop_long_hauler"
         return t
     }()
 
@@ -347,6 +357,7 @@ public extension TruckSpec {
         t.fuelEfficiency = 1.1
         t.speedLimiter = 95 / 3.6
         t.sound = EngineSound(pitch: 0.72, roughness: 0.5, turbo: 0.7, bark: 0.9, lope: 0.5)
+        t.sound.loopFile = "engine_loop_iron_bull"
         return t
     }()
 
@@ -402,6 +413,7 @@ public extension TruckSpec {
         t.fuelCapacityLiters = 800
         t.speedLimiter = 100 / 3.6
         t.sound = EngineSound(pitch: 0.68, roughness: 0.2, turbo: 0.8, bark: 1, lope: 0.2)
+        t.sound.loopFile = "engine_loop_titan"
         return t
     }()
 

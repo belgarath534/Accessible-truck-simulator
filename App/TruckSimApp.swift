@@ -21,6 +21,8 @@ struct TruckSimApp: App {
             .environmentObject(settings)
             .environmentObject(career)
             .onAppear {
+                // Store screenshots show a player who has finished the tutorial.
+                if ScreenshotMode.isOn { settings.tutorialDone = true }
                 GameCenter.shared.onAuthenticated = { [career] in career.syncGameCenter() }
                 GameCenter.shared.authenticate()
             }

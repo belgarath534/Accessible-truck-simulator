@@ -25,6 +25,24 @@ final class SampledEngine {
     private var layers: [Layer] = []
     private var oneShots: [String: (player: AVAudioPlayerNode, buffer: AVAudioPCMBuffer)] = [:]
     private var amp: Float = 0
+    /// One recording for the whole rev range (each truck's own engine): idle and top RPM for the speed-up.
+    private var singleLoop: (idle: Float, max: Float)?
+
+    /// A truck with its own engine recording: one seamless loop recorded at idle, sped up as the revs rise
+    /// (up to about 2.2 times at the red line). Returns nil if the recording isn't in the app.
+    init?(engine: AVAudioEngine, loop name: String, idleRPM: Float, maxRPM: Float) {
+        guard let buffer = SampledEngine.load(name) else { return nil }
+        let player = AVAudioPlayerNode()
+        let varispeed = AVAudioUnitVarispeed()
+        engine.attach(player)
+        engine.attach(varispeed)
+        engine.connect(player, to: varispeed, format: buffer.format)
+        engine.connect(varispeed, to: engine.mainMixerNode, format: buffer.format)
+        player.volume = 0
+        layers = [Layer(player: player, varispeed: varispeed, rpm: idleRPM, buffer: buffer)]
+        singleLoop = (max(idleRPM, 1), max(maxRPM, idleRPM + 1))
+        addOneShots(to: engine)
+    }
 
     /// Returns nil unless at least the idle loop is in the app.
     init?(engine: AVAudioEngine) {
@@ -43,6 +61,11 @@ final class SampledEngine {
             layers.forEach { engine.detach($0.player); engine.detach($0.varispeed) }
             return nil
         }
+        addOneShots(to: engine)
+    }
+
+    /// The starter, engine stop and air brake recordings (shared by all diesel trucks).
+    private func addOneShots(to engine: AVAudioEngine) {
         for name in SampledEngine.oneShotNames {
             guard let buffer = SampledEngine.load(name) else { continue }
             let player = AVAudioPlayerNode()
@@ -89,6 +112,12 @@ final class SampledEngine {
     /// Call every frame.
     func update(rpm: Float, load: Float, running: Bool, volume: Float) {
         amp += ((running ? 1 : 0) - amp) * (running ? 0.15 : 0.06)
+        if let single = singleLoop, let layer = layers.first {
+            let revs = min(1, max(0, (rpm - single.idle) / (single.max - single.idle)))
+            layer.varispeed.rate = 1 + 1.2 * revs
+            layer.player.volume = (0.6 + 0.4 * load) * (0.85 + 0.15 * revs) * amp * volume
+            return
+        }
         let sorted = layers.sorted { $0.rpm < $1.rpm }
         guard let first = sorted.first, let last = sorted.last else { return }
         let r = max(rpm, 1)

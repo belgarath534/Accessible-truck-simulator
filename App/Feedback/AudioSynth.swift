@@ -467,7 +467,7 @@ final class AudioSynth {
     private var hornBuffer: AVAudioPCMBuffer?
     private var configObserver: NSObjectProtocol?
 
-    func start(sound: EngineSound = .recorded) {
+    func start(sound: EngineSound = .recorded, idleRPM: Float = 600, maxRPM: Float = 2_100) {
         state.pitch = Float(sound.pitch)
         state.roughness = Float(sound.roughness)
         state.turboAmount = Float(sound.turbo)
@@ -511,7 +511,13 @@ final class AudioSynth {
         _ = attach(fx)
         _ = attach(weather)
 
-        sampled = sound.recorded ? SampledEngine(engine: engine) : nil
+        if sound.recorded {
+            sampled = SampledEngine(engine: engine)
+        } else if let loop = sound.loopFile {
+            sampled = SampledEngine(engine: engine, loop: loop, idleRPM: idleRPM, maxRPM: maxRPM)
+        } else {
+            sampled = nil
+        }
         if let buffer = SampledEngine.load("horn") {
             let player = AVAudioPlayerNode()
             engine.attach(player)

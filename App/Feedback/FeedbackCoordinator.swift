@@ -19,6 +19,9 @@ final class FeedbackCoordinator {
     var engineSound: EngineSound = .recorded
     /// The current truck's fuel use compared with a typical truck; set before start().
     var fuelEfficiency = 1.0
+    /// The current truck's idle and top RPM (for its engine recording); set before start().
+    var idleRPM: Double = 600
+    var maxRPM: Double = 2_100
     /// Today's weather; set before start() and on restart.
     var weather: Weather = .clear {
         didSet { audio.setWeather(weather) }
@@ -40,7 +43,7 @@ final class FeedbackCoordinator {
         }
         // The App Store screenshot simulator on the build Mac has no working sound device,
         // and starting audio there aborts the app. Screenshots don't need sound.
-        if !ScreenshotMode.isOn { audio.start(sound: engineSound) }
+        if !ScreenshotMode.isOn { audio.start(sound: engineSound, idleRPM: Float(idleRPM), maxRPM: Float(maxRPM)) }
         haptics.start()
     }
 

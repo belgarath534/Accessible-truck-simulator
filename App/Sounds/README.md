@@ -7,3 +7,9 @@ Drop recordings here (m4a, wav, caf or mp3) and the game uses them instead of it
 - `engine_start`, `engine_stop`, `air_brake`, `horn`: one-shot sounds (each optional)
 
 `engine_idle` is required; without it the synthesized engine is used.
+
+## Truck engines
+
+`engine_loop_<truck id>.wav`: one seamless loop per truck, recorded at idle and sped up with the revs
+(see `SampledEngine.init(engine:loop:idleRPM:maxRPM:)`). Made with ElevenLabs sound effects.
+Old Reliable uses the four `engine_idle`...`engine_high` loops; the Volt (electric) is synthesized.
