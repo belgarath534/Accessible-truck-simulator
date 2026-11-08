@@ -13,3 +13,8 @@ Drop recordings here (m4a, wav, caf or mp3) and the game uses them instead of it
 `engine_loop_<truck id>.wav`: one seamless loop per truck, recorded at idle and sped up with the revs
 (see `SampledEngine.init(engine:loop:idleRPM:maxRPM:)`). Made with ElevenLabs sound effects.
 Old Reliable uses the four `engine_idle`...`engine_high` loops; the Volt (electric) is synthesized.
+
+## Weather
+
+`weather_rain_light`, `weather_rain_storm`, `weather_wipers`, `weather_wet_tires` (seamless loops) and
+`weather_thunder` (one shot), made with ElevenLabs sound effects. Without them, the rain is synthesized.

@@ -466,6 +466,11 @@ final class AudioSynth {
     private var trafficSlots: [Int?] = [nil, nil, nil, nil]
     private var hornBuffer: AVAudioPCMBuffer?
     private var configObserver: NSObjectProtocol?
+    // Recorded weather: rain (light or storm), wipers and wet tyres loop; thunder plays once.
+    private var weatherLoops: [String: (player: AVAudioPlayerNode, buffer: AVAudioPCMBuffer)] = [:]
+    private var thunderShot: (player: AVAudioPlayerNode, buffer: AVAudioPCMBuffer)?
+    private var weather: Weather = .clear
+    private var hasWeatherRecordings: Bool { weatherLoops.count == 4 }
 
     func start(sound: EngineSound = .recorded, idleRPM: Float = 600, maxRPM: Float = 2_100) {
         state.pitch = Float(sound.pitch)
@@ -525,12 +530,21 @@ final class AudioSynth {
             hornPlayer = player
             hornBuffer = buffer
         }
+        for name in ["weather_rain_light", "weather_rain_storm", "weather_wipers", "weather_wet_tires", "weather_thunder"] {
+            guard let buffer = SampledEngine.load(name) else { continue }
+            let player = AVAudioPlayerNode()
+            engine.attach(player)
+            engine.connect(player, to: engine.mainMixerNode, format: buffer.format)
+            player.volume = 0
+            if name == "weather_thunder" { thunderShot = (player, buffer) } else { weatherLoops[name] = (player, buffer) }
+        }
         state.useSampledEngine = sampled != nil
         state.hasStartSample = sampled?.has("engine_start") ?? false
 
         engine.prepare()
         try? engine.start()
         sampled?.startLoops()
+        setWeather(weather)
 
         // Restart if the route changes (e.g. headphones plugged in).
         configObserver = NotificationCenter.default.addObserver(
@@ -560,6 +574,7 @@ final class AudioSynth {
         laneNode?.pan = Float(max(-1, min(1, truck.lateralOffset / DrivingSession.rumbleOffset)))
         sampled?.update(rpm: state.rpm, load: state.load, running: state.engineRunning,
                         volume: state.muted ? 0 : state.volume)
+        updateWeatherVolumes()
     }
 
     /// Drives the engine sound directly (garage preview), without a simulation.
@@ -592,9 +607,55 @@ final class AudioSynth {
         player.play()
     }
     func crash() { state.crashSeconds = 1.5 }
-    func thunder() { state.thunderSeconds = 4 }
+    /// Mutes or unmutes everything at once, recordings included (pause, results screen).
+    func setMuted(_ muted: Bool) {
+        state.muted = muted
+        sampled?.update(rpm: state.rpm, load: state.load, running: state.engineRunning, volume: muted ? 0 : state.volume)
+        if muted {
+            for (_, loop) in weatherLoops { loop.player.volume = 0 }
+        } else {
+            updateWeatherVolumes()
+        }
+    }
+
+    func thunder() {
+        guard let shot = thunderShot, !state.muted else {
+            state.thunderSeconds = 4
+            return
+        }
+        shot.player.stop()
+        shot.player.volume = state.volume * 0.9
+        shot.player.scheduleBuffer(shot.buffer, at: nil)
+        shot.player.play()
+    }
+
     func setWeather(_ weather: Weather) {
-        state.rain = weather == .storm ? 1 : (weather == .rain ? 0.6 : 0)
+        self.weather = weather
+        guard hasWeatherRecordings, engine.isRunning else {
+            // No recordings (or not started yet): the synthesized rain.
+            state.rain = weather == .storm ? 1 : (weather == .rain ? 0.6 : 0)
+            return
+        }
+        state.rain = 0
+        for (_, loop) in weatherLoops { loop.player.stop(); loop.player.volume = 0 }
+        guard weather != .clear else { return }
+        let rain = weather == .storm ? "weather_rain_storm" : "weather_rain_light"
+        for name in [rain, "weather_wipers", "weather_wet_tires"] {
+            guard let loop = weatherLoops[name] else { continue }
+            loop.player.scheduleBuffer(loop.buffer, at: nil, options: .loops)
+            loop.player.play()
+        }
+        updateWeatherVolumes()
+    }
+
+    /// Rain steady, wipers while the engine runs, tyre spray louder with speed.
+    private func updateWeatherVolumes() {
+        guard hasWeatherRecordings, weather != .clear else { return }
+        let on: Float = state.muted ? 0 : state.volume
+        let storm = weather == .storm
+        weatherLoops[storm ? "weather_rain_storm" : "weather_rain_light"]?.player.volume = on * (storm ? 0.85 : 0.6)
+        weatherLoops["weather_wipers"]?.player.volume = (state.engineRunning || state.cranking) ? on * 0.45 : 0
+        weatherLoops["weather_wet_tires"]?.player.volume = on * min(1, state.speed / 20) * (storm ? 0.8 : 0.6)
     }
     func policeRadio() { state.crackleSeconds = 0.6 }
     func oncomingCarHorn() { state.carHornSeconds = 0.9 }

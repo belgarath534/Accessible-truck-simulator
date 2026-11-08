@@ -62,7 +62,7 @@ final class FeedbackCoordinator {
     }
 
     func finishFreeDrive(_ summary: TripSummary, payout: Payout?) {
-        audio.state.muted = true
+        audio.setMuted(true)
         haptics.update(engineRunning: false, rpmFraction: 0, load: 0, onRumbleStrip: false)
         if UIAccessibility.isVoiceOverRunning {
             speech.speak("Drive ended.", priority: .high)
@@ -73,7 +73,7 @@ final class FeedbackCoordinator {
     }
 
     func setPaused(_ paused: Bool) {
-        audio.state.muted = paused
+        audio.setMuted(paused)
         if paused { haptics.update(engineRunning: false, rpmFraction: 0, load: 0, onRumbleStrip: false) }
         // With VoiceOver on, VoiceOver reads the pause menu itself; don't talk over it.
         if !UIAccessibility.isVoiceOverRunning || !paused {
@@ -82,7 +82,7 @@ final class FeedbackCoordinator {
     }
 
     func reset() {
-        audio.state.muted = false
+        audio.setMuted(false)
         onRumbleStrip = false
         lastSpokenSpeedStep = nil
         audio.setRumble(nil)
@@ -240,7 +240,7 @@ final class FeedbackCoordinator {
         case let .stoppedShort(remaining):
             speech.speak(phrases.stoppedShort(remaining), priority: .normal)
         case let .arrived(summary):
-            audio.state.muted = true
+            audio.setMuted(true)
             haptics.update(engineRunning: false, rpmFraction: 0, load: 0, onRumbleStrip: false)
             haptics.tap(intensity: 1, sharpness: 0.2)
             // VoiceOver reads the results screen itself; without it, the game reads them out.
