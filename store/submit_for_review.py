@@ -177,7 +177,9 @@ elif version and not problems:
                     "reviewSubmission": rel("reviewSubmissions", sub["id"]),
                     "appStoreVersion": rel("appStoreVersions", version["id"])}}})
         except ApiError as e:
-            if "409" not in str(e):
+            items = call("GET", f"/reviewSubmissions/{sub['id']}/items")["data"]
+            if not items:
+                # Apple refused to add the version: its reason says what's missing.
                 raise
             print("   (version was already in the submission)")
         call("PATCH", f"/reviewSubmissions/{sub['id']}", json={"data": {
