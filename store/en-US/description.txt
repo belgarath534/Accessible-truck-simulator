@@ -1,18 +1,38 @@
-Accessible Truck Sim is a truck-driving game you can play completely by sound. It's made for VoiceOver from the ground up by a blind developer, and sighted players can play it too.
+Accessible Truck Simulator is a trucking game you can play completely by sound. It's made for VoiceOver from the ground up by a blind developer, and sighted players can play it too.
 
-You really drive. No menus pick a route while the truck drives itself. You start the engine, press the accelerator, brake, and steer.
+You really drive. You start the engine, press the accelerator, brake, steer through the curves and stop on the drop-off. Then you get paid, and build a trucking company.
+
+LEARN IN MINUTES
+• A guided tutorial teaches every control, one step at a time, and waits for you at each step
+• A practice road full of curves, for learning with no pressure
 
 DRIVE BY EAR
-• A diesel engine that rises and falls with RPM and load, with an air hiss on every gear change
+• A real diesel engine that rises and falls with RPM and load, with an air hiss on every gear change
 • Soft beeps in the ear you're drifting toward, faster and higher the further you leave the centre of your lane
 • Rumble strips you hear and feel on the side you're drifting toward
 • Curves announced ahead of time with a suggested speed, and a warning if you're too fast
-• Speed called out as you accelerate, and a spoken dashboard on demand: speed, gear, RPM, fuel, engine temperature and turn signals
-• Vibration that follows the engine and kicks hard on the rumble strip
+• A spoken dashboard and GPS on demand: speed, gear, fuel, range, the next curve, the next turn and how far to go
+• A beacon in the last 150 meters that leads you to a perfect stop at the drop-off
+• Steering help you can turn up or down, from easy to fully realistic
 
-YOUR WAY TO STEER
+A WORLD TO DRIVE
+• Six places to deliver to, joined by an interstate, country roads and a mountain highway
+• Turn-by-turn GPS: signal left or right at each junction, and it recalculates if you take a wrong turn
+• Towns with lower speed limits, and police cars that ticket you for speeding, only when one is nearby
+• Truck stops: signal right, pull in and fill up before you run dry
+• Optional traffic: oncoming cars rush past in 3D sound, and slower vehicles to pass
+
+BUILD YOUR COMPANY
+• Pick jobs from the Job Board: cargo, distance, pay, time limit and weight are read out for each one
+• Bonuses for arriving on time, not crashing and a perfect stop
+• Three trucks, from the trusty starter to the Road King, each with its own engine sound
+• Upgrades for the engine, brakes, tires and fuel tank
+• Hire drivers who deliver for you and earn money, even while the game is closed
+
+PLAY YOUR WAY
 • Tilt the phone like a steering wheel, or use a one-finger joystick
-• Bluetooth keyboards and game controllers supported
-• Simple gestures that work with VoiceOver on: three-finger double tap to start the engine, two-finger double tap for the dashboard, two-finger swipes for turn signals and the horn
+• Simple gestures that work with VoiceOver on
+• Bluetooth keyboards and PlayStation, Xbox and MFi controllers supported
+• A truck radio with its own songs, and vibration that follows the engine
 
-This is an early version with one truck and a practice road full of curves. Coming next: GPS routes, traffic, deliveries, better trucks, upgrades and your own trucking company.
+No ads, no account and no data collected. Feedback and ideas are very welcome: the game is updated often based on what players ask for.

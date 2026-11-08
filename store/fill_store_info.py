@@ -314,12 +314,28 @@ def _():
     return f"version {v['attributes']['versionString']}"
 
 
+@part("Promotional text on the live version (it can change without an update)")
+def _():
+    vers = call("GET", f"/apps/{APP}/appStoreVersions", params={"filter[platform]": "IOS"})["data"]
+    live = [v for v in vers if (v["attributes"].get("appStoreState") or "") in ("READY_FOR_SALE", "READY_FOR_DISTRIBUTION")]
+    if not live:
+        return "no live version"
+    v = live[0]
+    locs = call("GET", f"/appStoreVersions/{v['id']}/appStoreVersionLocalizations")["data"]
+    en = next((l for l in locs if l["attributes"]["locale"] == "en-US"), None)
+    if not en:
+        return "no English text on the live version"
+    patch("appStoreVersionLocalizations", en["id"], {"promotionalText": text("promotional_text.txt")})
+    return f"version {v['attributes']['versionString']}"
+
+
 @part("Copyright")
 def _():
     v = editable_version()
     if not v:
         return "no editable App Store version"
     holder = " ".join(x for x in (contact.get("contactFirstName"), contact.get("contactLastName")) if x)
+    holder = " ".join(w[:1].upper() + w[1:] for w in holder.split())
     if not holder:
         return "skipped: no name found"
     patch("appStoreVersions", v["id"], {"copyright": f"{time.gmtime().tm_year} {holder}"})
