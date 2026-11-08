@@ -21,6 +21,7 @@ A WORLD TO DRIVE
 • Towns with lower speed limits, and police cars that ticket you for speeding, only when one is nearby
 • Truck stops: signal right, pull in and fill up before you run dry
 • Optional traffic: oncoming cars rush past in 3D sound, and slower vehicles to pass
+• Rain and storms: hear the rain on the cab, the wipers and the thunder. Wet roads are slippery, and deliveries pay extra
 
 BUILD YOUR COMPANY
 • Pick jobs from the Job Board: cargo, distance, pay, time limit and weight are read out for each one

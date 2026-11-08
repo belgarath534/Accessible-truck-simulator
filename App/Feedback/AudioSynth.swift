@@ -57,6 +57,10 @@ final class SynthState {
     var lope: Float = 0.1
     /// Electric truck: a motor whine instead of an engine.
     var electric = false
+    /// Rain: 0 dry, about 0.6 rain, 1 storm.
+    var rain: Float = 0
+    /// Seconds left of a thunderclap.
+    var thunderSeconds: Float = 0
 }
 
 private protocol Voice: AnyObject {
@@ -249,6 +253,70 @@ private final class TrafficVoice: Voice {
     }
 }
 
+/// Weather: rain on the cab roof, wipers, tyre spray on the wet road, and thunder.
+private final class WeatherVoice: Voice {
+    let state: SynthState
+    let sr: Float
+    var lp: Float = 0, hp: Float = 0, dropEnv: Float = 0, dropLP: Float = 0
+    var sprayLP: Float = 0, sprayHP: Float = 0
+    var wiperPhase: Float = 0, wiperLP: Float = 0
+    var thunderLP: Float = 0, thunderLP2: Float = 0, thunderLength: Float = 4
+    var noise = Noise(seed: 0x7A1D_0001)
+
+    init(state: SynthState, sampleRate: Float) { self.state = state; sr = sampleRate }
+
+    func render(_ out: UnsafeMutablePointer<Float>, frames: Int) {
+        let rain = state.rain
+        let thunderOn = state.thunderSeconds > 0
+        if (rain <= 0 && !thunderOn) || state.muted {
+            for i in 0..<frames { out[i] = 0 }
+            return
+        }
+        let dt = 1 / sr
+        let wiperPeriod: Float = rain > 0.8 ? 0.9 : 1.4
+        let wipersOn = state.engineRunning || state.cranking
+        let speed = state.speed
+        for i in 0..<frames {
+            var s: Float = 0
+            if rain > 0 {
+                // Steady rain: soft hiss on the roof.
+                let n = noise.next()
+                lp += (n - lp) * 0.25
+                hp += (lp - hp) * 0.02
+                s += (lp - hp) * 0.22 * rain
+                // Individual drops tapping the cab.
+                if noise.next() > 1 - 0.0009 * rain { dropEnv = 1 }
+                dropEnv *= 0.995
+                dropLP += (noise.next() - dropLP) * 0.5
+                s += dropLP * dropEnv * 0.18 * rain
+                // Tyres hissing through water, rising with speed.
+                let wet = min(1, speed / 20) * rain
+                sprayLP += (n - sprayLP) * 0.5
+                sprayHP += (sprayLP - sprayHP) * 0.08
+                s += (sprayLP - sprayHP) * 0.3 * wet
+                // Wipers: a swish each way.
+                if wipersOn {
+                    wiperPhase += dt / wiperPeriod; if wiperPhase >= 1 { wiperPhase -= 1 }
+                    let half = wiperPhase < 0.5 ? wiperPhase * 2 : (wiperPhase - 0.5) * 2
+                    let env = sinf(Float.pi * min(1, half / 0.6))
+                    wiperLP += (noise.next() - wiperLP) * 0.06
+                    s += wiperLP * env * env * 0.35
+                }
+            }
+            if state.thunderSeconds > 0 {
+                state.thunderSeconds -= dt
+                // A deep rumble that rolls in fast and fades slowly.
+                let t = 1 - state.thunderSeconds / thunderLength
+                let env = min(1, t * 8) * expf(-t * 3) * (0.7 + 0.3 * noise.next())
+                thunderLP += (noise.next() - thunderLP) * 0.01
+                thunderLP2 += (thunderLP - thunderLP2) * 0.02
+                s += thunderLP2 * env * 9
+            }
+            out[i] = s * state.volume
+        }
+    }
+}
+
 private final class LaneVoice: Voice {
     let state: SynthState
     let sr: Float
@@ -419,7 +487,8 @@ final class AudioSynth {
         let rumble = RumbleVoice(state: state, sampleRate: sr)
         let lane = LaneVoice(state: state, sampleRate: sr)
         let fx = FXVoice(state: state, sampleRate: sr)
-        voices = [engineVoice, road, rumble, lane, fx]
+        let weather = WeatherVoice(state: state, sampleRate: sr)
+        voices = [engineVoice, road, rumble, lane, fx, weather]
 
         func attach(_ voice: Voice) -> AVAudioSourceNode {
             let node = AVAudioSourceNode(format: format) { _, _, frameCount, bufferList -> OSStatus in
@@ -440,6 +509,7 @@ final class AudioSynth {
         laneNode = attach(lane)
         trafficNodes = (0..<4).map { attach(TrafficVoice(state: state, sampleRate: sr, slot: $0)) }
         _ = attach(fx)
+        _ = attach(weather)
 
         sampled = sound.recorded ? SampledEngine(engine: engine) : nil
         if let buffer = SampledEngine.load("horn") {
@@ -516,6 +586,10 @@ final class AudioSynth {
         player.play()
     }
     func crash() { state.crashSeconds = 1.5 }
+    func thunder() { state.thunderSeconds = 4 }
+    func setWeather(_ weather: Weather) {
+        state.rain = weather == .storm ? 1 : (weather == .rain ? 0.6 : 0)
+    }
     func policeRadio() { state.crackleSeconds = 0.6 }
     func oncomingCarHorn() { state.carHornSeconds = 0.9 }
 

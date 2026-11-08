@@ -84,6 +84,8 @@ public final class DrivingSession {
     /// Seconds allowed for a delivery job, if it has a deadline.
     public let timeLimit: Double?
     public var assist: SteeringAssist
+    /// Set before driving. Rain and storms reduce grip and braking.
+    public var weather: Weather = .clear
     public private(set) var truck: TruckState
     public private(set) var time: Double = 0
     public private(set) var stats = TripStats()
@@ -231,7 +233,7 @@ public final class DrivingSession {
         case .speakDashboard:
             return [.dashboard(dashboard)]
         case .speakRoadAhead:
-            var events: [SimEvent] = [.roadAhead(road.nextCurve(after: truck.position, within: 3_000), remaining: remaining,
+            var events: [SimEvent] = [.roadAhead(forWeather(road.nextCurve(after: truck.position, within: 3_000)), remaining: remaining,
                                                  timeLeft: timeLeft, truckStop: road.nextTruckStop(after: truck.position)?.distance)]
             if let navigator {
                 if navigator.destination != nil, let next = navigator.nextInstruction(at: truck.position) {
@@ -273,6 +275,18 @@ public final class DrivingSession {
 
     /// How far the fuel left will go, metres.
     public var range: Double { truck.fuelLiters / fuelPerMetre }
+
+    /// Tyre grip in curves today: the truck's grip, less in the rain.
+    public var grip: Double { spec.steeringLatAccel * weather.grip }
+
+    /// A curve with its suggested speed lowered for the weather.
+    func forWeather(_ curve: UpcomingCurve?) -> UpcomingCurve? {
+        guard var c = curve else { return nil }
+        c.advisorySpeed *= weather.grip.squareRoot()
+        return c
+    }
+
+    var nextThunder: Double = 25
 
     /// Seconds left before the delivery is late (negative once late), or nil without a deadline.
     public var timeLeft: Double? {
@@ -330,6 +344,13 @@ public final class DrivingSession {
         checkPolice(dt: dt, events: &events)
         checkTruckStops(dt: dt, input: input, events: &events)
         checkTow(dt: dt, events: &events)
+        if weather == .storm {
+            nextThunder -= dt
+            if nextThunder <= 0 {
+                nextThunder = Double.random(in: 20...60, using: &rng)
+                events.append(.thunder)
+            }
+        }
         updateStats(dt: dt, events: events)
         checkTrip(events: &events)
         return events
@@ -472,7 +493,7 @@ public final class DrivingSession {
         let aero = 0.5 * 1.2 * spec.dragArea * truck.speed * truck.speed
         let rolling = truck.speed > 0.01 ? spec.rollingResistance * mass * g : 0
         // Brake force is sized for the truck with a light load, so heavy cargo takes longer to stop.
-        let brakeDecel = min(spec.maxBrakeDecel, spec.maxBrakeDecel * spec.massKg * 1.5 / mass)
+        let brakeDecel = min(spec.maxBrakeDecel, spec.maxBrakeDecel * spec.massKg * 1.5 / mass) * weather.braking
         let brake = input.brake * brakeDecel * mass
 
         var accel = (driveForce - aero - rolling) / mass
@@ -492,7 +513,7 @@ public final class DrivingSession {
         let v = truck.speed
         // Speed-sensitive steering: full lock always produces roughly the same sideways force,
         // so steering feels consistent at any speed and the truck can't be flicked around on the highway.
-        let speedLimitedAngle = v > 1 ? spec.steeringLatAccel * spec.wheelbase / (v * v) : spec.maxSteerAngle
+        let speedLimitedAngle = v > 1 ? grip * spec.wheelbase / (v * v) : spec.maxSteerAngle
         let maxAngle = min(spec.maxSteerAngle, speedLimitedAngle)
         let target = input.steer * maxAngle
         let maxDelta = spec.steerRate * dt
@@ -522,7 +543,7 @@ public final class DrivingSession {
         let curveAccel = v * v * k
         var push = -curveAccel * assist.curvePush
         // Too fast for the curve: past the tyres' grip the truck slides out much harder.
-        let grip = spec.steeringLatAccel
+        let grip = self.grip
         let overGrip = abs(curveAccel) / grip - 0.9
         if overGrip > 0 { push *= 1 + 4 * overGrip }
         // Barely any sideways movement while crawling.
@@ -793,14 +814,14 @@ public final class DrivingSession {
 
     private func checkCurves(events: inout [SimEvent]) {
         let lookahead = max(200, truck.speed * 10)
-        if let curve = road.nextCurve(after: truck.position, within: lookahead),
+        if let curve = forWeather(road.nextCurve(after: truck.position, within: lookahead)),
            curve.segmentIndex != announcedCurveIndex, truck.speed > 2 {
             announcedCurveIndex = curve.segmentIndex
             events.append(.curveAhead(curve))
         }
         let k = abs(road.curvature(at: truck.position))
         let lateralNeeded = truck.speed * truck.speed * k
-        if k > 0, lateralNeeded > spec.steeringLatAccel * 0.85, time - lastTooFastWarning > 4 {
+        if k > 0, lateralNeeded > grip * 0.85, time - lastTooFastWarning > 4 {
             lastTooFastWarning = time
             events.append(.tooFastForCurve)
         }

@@ -172,9 +172,13 @@ public struct Payout: Equatable, Sendable {
         return Payout(lines: lines + expenses(stats))
     }
 
-    public static func delivery(_ job: DeliveryJob, summary: TripSummary) -> Payout {
+    public static func delivery(_ job: DeliveryJob, summary: TripSummary, weather: Weather = .clear) -> Payout {
         let base = job.pay
         var lines = [Line(label: "Delivery pay", amount: base)]
+        if weather.payBonus > 0 {
+            lines.append(Line(label: weather == .storm ? "Storm bonus" : "Rain bonus",
+                              amount: Int((Double(base) * weather.payBonus).rounded())))
+        }
         let stats = summary.stats
 
         let late = stats.drivingTime - job.timeLimit

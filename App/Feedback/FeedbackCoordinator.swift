@@ -19,6 +19,10 @@ final class FeedbackCoordinator {
     var engineSound: EngineSound = .recorded
     /// The current truck's fuel use compared with a typical truck; set before start().
     var fuelEfficiency = 1.0
+    /// Today's weather; set before start() and on restart.
+    var weather: Weather = .clear {
+        didSet { audio.setWeather(weather) }
+    }
 
     init(settings: AppSettings) {
         self.settings = settings
@@ -106,6 +110,7 @@ final class FeedbackCoordinator {
                     : " Warning: you may not have enough fuel. Listen for truck stops and fill up on the way."
             }
         }
+        if let forecast = weather.announcement { trip += " " + forecast }
         speech.speak(
             "\(trip) Engine off. \(controls) Three-finger double tap starts the engine. Two-finger double tap reads the dashboard. Two-finger swipe down pauses.",
             priority: .high
@@ -137,6 +142,9 @@ final class FeedbackCoordinator {
             haptics.tap(intensity: 0.4, sharpness: 0.8)
         case .horn:
             audio.honk()
+        case .thunder:
+            audio.thunder()
+            haptics.tap(intensity: 0.5, sharpness: 0.1)
         case let .rumbleStrip(side):
             onRumbleStrip = side != nil
             audio.setRumble(side)

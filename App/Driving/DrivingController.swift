@@ -70,6 +70,11 @@ final class DrivingController: NSObject, ObservableObject {
                                      assist: settings.assist)
         // Traffic on the map; the practice loop stays quiet for learning.
         session.trafficEnabled = settings.traffic && navigator != nil
+        // Weather for every drive except the tutorial (and screenshots).
+        if settings.weather && drive != .tutorial && !ScreenshotMode.isOn {
+            var rng = SystemRandomNumberGenerator()
+            session.weather = Weather.random(using: &rng)
+        }
         return session
     }
 
@@ -97,6 +102,7 @@ final class DrivingController: NSObject, ObservableObject {
         if settings.steeringMode == .tilt { tilt.start() }
         feedback.engineSound = session.spec.sound
         feedback.fuelEfficiency = session.spec.fuelEfficiency
+        feedback.weather = session.weather
         feedback.freeDriveTown = career.state.currentTownName
         feedback.startingFuel = session.truck.fuelLiters
         feedback.start()
@@ -186,7 +192,7 @@ final class DrivingController: NSObject, ObservableObject {
         case .freeDrive:
             result = Payout.freeDrive(summary.stats)
             if let town = session.navigator?.lastTown { career.move(to: town) }
-        case let .job(job): result = Payout.delivery(job, summary: summary)
+        case let .job(job): result = Payout.delivery(job, summary: summary, weather: session.weather)
         }
         payout = result
         let trip = TripResult(job: drive.job, summary: drive.job == nil ? nil : summary, stats: summary.stats)
@@ -207,6 +213,7 @@ final class DrivingController: NSObject, ObservableObject {
         session = DrivingController.makeSession(drive, settings, career.truck, fuel: career.fuelLiters,
                                                 town: career.state.currentTown)
         payout = nil
+        feedback.weather = session.weather
         tutorial = makeTutorial()
         tutorialFinishedAt = nil
         recentActions = []

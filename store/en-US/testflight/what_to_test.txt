@@ -1,4 +1,6 @@
-New in 1.1: eight new trucks, achievements and Game Center.
+New in 1.1: weather, eight new trucks, achievements and Game Center.
+
+Weather: some drives now have rain or a storm. You hear rain on the cab, the wipers, your tires hissing through water, and thunder in a storm. Wet roads have less grip and take longer to stop, so curve warnings suggest slower speeds. Deliveries pay 10 percent extra in the rain and 20 percent in a storm. Turn it off in Settings if you want clear skies.
 
 Trucks: the garage now has 11 trucks, each with its own engine sound and its own feel. Farm Runner ($3,500), City Hauler ($10,000, sharpest steering), Mountain Goat ($14,000, strongest brakes), Highway Star ($24,000), Long Hauler ($28,000, huge tank), Iron Bull ($34,000, for heavy loads), Volt ($40,000, electric: no gears, a motor whine, charges at truck stops) and Titan ($60,000, the best at everything). Use "Hear the engine" in the garage to listen to each one.
 

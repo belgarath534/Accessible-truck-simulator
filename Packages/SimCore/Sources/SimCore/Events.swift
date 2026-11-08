@@ -116,6 +116,8 @@ public enum SimEvent: Equatable, Sendable {
     case policeChase(speed: Double, limit: Double)
     case speedingTicket(speed: Double, limit: Double, fine: Int)
     case fledPolice(fine: Int)
+    /// A thunderclap (storms).
+    case thunder
     case dashboard(DashboardReading)
     case roadAhead(UpcomingCurve?, remaining: Double?, timeLeft: Double?, truckStop: Double?)
     /// Delivery deadline reminders (5 minutes and 1 minute left).

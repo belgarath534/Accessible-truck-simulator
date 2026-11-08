@@ -23,6 +23,7 @@ final class AppSettings: ObservableObject {
     @Published var menuMusic: Bool { didSet { defaults.set(menuMusic, forKey: "menuMusic") } }
     @Published var radioOnStart: Bool { didSet { defaults.set(radioOnStart, forKey: "radioOnStart") } }
     @Published var traffic: Bool { didSet { defaults.set(traffic, forKey: "traffic") } }
+    @Published var weather: Bool { didSet { defaults.set(weather, forKey: "weather") } }
     @Published var tutorialDone: Bool { didSet { defaults.set(tutorialDone, forKey: "tutorialDone") } }
 
     init() {
@@ -44,6 +45,7 @@ final class AppSettings: ObservableObject {
         radioOnStart = d.object(forKey: "radioOnStart") as? Bool ?? true
         traffic = d.object(forKey: "traffic") as? Bool ?? false
         tutorialDone = d.object(forKey: "tutorialDone") as? Bool ?? false
+        weather = d.object(forKey: "weather") as? Bool ?? true
         MusicPlayer.shared.volume = Float(musicVolume)
     }
 }

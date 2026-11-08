@@ -259,6 +259,8 @@ struct SettingsView: View {
             Section {
                 Toggle("Traffic", isOn: $settings.traffic)
                     .accessibilityHint("Other vehicles on the map's roads. The practice loop never has traffic.")
+                Toggle("Weather", isOn: $settings.weather)
+                    .accessibilityHint("Rain and storms on some drives: slippery roads, rain sounds and a pay bonus. Off means clear skies every time.")
                 Toggle("Lane guidance beeps", isOn: $settings.laneGuidanceTone)
                 Toggle("Call out speed", isOn: $settings.announceSpeed)
                 Toggle("Announce gear changes", isOn: $settings.announceGears)
