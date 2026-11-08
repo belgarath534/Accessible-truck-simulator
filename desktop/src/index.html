@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' app:; script-src 'self' app:; style-src 'self' app: 'unsafe-inline'; media-src 'self' app: blob:; connect-src 'self' app:">
+  <title>Accessible Truck Simulator</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- Screen reader speech: the game writes what it says here. -->
+  <div class="sr-only" aria-live="assertive" aria-atomic="true" id="live-a1"></div>
+  <div class="sr-only" aria-live="assertive" aria-atomic="true" id="live-a2"></div>
+  <div class="sr-only" aria-live="polite" aria-atomic="true" id="live-p"></div>
+
+  <main id="menu" class="screen">
+    <h1 tabindex="-1">Accessible Truck Simulator</h1>
+    <p>A truck driving game you can play entirely by sound. Use Tab and Enter, or the arrow keys, to choose.</p>
+    <div class="buttons">
+      <button id="btn-tutorial-first" class="primary">Start Here: Tutorial</button>
+      <button id="btn-practice">Practice Drive</button>
+      <button id="btn-tutorial">Tutorial</button>
+      <button id="btn-help">How to Drive</button>
+      <button id="btn-settings">Settings</button>
+      <button id="btn-quit">Quit</button>
+    </div>
+    <p class="note">This is the first Windows version: the tutorial and the practice loop. Jobs, money, trucks and the map are coming next.</p>
+  </main>
+
+  <section id="help" class="screen" hidden aria-labelledby="help-title">
+    <h1 id="help-title" tabindex="-1">How to Drive</h1>
+    <h2>Keyboard</h2>
+    <ul>
+      <li>N: start or stop the engine.</li>
+      <li>Up arrow or W: accelerate. Hold it: the longer you hold, the faster you go.</li>
+      <li>Down arrow or S: brake.</li>
+      <li>Left and Right arrows, or A and D: steer. Short taps work best.</li>
+      <li>I: read the dashboard: speed, gear, fuel and more.</li>
+      <li>G: GPS: what's on the road ahead.</li>
+      <li>Left bracket and right bracket: turn signals. Backspace cancels the signal.</li>
+      <li>H: horn.</li>
+      <li>Escape: pause menu.</li>
+      <li>F1: hear the keys while driving.</li>
+    </ul>
+    <h2>Game controller</h2>
+    <ul>
+      <li>Right trigger: accelerate. Left trigger: brake. Left stick: steer.</li>
+      <li>Y: engine. A: dashboard. X: GPS. B: horn.</li>
+      <li>Left and right bumpers: turn signals. View button: cancel signal. Menu button: pause.</li>
+    </ul>
+    <h2>What you hear</h2>
+    <ul>
+      <li>The engine gets louder and higher as RPM rises, and you hear a hiss on each gear change.</li>
+      <li>Drifting toward the edge of your lane: soft beeps in that ear, faster and higher the further you drift. Steer away from the beeps.</li>
+      <li>Too far: a rumble strip on that side. Go further and you leave the road and crash.</li>
+      <li>Curves are announced ahead of time with a suggested speed. In a curve you must steer, or the truck drifts to the outside.</li>
+      <li>Your speed is called out every 10 miles or kilometers per hour.</li>
+      <li>In the last 150 meters before the drop-off you hear a beacon, like a parking sensor: faster beeps as you get closer, a steady tone right at the drop-off. Stop there.</li>
+      <li>Headphones are best: the lane beeps tell left from right.</li>
+    </ul>
+    <h2>Speech</h2>
+    <p>If NVDA, JAWS or Narrator is running, the game talks through it. Otherwise it uses the Windows voice. You can change this in Settings.</p>
+    <button class="back">Back to Main Menu</button>
+  </section>
+
+  <section id="settings" class="screen" hidden aria-labelledby="settings-title">
+    <h1 id="settings-title" tabindex="-1">Settings</h1>
+    <div class="field">
+      <label for="set-speech">Speech</label>
+      <select id="set-speech">
+        <option value="auto">Automatic: screen reader if one is running, otherwise the Windows voice</option>
+        <option value="screenReader">Always through my screen reader</option>
+        <option value="voice">Always the Windows voice</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="set-rate">Windows voice speed</label>
+      <input id="set-rate" type="range" min="0.7" max="2" step="0.1">
+    </div>
+    <div class="field">
+      <label for="set-units">Units</label>
+      <select id="set-units">
+        <option value="imperial">Miles and miles per hour</option>
+        <option value="metric">Kilometers and kilometers per hour</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="set-assist">Steering help</label>
+      <select id="set-assist">
+        <option value="high">High: easiest</option>
+        <option value="medium">Medium</option>
+        <option value="low">Low</option>
+        <option value="off">Off: realistic, hardest</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="set-volume">Game volume</label>
+      <input id="set-volume" type="range" min="0" max="1" step="0.05">
+    </div>
+    <div class="field check"><input id="set-lane" type="checkbox"><label for="set-lane">Lane guidance beeps</label></div>
+    <div class="field check"><input id="set-speed" type="checkbox"><label for="set-speed">Call out speed every 10</label></div>
+    <div class="field check"><input id="set-gears" type="checkbox"><label for="set-gears">Call out gear changes</label></div>
+    <button class="back">Back to Main Menu</button>
+  </section>
+
+  <section id="drive" class="screen" hidden>
+    <div id="drive-surface" role="application" tabindex="0"
+         aria-label="Driving. The game speaks for itself. Press F1 to hear the keys, Escape to pause.">
+      <canvas id="drive-canvas" aria-hidden="true"></canvas>
+    </div>
+  </section>
+
+  <div id="pause" class="dialog" role="dialog" aria-modal="true" aria-labelledby="pause-title" aria-describedby="pause-status" hidden>
+    <h1 id="pause-title">Paused</h1>
+    <p id="pause-status"></p>
+    <div class="buttons">
+      <button id="btn-resume" class="primary">Resume Driving</button>
+      <button id="btn-restart">Restart from the Start</button>
+      <button id="btn-quit-drive">Quit to Main Menu</button>
+    </div>
+  </div>
+
+  <div id="results" class="dialog" role="dialog" aria-modal="true" aria-labelledby="results-title" aria-describedby="results-text" hidden>
+    <h1 id="results-title"></h1>
+    <p id="results-text"></p>
+    <div class="buttons">
+      <button id="btn-again" class="primary">Drive Again</button>
+      <button id="btn-results-menu">Main Menu</button>
+    </div>
+  </div>
+
+  <script type="module" src="app/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,65 @@
+{
+  "name": "accessible-truck-simulator",
+  "productName": "Accessible Truck Simulator",
+  "version": "1.0.0",
+  "description": "A truck driving game you can play entirely by sound.",
+  "main": "main.js",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "assets": "node scripts/copy-assets.js",
+    "start": "npm run assets && electron .",
+    "dist": "npm run assets && electron-builder"
+  },
+  "author": "Accessible Truck Simulator",
+  "build": {
+    "appId": "com.accessibletrucksim.desktop",
+    "productName": "Accessible Truck Simulator",
+    "files": [
+      "main.js",
+      "preload.cjs",
+      "package.json",
+      "src/**/*"
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "perMachine": false,
+      "artifactName": "Accessible-Truck-Simulator-Setup-${version}.${ext}"
+    },
+    "linux": {
+      "target": [
+        "AppImage"
+      ]
+    },
+    "mac": {
+      "target": [
+        "dmg"
+      ]
+    }
+  },
+  "devDependencies": {
+    "electron": "^44.10.2",
+    "electron-builder": "^26.18.0"
+  }
+}
