@@ -162,6 +162,24 @@ final class CareerStore: ObservableObject {
         save()
     }
 
+    func giveRaise(_ driver: Driver) -> CareerState.RaiseResult {
+        let result = state.giveRaise(driver.id)
+        save()
+        return result
+    }
+
+    func declineRaise(_ driver: Driver) {
+        state.declineRaise(driver.id)
+        save()
+    }
+
+    /// Counts the drivers' work up to now (so raise requests show up), without a spoken report.
+    func refreshDrivers() {
+        guard !isDemo else { return }
+        _ = state.updateDrivers()
+        save()
+    }
+
     func driver(using truck: TruckSpec) -> Driver? { state.drivers.first { $0.truckID == truck.id } }
 
     func move(to town: String) {

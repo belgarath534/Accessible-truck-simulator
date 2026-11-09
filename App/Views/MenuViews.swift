@@ -534,6 +534,15 @@ struct CompanyView: View {
                         }
                     }
                     .accessibilityElement(children: .combine)
+                    if let raise = driver.raiseRequest {
+                        Text("\(driver.name) has the experience to become a \(driver.skill + 1)-star driver and asks for a raise of \(Phrases.money(raise)). Answer within \(driver.deliveriesUntilQuit ?? Driver.patience) more deliveries, or they may quit.")
+                        Button("Give \(driver.name) the Raise: \(Phrases.money(raise))") { giveRaise(driver) }
+                            .accessibilityHint("They become a \(driver.skill + 1)-star driver: faster, and they earn more for the company.")
+                        Button("Not Now") { career.declineRaise(driver) }
+                            .accessibilityHint("They keep working as they are and ask again after \(Driver.patience) more deliveries.")
+                    } else if let needed = Driver.deliveriesForRaise(skill: driver.skill) {
+                        Text("\(max(0, needed - driver.jobsDone)) more deliveries until \(driver.name) can move up a star.")
+                    }
                     ForEach(career.state.freeTrucks, id: \.id) { truck in
                         Button("Give \(driver.name) the \(truck.name)") { career.assign(driver, to: truck) }
                     }
@@ -558,6 +567,7 @@ struct CompanyView: View {
             }
         }
         .navigationTitle("Company")
+        .onAppear { career.refreshDrivers() }
         .alert(message ?? "", isPresented: Binding(get: { message != nil }, set: { if !$0 { message = nil } })) {
             Button("OK", role: .cancel) {}
         }
@@ -568,6 +578,17 @@ struct CompanyView: View {
                 if let d = confirmFire { career.fire(d) }
                 confirmFire = nil
             }
+        }
+    }
+
+    private func giveRaise(_ driver: Driver) {
+        switch career.giveRaise(driver) {
+        case let .promoted(stars):
+            message = "\(driver.name) is now a \(stars)-star driver! Faster deliveries, more money for the company."
+        case let .notEnoughMoney(short):
+            message = "You need \(Phrases.money(short)) more for that raise."
+        case .noRequest:
+            break
         }
     }
 

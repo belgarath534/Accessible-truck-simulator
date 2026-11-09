@@ -14,6 +14,12 @@ public struct Driver: Codable, Equatable, Identifiable, Sendable {
     public var progress: Double
     public var jobsDone: Int
     public var earned: Int
+    /// A raise they're asking for (dollars), to move up a star; nil if they aren't asking.
+    public var raiseRequest: Int?
+    /// Deliveries left before they quit over an unanswered raise request.
+    public var deliveriesUntilQuit: Int?
+    /// After "not now", they don't ask again until this many deliveries.
+    public var nextRaiseAt: Int?
 
     public init(id: UUID = UUID(), name: String, skill: Int, truckID: String? = nil, lastUpdate: Date = Date(),
                 progress: Double = 0, jobsDone: Int = 0, earned: Int = 0) {
@@ -37,6 +43,13 @@ public struct Driver: Codable, Equatable, Identifiable, Sendable {
     public var hourlyEarnings: Int { Int((Double(payPerJob) * 60 / minutesPerJob).rounded()) }
 
     public var stars: String { "\(skill) star\(skill == 1 ? "" : "s")" }
+
+    /// Deliveries before a driver at this skill asks to move up (nil at the top).
+    public static func deliveriesForRaise(skill: Int) -> Int? { skill == 1 ? 20 : (skill == 2 ? 50 : nil) }
+    /// What moving up from this skill costs.
+    public static func raiseCost(skill: Int) -> Int { skill == 1 ? 1_500 : 3_500 }
+    /// How many deliveries they'll wait for an answer before quitting.
+    public static let patience = 15
 }
 
 /// What a driver did since you last checked.
@@ -44,6 +57,18 @@ public struct DriverReport: Equatable, Sendable {
     public var name: String
     public var jobs: Int
     public var earned: Int
+    /// They asked for a raise (dollars) during this time.
+    public var askedForRaise: Int?
+    /// They quit because their raise request went unanswered.
+    public var quit = false
+
+    public init(name: String, jobs: Int, earned: Int, askedForRaise: Int? = nil, quit: Bool = false) {
+        self.name = name
+        self.jobs = jobs
+        self.earned = earned
+        self.askedForRaise = askedForRaise
+        self.quit = quit
+    }
 }
 
 public enum Company {
@@ -115,9 +140,37 @@ public extension CareerState {
         drivers.removeAll { $0.id == driverID }
     }
 
+    enum RaiseResult: Equatable, Sendable { case promoted(stars: Int), notEnoughMoney(short: Int), noRequest }
+
+    /// Gives a driver the raise they asked for: they move up a star (faster, and they earn more).
+    @discardableResult
+    mutating func giveRaise(_ driverID: UUID, now: Date = Date()) -> RaiseResult {
+        _ = updateDrivers(now: now)
+        guard let i = drivers.firstIndex(where: { $0.id == driverID }), let cost = drivers[i].raiseRequest else {
+            return .noRequest
+        }
+        guard money >= cost else { return .notEnoughMoney(short: cost - money) }
+        money -= cost
+        drivers[i].skill = min(3, drivers[i].skill + 1)
+        drivers[i].raiseRequest = nil
+        drivers[i].deliveriesUntilQuit = nil
+        drivers[i].nextRaiseAt = nil
+        return .promoted(stars: drivers[i].skill)
+    }
+
+    /// "Not now": they keep working as they are and ask again later.
+    mutating func declineRaise(_ driverID: UUID, now: Date = Date()) {
+        _ = updateDrivers(now: now)
+        guard let i = drivers.firstIndex(where: { $0.id == driverID }), drivers[i].raiseRequest != nil else { return }
+        drivers[i].raiseRequest = nil
+        drivers[i].deliveriesUntilQuit = nil
+        drivers[i].nextRaiseAt = drivers[i].jobsDone + Driver.patience
+    }
+
     /// Counts the drivers' work since the last update: finished jobs pay into the bank.
     mutating func updateDrivers(now: Date = Date()) -> [DriverReport] {
         var reports: [DriverReport] = []
+        var quitters: [UUID] = []
         for i in drivers.indices {
             let elapsed = min(Company.maxAwaySeconds, max(0, now.timeIntervalSince(drivers[i].lastUpdate)))
             drivers[i].lastUpdate = now
@@ -132,8 +185,26 @@ public extension CareerState {
             drivers[i].earned += pay
             money += pay
             totalEarned += pay
-            reports.append(DriverReport(name: drivers[i].name, jobs: jobs, earned: pay))
+            var report = DriverReport(name: drivers[i].name, jobs: jobs, earned: pay)
+            if drivers[i].raiseRequest != nil {
+                // Still waiting for an answer: their patience runs out.
+                let left = (drivers[i].deliveriesUntilQuit ?? Driver.patience) - jobs
+                drivers[i].deliveriesUntilQuit = left
+                if left <= 0 {
+                    report.quit = true
+                    quitters.append(drivers[i].id)
+                }
+            } else if let needed = Driver.deliveriesForRaise(skill: drivers[i].skill),
+                      drivers[i].jobsDone >= max(needed, drivers[i].nextRaiseAt ?? 0) {
+                // Experienced enough to move up a star: they ask for a raise.
+                let cost = Driver.raiseCost(skill: drivers[i].skill)
+                drivers[i].raiseRequest = cost
+                drivers[i].deliveriesUntilQuit = Driver.patience
+                report.askedForRaise = cost
+            }
+            reports.append(report)
         }
+        drivers.removeAll { quitters.contains($0.id) }
         return reports
     }
 }
