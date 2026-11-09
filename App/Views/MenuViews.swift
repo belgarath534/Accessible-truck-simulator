@@ -7,7 +7,27 @@ struct MainMenuView: View {
     @State private var drive: DriveMode?
     @State private var showingJobs = false
     @State private var driverReport: String?
+    /// A new drive picked while a saved drive exists: asks first.
+    @State private var replacingSaved: DriveMode?
     @Environment(\.scenePhase) private var scenePhase
+
+    /// Starts a drive; if there's a saved drive, asks before replacing it (the tutorial never replaces it).
+    private func start(_ mode: DriveMode) {
+        if career.savedDrive != nil && mode != .tutorial {
+            replacingSaved = mode
+        } else {
+            drive = mode
+        }
+    }
+
+    private var savedDriveName: String {
+        guard let saved = career.savedDrive else { return "" }
+        switch saved.kind {
+        case .practice: return "Practice Drive"
+        case .freeDrive: return "Free Drive"
+        case .job: return saved.job.map { "\($0.cargo.name) to \($0.destinationName ?? "the drop-off")" } ?? "Delivery"
+        }
+    }
 
     private var achievementTitle: String {
         career.justUnlocked.count == 1 ? "Achievement Unlocked!" : "\(career.justUnlocked.count) Achievements Unlocked!"
@@ -32,6 +52,13 @@ struct MainMenuView: View {
                     Text("You're in \(career.state.currentTownName).")
                     Text("Driving: \(career.truck.name). Fuel \(Int((career.fuelLiters / career.truck.fuelCapacityLiters * 100).rounded())) percent.")
                 }
+                if career.savedDrive != nil {
+                    Section {
+                        Button("Continue Your Drive: \(savedDriveName)") { drive = career.prepareResume() }
+                            .font(.title2.bold())
+                            .accessibilityHint("Picks up your saved drive exactly where you left it.")
+                    }
+                }
                 if !settings.tutorialDone {
                     Section {
                         Button("Start Here: Tutorial") { drive = .tutorial }
@@ -41,12 +68,12 @@ struct MainMenuView: View {
                 }
                 Section {
                     NavigationLink {
-                        JobBoardView { job in drive = .job(job) }
+                        JobBoardView { job in start(.job(job)) }
                     } label: {
                         Text("Job Board").font(.title2.bold())
                     }
                     .accessibilityHint("Pick a delivery. Jobs pay the most.")
-                    Button("Free Drive") { drive = .freeDrive }
+                    Button("Free Drive") { start(.freeDrive) }
                         .font(.title2)
                         .accessibilityHint("Roam the map from \(career.state.currentTownName) as long as you like. Pays \(Phrases.money(Int(Payout.freeDriveRatePerKm))) per kilometer.")
                     NavigationLink {
@@ -61,7 +88,7 @@ struct MainMenuView: View {
                         Text("Garage").font(.title2)
                     }
                     .accessibilityHint("Buy trucks, hear their engines and choose which one to drive.")
-                    Button("Practice Drive") { drive = .practice }
+                    Button("Practice Drive") { start(.practice) }
                         .font(.title2)
                         .accessibilityHint("One lap of the country road, then stop at the drop-off. No pay.")
                     if settings.tutorialDone {
@@ -97,6 +124,17 @@ struct MainMenuView: View {
             Button("OK", role: .cancel) {}
         } message: {
             Text(career.justUnlocked.map { "\($0.title): \($0.detail)" }.joined(separator: "\n"))
+        }
+        .alert("Start a new drive?", isPresented: Binding(get: { replacingSaved != nil },
+                                                          set: { if !$0 { replacingSaved = nil } })) {
+            Button("Start New Drive", role: .destructive) {
+                career.clearSavedDrive()
+                drive = replacingSaved
+                replacingSaved = nil
+            }
+            Button("Keep My Saved Drive", role: .cancel) { replacingSaved = nil }
+        } message: {
+            Text("Your saved drive, \(savedDriveName), will be lost.")
         }
         .fullScreenCover(item: $drive, onDismiss: {
             if settings.menuMusic { MusicPlayer.shared.playMenu() }

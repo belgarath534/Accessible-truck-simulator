@@ -1,6 +1,6 @@
 import Foundation
 
-public enum Side: String, Equatable, Sendable {
+public enum Side: String, Codable, Equatable, Sendable {
     case left, right
 }
 

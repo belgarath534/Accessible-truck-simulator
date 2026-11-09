@@ -59,6 +59,10 @@ struct DrivingScreen: View {
                     resume: controller.resume,
                     restart: controller.restart,
                     endFreeDrive: controller.endFreeDrive,
+                    saveForLater: controller.drive == .tutorial ? nil : {
+                        controller.saveForLater()
+                        onExit()
+                    },
                     quit: {
                         controller.quit()
                         onExit()
@@ -89,6 +93,8 @@ struct PauseMenuView: View {
     let resume: () -> Void
     let restart: () -> Void
     let endFreeDrive: () -> Void
+    /// Saves the drive to continue later (nil for the tutorial).
+    let saveForLater: (() -> Void)?
     let quit: () -> Void
     @AccessibilityFocusState private var focused: Bool
 
@@ -109,6 +115,11 @@ struct PauseMenuView: View {
                 .accessibilityFocused($focused)
                 Button("Resume Driving", action: resume)
                     .buttonStyle(.borderedProminent)
+                if let saveForLater {
+                    Button("Save and Continue Later", action: saveForLater)
+                        .buttonStyle(.bordered)
+                        .accessibilityHint("Saves this drive exactly where you are. Continue it from the main menu any time.")
+                }
                 switch drive {
                 case .freeDrive:
                     Button("End Drive and Get Paid", action: endFreeDrive)

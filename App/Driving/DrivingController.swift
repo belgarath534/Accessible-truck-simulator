@@ -34,6 +34,11 @@ final class DrivingController: NSObject, ObservableObject {
     private var tutorial: Tutorial?
     /// Gestures since the last frame, for the tutorial.
     private var recentActions: [DrivingAction] = []
+    /// This drive was continued from a save.
+    private var resumed = false
+    /// The town this drive started from (Free Drive saves it).
+    private var origin: String { career.state.currentTown }
+
     /// When the tutorial finished, to show the results after its last words.
     private var tutorialFinishedAt: CFTimeInterval?
 
@@ -48,8 +53,12 @@ final class DrivingController: NSObject, ObservableObject {
         self.settings = settings
         self.career = career
         self.drive = drive
-        session = DrivingController.makeSession(drive, settings, career.truck, fuel: career.fuelLiters,
-                                                town: career.state.currentTown)
+        let resume = career.takePendingResume()
+        let newSession = DrivingController.makeSession(drive, settings, career.truck, fuel: career.fuelLiters,
+                                                       town: resume?.origin ?? career.state.currentTown)
+        if let resume { newSession.restore(resume.snapshot) }
+        session = newSession
+        resumed = resume != nil
         touch = TouchInterpreter(mode: settings.steeringMode, areaWidth: 800)
         feedback = FeedbackCoordinator(settings: settings)
         super.init()
@@ -127,8 +136,12 @@ final class DrivingController: NSObject, ObservableObject {
         displayLink = link
         lastTime = 0
         UIApplication.shared.isIdleTimerDisabled = true
-        // The tutorial speaks its own welcome.
-        if tutorial == nil { feedback.announceIntro(mode: settings.steeringMode, drive: drive) }
+        // The tutorial speaks its own welcome; a continued drive gets a welcome back.
+        if resumed {
+            announceResume()
+        } else if tutorial == nil {
+            feedback.announceIntro(mode: settings.steeringMode, drive: drive)
+        }
         MusicPlayer.shared.stop()
         if settings.radioOnStart && !ScreenshotMode.isOn { MusicPlayer.shared.startRadio() }
     }
@@ -181,6 +194,31 @@ final class DrivingController: NSObject, ObservableObject {
         announceAchievements()
         MusicPlayer.shared.setPaused(true)
         finished = summary
+    }
+
+    /// Saves the drive where it is, to pick up later from the main menu. Nothing is paid or charged yet: that
+    /// happens when the drive is finished.
+    func saveForLater() {
+        guard finished == nil, drive != .tutorial else { return }
+        let kind: SavedDrive.Kind
+        switch drive {
+        case .practice: kind = .practice
+        case .freeDrive: kind = .freeDrive
+        case .job: kind = .job
+        case .tutorial: return
+        }
+        career.saveDrive(SavedDrive(kind: kind, job: drive.job, origin: origin, snapshot: session.snapshot))
+        stop()
+    }
+
+    private func announceResume() {
+        let phrases = feedback.phrasesForUI()
+        var text = "Welcome back! Continuing your \(drive.job.map { "delivery of \($0.cargo.name.lowercased())" } ?? goal.name)."
+        if let r = session.remaining { text += " " + phrases.tripProgress(remaining: max(0, r)) }
+        if let t = session.timeLeft { text += t > 0 ? " \(phrases.duration(t, roundToMinutes: t >= 120)) left." : " You're late." }
+        if let forecast = session.weather.announcement, session.weather != .clear { text += " " + forecast.components(separatedBy: ". ").first! + "." }
+        text += " Engine off. Three-finger double tap starts the engine."
+        feedback.speech.speak(text, priority: .high)
     }
 
     /// Leaving mid-drive: Free Drive still pays for the distance; an unfinished job pays nothing.

@@ -1,6 +1,7 @@
 Version 1.2 test build.
 
 New:
+- Save and Continue Later: in the pause menu. It saves the drive exactly where you are (place, fuel, weather, time left), and the main menu shows Continue Your Drive at the top. Starting a different drive asks before replacing it.
 - A welcome setup the first time you open the game (you'll see it once now too): pick speech, captions, steering, steering help, driving buttons, lane beeps, weather, traffic, menu direction and units. Run it again any time from Settings.
 - Menus are upright now. Driving is still sideways; the pause menu and results turn upright too. Prefer sideways menus? Settings, Screen, Menus.
 

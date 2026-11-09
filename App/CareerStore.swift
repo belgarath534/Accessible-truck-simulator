@@ -169,6 +169,43 @@ final class CareerStore: ObservableObject {
         save()
     }
 
+    // MARK: Save and continue later
+
+    var savedDrive: SavedDrive? { state.savedDrive }
+    /// Set when the player chooses Continue; the next drive picks it up.
+    private(set) var pendingResume: SavedDrive?
+
+    func saveDrive(_ drive: SavedDrive) {
+        state.savedDrive = drive
+        save()
+    }
+
+    func clearSavedDrive() {
+        state.savedDrive = nil
+        save()
+    }
+
+    /// Continue the saved drive: drive the same truck, and hand the save to the next drive screen.
+    func prepareResume() -> DriveMode? {
+        guard let saved = state.savedDrive else { return nil }
+        let truck = TruckSpec.withID(saved.snapshot.truckID)
+        if state.owns(truck) && state.selectedTruck != truck.id { state.select(truck) }
+        pendingResume = saved
+        switch saved.kind {
+        case .practice: return .practice
+        case .freeDrive: return .freeDrive
+        case .job: return saved.job.map { .job($0) }
+        }
+    }
+
+    /// The drive screen takes the save (once); it's removed from the career so it can't be continued twice.
+    func takePendingResume() -> SavedDrive? {
+        defer { pendingResume = nil }
+        guard let saved = pendingResume else { return nil }
+        clearSavedDrive()
+        return saved
+    }
+
     func refreshBoard() {
         state.refreshBoard()
         save()

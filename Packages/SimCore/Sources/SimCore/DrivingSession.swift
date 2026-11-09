@@ -219,6 +219,57 @@ public final class DrivingSession {
         fuelWarned = truck.fuelLiters / spec.fuelCapacityLiters < 0.1
     }
 
+    // MARK: - Save and continue later
+
+    /// Where the drive is, to save it and pick it up later.
+    public var snapshot: DriveSnapshot {
+        let side: Side? = { if case let .on(s) = truck.signal { return s }; return nil }()
+        return DriveSnapshot(truckID: spec.id, position: truck.position, lateralOffset: truck.lateralOffset,
+                             odometer: truck.odometer, fuelLiters: truck.fuelLiters, engineTempC: truck.engineTempC,
+                             time: time, signal: side, stats: stats, weather: weather,
+                             edge: navigator?.edge, route: navigator?.route ?? [], lastTown: navigator?.lastTown,
+                             targetLane: targetLane)
+    }
+
+    /// Picks up a saved drive: same place, fuel, trip so far and weather, with the truck stopped and the engine off.
+    public func restore(_ s: DriveSnapshot) {
+        if let navigator, let edge = s.edge {
+            navigator.restore(edge: edge, route: s.route, lastTown: s.lastTown ?? navigator.lastTown)
+            road = navigator.road
+        }
+        truck.position = s.position
+        truck.lateralOffset = s.lateralOffset
+        truck.odometer = s.odometer
+        truck.fuelLiters = min(s.fuelLiters, spec.fuelCapacityLiters)
+        truck.engineTempC = s.engineTempC
+        truck.signal = s.signal.map { .on($0) } ?? .off
+        truck.speed = 0
+        truck.engine = .off
+        truck.gearIndex = 0
+        time = s.time
+        stats = s.stats
+        weather = s.weather
+        targetLane = s.targetLane
+        inLeftLane = truck.lateralOffset < DrivingSession.centerLine
+        // Don't repeat announcements for what's already behind you.
+        if let r = remaining {
+            for m in DrivingSession.milestones where r <= m { announcedMilestones.insert(m) }
+            warnedDestination = r <= DrivingSession.destinationWarning
+            if navigator?.destination != nil {
+                let toEnd = road.totalLength - truck.position
+                for mark in [1_000, 300, 200] where toEnd < Double(mark) { navAnnounced.insert(mark) }
+            }
+        }
+        if let t = timeLeft {
+            for w in [300.0, 60.0] where t <= w { announcedTimeWarnings.insert(w) }
+            announcedLate = t < 0
+        }
+        currentZone = road.speedZone(at: truck.position)?.name
+        let fraction = truck.fuelLiters / spec.fuelCapacityLiters
+        warnedQuarter = fraction < 0.25
+        fuelWarned = fraction < 0.1
+    }
+
     // MARK: - Actions
 
     public func perform(_ action: DrivingAction) -> [SimEvent] {

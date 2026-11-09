@@ -26,7 +26,7 @@ public enum TripGoal: Equatable, Sendable {
 }
 
 /// Running totals for the current drive.
-public struct TripStats: Equatable, Sendable {
+public struct TripStats: Codable, Equatable, Sendable {
     /// Seconds since the truck first started moving.
     public var drivingTime: Double = 0
     public var distance: Double = 0

@@ -145,7 +145,7 @@ public struct WorldMap: Sendable {
     public func length(of route: [DirectedEdge]) -> Double { route.reduce(0) { $0 + length($1) } }
 }
 
-public struct DirectedEdge: Hashable, Sendable {
+public struct DirectedEdge: Codable, Hashable, Sendable {
     public var index: Int
     public var forward: Bool
 }
@@ -315,6 +315,14 @@ public final class Navigator {
         edge = start
         road = map.road(start)
         lastTown = origin
+    }
+
+    /// Puts the navigator back where a saved drive left off.
+    func restore(edge: DirectedEdge, route: [DirectedEdge], lastTown: String) {
+        self.edge = edge
+        self.route = route
+        self.road = map.road(edge)
+        self.lastTown = lastTown
     }
 
     /// True on the last road before the destination.

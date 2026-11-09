@@ -233,6 +233,8 @@ public struct CareerState: Codable, Equatable, Sendable {
     public var achievements: [String]
     /// Towns the truck has been to (for the Seen It All achievement).
     public var visitedTowns: [String]
+    /// A drive saved part-way, to continue later.
+    public var savedDrive: SavedDrive?
     public static let homeTown = "millbrook"
 
     /// Dollars per litre to fill up at your own yard (truck stops are cheaper).
@@ -261,7 +263,7 @@ public struct CareerState: Codable, Equatable, Sendable {
 
     // Saves from before the garage existed have no truck fields: give them the starter truck.
     enum CodingKeys: String, CodingKey {
-        case money, jobsCompleted, kilometersDriven, totalEarned, jobBoard, seed, ownedTrucks, selectedTruck, upgrades, fuel, currentTown, drivers, candidates, achievements, visitedTowns
+        case money, jobsCompleted, kilometersDriven, totalEarned, jobBoard, seed, ownedTrucks, selectedTruck, upgrades, fuel, currentTown, drivers, candidates, achievements, visitedTowns, savedDrive
     }
 
     public init(from decoder: Decoder) throws {
@@ -285,6 +287,7 @@ public struct CareerState: Codable, Equatable, Sendable {
             candidates = Company.candidates(using: &rng)
         }
         achievements = try c.decodeIfPresent([String].self, forKey: .achievements) ?? []
+        savedDrive = try c.decodeIfPresent(SavedDrive.self, forKey: .savedDrive)
         visitedTowns = try c.decodeIfPresent([String].self, forKey: .visitedTowns)
             ?? Array(Set([CareerState.homeTown, currentTown])).sorted()
         // Jobs saved before the map (or from another town) are replaced with jobs from here.
