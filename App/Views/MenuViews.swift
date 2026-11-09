@@ -320,6 +320,8 @@ struct SettingsView: View {
             Section {
                 Toggle("Traffic", isOn: $settings.traffic)
                     .accessibilityHint("Other vehicles on the map's roads. The practice loop never has traffic.")
+                Toggle("Deer on the road", isOn: $settings.wildlife)
+                    .accessibilityHint("Deer sometimes step onto country and mountain roads, more at night. Honk to scare them off, or slow down.")
                 Toggle("Weather", isOn: $settings.weather)
                     .accessibilityHint("Rain and storms on some drives: slippery roads, rain sounds and a pay bonus. Off means clear skies every time.")
                 Toggle("Lane guidance beeps", isOn: $settings.laneGuidanceTone)

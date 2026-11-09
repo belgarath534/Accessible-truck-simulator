@@ -41,8 +41,32 @@ public struct TripStats: Codable, Equatable, Sendable {
     public var towCost: Int = 0
     public var tickets: Int = 0
     public var ticketCost: Int = 0
+    public var tollCost: Int = 0
 
     public init() {}
+
+    enum CodingKeys: String, CodingKey {
+        case drivingTime, distance, crashes, topSpeed, tooFastWarnings, fuelUsedLiters, fuelBoughtLiters, fuelCost
+        case tows, towCost, tickets, ticketCost, tollCost
+    }
+
+    /// Saved drives from before tolls existed load fine.
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        drivingTime = try c.decode(Double.self, forKey: .drivingTime)
+        distance = try c.decode(Double.self, forKey: .distance)
+        crashes = try c.decode(Int.self, forKey: .crashes)
+        topSpeed = try c.decode(Double.self, forKey: .topSpeed)
+        tooFastWarnings = try c.decode(Int.self, forKey: .tooFastWarnings)
+        fuelUsedLiters = try c.decode(Double.self, forKey: .fuelUsedLiters)
+        fuelBoughtLiters = try c.decode(Double.self, forKey: .fuelBoughtLiters)
+        fuelCost = try c.decode(Int.self, forKey: .fuelCost)
+        tows = try c.decode(Int.self, forKey: .tows)
+        towCost = try c.decode(Int.self, forKey: .towCost)
+        tickets = try c.decode(Int.self, forKey: .tickets)
+        ticketCost = try c.decode(Int.self, forKey: .ticketCost)
+        tollCost = try c.decodeIfPresent(Int.self, forKey: .tollCost) ?? 0
+    }
 
     public var averageSpeed: Double { drivingTime > 0 ? distance / drivingTime : 0 }
 }

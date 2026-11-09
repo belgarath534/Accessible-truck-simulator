@@ -22,6 +22,11 @@ enum Changelog {
             "Vibration comes back after you leave the game and return.",
             "VoiceOver stays on the driving screen during a drive.",
             "This What's New page.",
+            "Day and night, from your phone's clock: crickets and quiet roads at night, birds at dawn.",
+            "Deer on country and mountain roads, more of them at night. You hear them ahead: honk to scare them off, or slow right down. Turn them off in Settings.",
+            "Construction zones: machines, backup beepers and a 25 mph (40 km/h) limit.",
+            "Toll booths on Interstate 40: slow down to pay $5, or blow through and get a $75 fine.",
+            "Every town sounds different: seagulls in Ridgeport, the steel mill in Ironton, the farm in Bayview, the sawmill in Cedar Falls.",
         ]),
         Version(number: "1.1", title: "Big Update", items: [
             "Eight new trucks: 11 in all, each with its own recorded engine sound and its own feel, including the electric Volt and the V12 Titan.",
@@ -107,8 +112,6 @@ enum Changelog {
     ]
 
     static let comingSoon: [String] = [
-        "Town sounds: seagulls in Ridgeport, the steel mill in Ironton, the farm in Bayview, the sawmill in Cedar Falls.",
-        "Day and night, deer on the road, construction zones and toll booths.",
         "A horn shop, and naming your truck and company.",
         "Backing into the loading dock by ear.",
         "Special cargo: livestock, refrigerated loads, oversize loads and hazmat.",

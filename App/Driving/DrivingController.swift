@@ -90,6 +90,9 @@ final class DrivingController: NSObject, ObservableObject {
                                      assist: settings.assist)
         // Traffic on the map; the practice loop stays quiet for learning.
         session.trafficEnabled = settings.traffic && navigator != nil
+        // Day and night follow the player's clock; deer on the map's country and mountain roads.
+        session.timeOfDay = ScreenshotMode.isOn ? .day : TimeOfDay(hour: Calendar.current.component(.hour, from: Date()))
+        session.wildlifeEnabled = settings.wildlife && navigator != nil && !ScreenshotMode.isOn
         // Weather for every drive except the tutorial (and screenshots).
         if settings.weather && drive != .tutorial && !ScreenshotMode.isOn {
             var rng = SystemRandomNumberGenerator()
@@ -125,6 +128,7 @@ final class DrivingController: NSObject, ObservableObject {
         feedback.idleRPM = session.spec.idleRPM
         feedback.maxRPM = session.spec.maxRPM
         feedback.weather = session.weather
+        feedback.timeOfDay = session.timeOfDay
         feedback.freeDriveTown = career.state.currentTownName
         feedback.startingFuel = session.truck.fuelLiters
         feedback.start()

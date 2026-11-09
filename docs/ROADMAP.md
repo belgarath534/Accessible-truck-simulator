@@ -18,12 +18,12 @@ captions, driving buttons, Larger Text / Increase Contrast / Reduce Motion, iPad
 - Rate-this-game prompt after a great delivery
 - What's New page in the game (every version, plus coming soon), shown once after each update
 
-## Part 2: Living World
-- Town sounds: seagulls and ship horns in Ridgeport, the steel mill in Ironton, farm animals in Bayview, the sawmill in Cedar Falls
-- Day and night: crickets and quiet roads at night, birds at dawn, rush hour traffic
-- Deer on the road: hear them, honk and brake
-- Construction zones: a flagger, beeping machines, one lane
-- Toll booths
+## Part 2: Living World (in progress)
+- Town sounds: seagulls and ship horns in Ridgeport, the steel mill in Ironton, farm animals in Bayview, the sawmill in Cedar Falls (done)
+- Day and night: crickets and quiet roads at night, birds at dawn, rush hour traffic (done)
+- Deer on the road: hear them, honk and brake (done)
+- Construction zones: a flagger, beeping machines, one lane (done)
+- Toll booths (done)
 - Horn shop: train horn, musical horn, ship horn
 - Name your truck and your company
 

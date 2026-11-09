@@ -291,6 +291,11 @@ public final class DrivingSession {
             truck.signal = .off
             return [.signalChanged(.off)]
         case .horn:
+            // A honk scares a nearby deer off the road.
+            if let d = deer, d.position - truck.position < 300, !d.scared {
+                deer?.leavesAt = min(d.leavesAt, time + 1.2)
+                deer?.scared = true
+            }
             return [.horn]
         case .speakDashboard:
             return [.dashboard(dashboard)]
@@ -350,6 +355,19 @@ public final class DrivingSession {
 
     var nextThunder: Double = 25
 
+    // Living world
+    /// Set before driving, from the player's clock.
+    public var timeOfDay: TimeOfDay = .day
+    /// Deer can appear (on roads with wildlife). Off for the tutorial and practice.
+    public var wildlifeEnabled = false
+    /// The deer on the road now, if any.
+    public internal(set) var deer: Deer?
+    var deerTimer: Double = 120
+    var tollsHandled: Set<Int> = []
+    var tollsAnnounced: Set<Int> = []
+    /// Inside a construction zone (for its sounds).
+    public var inConstructionZone: Bool { road.speedZone(at: truck.position)?.kind == .construction }
+
     /// Seconds left before the delivery is late (negative once late), or nil without a deadline.
     public var timeLeft: Double? {
         timeLimit.map { $0 - stats.drivingTime }
@@ -402,6 +420,8 @@ public final class DrivingSession {
         checkLane(events: &events)
         checkCurves(events: &events)
         checkMap(events: &events)
+        checkTolls(events: &events)
+        stepDeer(dt: dt, events: &events)
         stepTraffic(dt: dt, events: &events)
         checkPolice(dt: dt, events: &events)
         checkTruckStops(dt: dt, input: input, events: &events)
@@ -650,19 +670,26 @@ public final class DrivingSession {
     // MARK: - Map
 
     private func checkMap(events: inout [SimEvent]) {
-        guard let nav = navigator else { return }
         let position = truck.position
 
         // Towns: speed limit changes.
         let zone = road.speedZone(at: position)
         if zone?.name != currentZone {
-            if let zone {
-                events.append(.enteredTown(name: zone.name, speedLimit: zone.limit))
-            } else if let old = currentZone {
+            if let old = currentZone, old == "Construction zone" {
+                events.append(.leftConstruction(speedLimit: road.speedLimit(at: position)))
+            } else if let old = currentZone, zone == nil {
                 events.append(.leftTown(name: old, speedLimit: road.speedLimit(at: position)))
+            }
+            if let zone {
+                if zone.kind == .construction {
+                    events.append(.enteredConstruction(speedLimit: zone.limit))
+                } else {
+                    events.append(.enteredTown(name: zone.name, speedLimit: zone.limit))
+                }
             }
             currentZone = zone?.name
         }
+        guard let nav = navigator else { return }
 
         // GPS: the next junction at 1 km and 300 m (free roaming: the choices at 800 m).
         let toEnd = road.totalLength - position
@@ -709,6 +736,9 @@ public final class DrivingSession {
         truckStopState = .driving
         navAnnounced = []
         policeDecided = [:]
+        tollsHandled = []
+        tollsAnnounced = []
+        deer = nil
         clearTraffic()
         currentZone = road.speedZone(at: truck.position)?.name
         events.append(.tookRoad(roadName: result.choice.roadName, toward: result.choice.toward,
@@ -716,6 +746,60 @@ public final class DrivingSession {
         if !result.onRoute, let remaining {
             events.append(.rerouted(remaining: remaining))
         }
+    }
+
+    // MARK: - Tolls and deer
+
+    private func checkTolls(events: inout [SimEvent]) {
+        for (i, booth) in road.tollBooths.enumerated() {
+            let ahead = booth - truck.position
+            if ahead > 0 && ahead < 800 && !tollsAnnounced.contains(i) && truck.speed > 2 {
+                tollsAnnounced.insert(i)
+                events.append(.tollBoothAhead(distance: ahead))
+            }
+            if ahead <= 0 && ahead > -50 && !tollsHandled.contains(i) {
+                tollsHandled.insert(i)
+                if truck.speed <= DrivingSession.tollSpeed {
+                    stats.tollCost += DrivingSession.tollCost
+                    events.append(.tollPaid(cost: DrivingSession.tollCost))
+                } else {
+                    stats.tickets += 1
+                    stats.ticketCost += DrivingSession.tollFine
+                    events.append(.ranToll(fine: DrivingSession.tollFine))
+                }
+            }
+        }
+    }
+
+    private func stepDeer(dt: Double, events: inout [SimEvent]) {
+        if let d = deer {
+            if time >= d.leavesAt {
+                deer = nil
+                events.append(.deerGone(scared: d.scared))
+                return
+            }
+            // Reaching it: fast is a crash; slow, it jumps out of the way.
+            if truck.position >= d.position - 2 {
+                deer = nil
+                if truck.speed > DrivingSession.deerSafeSpeed {
+                    events.append(.crashed(.animal))
+                    recover()
+                    events.append(.rumbleStrip(nil))
+                } else {
+                    events.append(.deerGone(scared: false))
+                }
+            }
+            return
+        }
+        guard wildlifeEnabled, road.hasWildlife else { return }
+        deerTimer -= dt
+        guard deerTimer <= 0 else { return }
+        deerTimer = Double.random(in: timeOfDay.deerInterval, using: &rng)
+        let spot = truck.position + 220
+        // Not in towns or work zones, and not right before the end of the road.
+        guard truck.speed > 8, road.loops || spot < road.totalLength - 300, road.speedZone(at: spot) == nil else { return }
+        deer = Deer(position: spot, leavesAt: time + Double.random(in: 8...14, using: &rng))
+        events.append(.deerAhead(distance: 220))
     }
 
     // MARK: - Police
@@ -961,7 +1045,7 @@ extension DrivingSession {
         // Spawning: oncoming traffic on two-way roads, and now and then a slower vehicle ahead.
         oncomingTimer -= dt
         if oncomingTimer <= 0 {
-            oncomingTimer = Double.random(in: 25...70, using: &rng)
+            oncomingTimer = Double.random(in: 25...70, using: &rng) * timeOfDay.trafficFactor
             if !road.leftLaneSameDirection && roadAhead > 800 {
                 nextVehicleID += 1
                 traffic.append(TrafficVehicle(id: nextVehicleID, kind: randomKind(), oncoming: true,
@@ -977,7 +1061,7 @@ extension DrivingSession {
                 traffic.append(TrafficVehicle(id: nextVehicleID, kind: randomKind(), oncoming: false, lane: 0,
                                               position: pos + 500,
                                               speed: limit * Double.random(in: 0.55...0.75, using: &rng)))
-                slowTimer = Double.random(in: 70...160, using: &rng)
+                slowTimer = Double.random(in: 70...160, using: &rng) * timeOfDay.trafficFactor
             } else {
                 slowTimer = 10
             }

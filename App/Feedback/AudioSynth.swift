@@ -471,6 +471,14 @@ final class AudioSynth {
     private var thunderShot: (player: AVAudioPlayerNode, buffer: AVAudioPCMBuffer)?
     private var weather: Weather = .clear
     private var hasWeatherRecordings: Bool { weatherLoops.count == 4 }
+    // Living world: looping ambience (towns, night, dawn, construction) that fades in and out, and one-shot effects.
+    static let ambienceNames = ["amb_night", "amb_dawn", "amb_construction", "amb_town_millbrook", "amb_town_cedar_falls",
+                                "amb_town_ridgeport", "amb_town_ironton", "amb_town_bayview"]
+    static let effectNames = ["fx_deer", "fx_toll"]
+    private var ambienceLoops: [String: (player: AVAudioPlayerNode, buffer: AVAudioPCMBuffer)] = [:]
+    private var ambienceLevel: [String: Float] = [:]
+    private var ambienceTarget: [String: Float] = [:]
+    private var effects: [String: (player: AVAudioPlayerNode, buffer: AVAudioPCMBuffer)] = [:]
 
     func start(sound: EngineSound = .recorded, idleRPM: Float = 600, maxRPM: Float = 2_100) {
         state.pitch = Float(sound.pitch)
@@ -538,6 +546,14 @@ final class AudioSynth {
             player.volume = 0
             if name == "weather_thunder" { thunderShot = (player, buffer) } else { weatherLoops[name] = (player, buffer) }
         }
+        for name in AudioSynth.ambienceNames + AudioSynth.effectNames {
+            guard let buffer = SampledEngine.load(name) else { continue }
+            let player = AVAudioPlayerNode()
+            engine.attach(player)
+            engine.connect(player, to: engine.mainMixerNode, format: buffer.format)
+            player.volume = 0
+            if name.hasPrefix("fx_") { effects[name] = (player, buffer) } else { ambienceLoops[name] = (player, buffer) }
+        }
         state.useSampledEngine = sampled != nil
         state.hasStartSample = sampled?.has("engine_start") ?? false
 
@@ -575,6 +591,39 @@ final class AudioSynth {
         sampled?.update(rpm: state.rpm, load: state.load, running: state.engineRunning,
                         volume: state.muted ? 0 : state.volume)
         updateWeatherVolumes()
+        updateAmbience()
+    }
+
+    /// What ambience should play, and how loud (0...1). Loops not named fade out.
+    func setAmbience(_ targets: [String: Float]) { ambienceTarget = targets }
+
+    /// Fades each ambience loop toward its target, starting and stopping players as needed.
+    private func updateAmbience() {
+        guard engine.isRunning else { return }
+        for (name, loop) in ambienceLoops {
+            let target = state.muted ? 0 : (ambienceTarget[name] ?? 0)
+            var level = ambienceLevel[name] ?? 0
+            level += (target - level) * 0.02
+            if abs(level - target) < 0.002 { level = target }
+            ambienceLevel[name] = level
+            if level > 0.001 && !loop.player.isPlaying {
+                loop.player.scheduleBuffer(loop.buffer, at: nil, options: .loops)
+                loop.player.play()
+            } else if level <= 0.001 && target == 0 && loop.player.isPlaying {
+                loop.player.stop()
+            }
+            loop.player.volume = level * state.volume
+        }
+    }
+
+    /// Plays a one-shot effect, panned (-1 left ... 1 right).
+    func playEffect(_ name: String, volume: Float = 1, pan: Float = 0) {
+        guard let fx = effects[name], !state.muted else { return }
+        fx.player.stop()
+        fx.player.volume = state.volume * volume
+        fx.player.pan = pan
+        fx.player.scheduleBuffer(fx.buffer, at: nil)
+        fx.player.play()
     }
 
     /// Drives the engine sound directly (garage preview), without a simulation.
@@ -613,6 +662,7 @@ final class AudioSynth {
         sampled?.update(rpm: state.rpm, load: state.load, running: state.engineRunning, volume: muted ? 0 : state.volume)
         if muted {
             for (_, loop) in weatherLoops { loop.player.volume = 0 }
+            for (_, loop) in ambienceLoops { loop.player.volume = 0 }
         } else {
             updateWeatherVolumes()
         }

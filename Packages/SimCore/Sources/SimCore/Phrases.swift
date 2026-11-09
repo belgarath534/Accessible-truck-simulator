@@ -197,6 +197,34 @@ public struct Phrases {
         "Leaving \(name). Speed limit \(units.speed(speedLimit))."
     }
 
+    // MARK: Living world
+
+    public func deerAhead(_ distance: Double) -> String {
+        "Deer on the road, \(units.distance(distance)) ahead! Honk or slow down."
+    }
+
+    public func deerGone(scared: Bool) -> String {
+        scared ? "The deer ran off. Road's clear." : "The deer jumped out of the way. Road's clear."
+    }
+
+    public func enteredConstruction(speedLimit: Double) -> String {
+        "Construction zone. One lane. Speed limit \(units.speed(speedLimit)). Fines doubled."
+    }
+
+    public func leftConstruction(speedLimit: Double) -> String {
+        "End of construction. Speed limit \(units.speed(speedLimit))."
+    }
+
+    public func tollBoothAhead(_ distance: Double) -> String {
+        "Toll booth in \(units.distance(distance)). Slow below \(units.speed(DrivingSession.tollSpeed)) to pay \(Phrases.money(DrivingSession.tollCost))."
+    }
+
+    public func tollPaid(_ cost: Int) -> String { "Toll paid: \(Phrases.money(cost)). Have a good drive." }
+
+    public func ranToll(_ fine: Int) -> String {
+        "You blew through the toll booth! Fine: \(Phrases.money(fine)). Slow down for tolls next time."
+    }
+
     // MARK: Company
 
     public func driver(_ d: Driver) -> String {
@@ -412,6 +440,8 @@ public struct Phrases {
         case let .collision(headOn, vehicle):
             return headOn ? "Crash! Head-on with an oncoming \(vehicle.rawValue). Stay in your lane when traffic is coming."
                           : "Crash! You hit the \(vehicle.rawValue) in front of you. Slow down sooner behind traffic."
+        case .animal:
+            return "Crash! You hit a deer. Next time, honk to scare it off, or slow right down."
         }
     }
 }

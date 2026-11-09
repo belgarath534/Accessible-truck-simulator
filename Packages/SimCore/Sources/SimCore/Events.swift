@@ -57,6 +57,8 @@ public enum CrashReason: Equatable, Sendable {
     case leftRoad(Side)
     /// Hit another vehicle: head-on (oncoming) or from behind.
     case collision(headOn: Bool, vehicle: VehicleKind)
+    /// Hit a deer.
+    case animal
 }
 
 public enum VehicleKind: String, Equatable, Sendable { case car, pickup, truck }
@@ -120,6 +122,17 @@ public enum SimEvent: Equatable, Sendable {
     case fledPolice(fine: Int)
     /// A thunderclap (storms).
     case thunder
+    // Living world
+    /// A deer on the road ahead (metres). Honk to scare it off, or slow down.
+    case deerAhead(distance: Double)
+    /// The deer left the road (`scared`: because of the horn).
+    case deerGone(scared: Bool)
+    case enteredConstruction(speedLimit: Double)
+    case leftConstruction(speedLimit: Double)
+    case tollBoothAhead(distance: Double)
+    case tollPaid(cost: Int)
+    /// Drove through a toll booth too fast to pay.
+    case ranToll(fine: Int)
     case dashboard(DashboardReading)
     case roadAhead(UpcomingCurve?, remaining: Double?, timeLeft: Double?, truckStop: Double?)
     /// Delivery deadline reminders (5 minutes and 1 minute left).

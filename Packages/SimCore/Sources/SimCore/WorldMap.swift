@@ -74,6 +74,18 @@ public struct WorldMap: Sendable {
         // Police watch the town speed limits from inside each town.
         if node(from(e))?.isTown == true { r.policeSpots.append(townZoneLength * 0.5) }
         if node(to(e))?.isTown == true { r.policeSpots.append(r.totalLength - townZoneLength * 0.5) }
+        let style = edges[e.index].style
+        // Road works on every third highway, half way along, with a police car watching the slow limit.
+        if e.index % 3 == 1 && r.totalLength > 4_000 {
+            let start = r.totalLength * 0.45
+            r.speedZones.append(SpeedZone(start: start, end: start + constructionZoneLength,
+                                          limit: constructionSpeedLimit, name: "Construction zone", kind: .construction))
+            r.policeSpots.append(start + constructionZoneLength * 0.6)
+        }
+        // The interstate is a toll road: one booth on each stretch.
+        if style == .interstate { r.tollBooths = [r.totalLength * 0.6] }
+        // Deer live along the country and mountain roads.
+        r.hasWildlife = style != .interstate
         r.policeSpots.sort()
         return r
     }
@@ -162,11 +174,18 @@ public struct JunctionChoice: Equatable, Sendable {
 
 /// A stretch with its own speed limit (a town).
 public struct SpeedZone: Equatable, Sendable {
+    public enum Kind: String, Equatable, Sendable { case town, construction }
     public var start: Double
     public var end: Double
     public var limit: Double
     public var name: String
+    public var kind: Kind = .town
 }
+
+/// Speed limit in construction zones, m/s.
+public let constructionSpeedLimit = 40 / 3.6
+/// How long a construction zone is, metres.
+public let constructionZoneLength = 700.0
 
 // MARK: - Road helpers
 
@@ -181,9 +200,12 @@ public extension Road {
         }
         var r = Road(segments: Array(segs), loops: loops, speedLimit: speedLimit,
                      truckStops: truckStops.map { totalLength - $0 })
-        r.speedZones = speedZones.map { SpeedZone(start: totalLength - $0.end, end: totalLength - $0.start, limit: $0.limit, name: $0.name) }
+        r.speedZones = speedZones.map { SpeedZone(start: totalLength - $0.end, end: totalLength - $0.start, limit: $0.limit,
+                                                  name: $0.name, kind: $0.kind) }
         r.policeSpots = policeSpots.map { totalLength - $0 }.sorted()
         r.leftLaneSameDirection = leftLaneSameDirection
+        r.tollBooths = tollBooths.map { totalLength - $0 }.sorted()
+        r.hasWildlife = hasWildlife
         return r
     }
 
@@ -192,7 +214,7 @@ public extension Road {
         speedZones.first { position >= $0.start && position <= $0.end }?.limit ?? speedLimit
     }
 
-    func speedZone(at position: Double) -> SpeedZone? {
+    public func speedZone(at position: Double) -> SpeedZone? {
         speedZones.first { position >= $0.start && position <= $0.end }
     }
 

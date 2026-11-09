@@ -50,10 +50,11 @@ struct SetupView: View {
                 Section {
                     Toggle("Weather: rain and storms", isOn: $settings.weather)
                     Toggle("Traffic", isOn: $settings.traffic)
+                    Toggle("Deer on the road", isOn: $settings.wildlife)
                 } header: {
                     Text("The road")
                 } footer: {
-                    Text("Weather makes some drives rainy: slippery roads, but deliveries pay extra. Traffic adds other vehicles you can hear around you.")
+                    Text("Weather makes some drives rainy: slippery roads, but deliveries pay extra. Traffic adds other vehicles you can hear around you. Deer sometimes step onto country roads, more at night: honk or slow down.")
                 }
 
                 Section {

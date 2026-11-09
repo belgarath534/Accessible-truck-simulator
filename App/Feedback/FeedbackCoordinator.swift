@@ -26,6 +26,8 @@ final class FeedbackCoordinator {
     var weather: Weather = .clear {
         didSet { audio.setWeather(weather) }
     }
+    /// Day or night; set before start().
+    var timeOfDay: TimeOfDay = .day
 
     init(settings: AppSettings) {
         self.settings = settings
@@ -114,6 +116,7 @@ final class FeedbackCoordinator {
             }
         }
         if let forecast = weather.announcement { trip += " " + forecast }
+        if drive != .tutorial && drive != .practice, let time = timeOfDay.announcement { trip += " " + time }
         speech.speak(
             "\(trip) Engine off. \(controls) Three-finger double tap starts the engine. Two-finger double tap reads the dashboard. Two-finger swipe down pauses.",
             priority: .high
@@ -145,6 +148,26 @@ final class FeedbackCoordinator {
             haptics.tap(intensity: 0.4, sharpness: 0.8)
         case .horn:
             audio.honk()
+        case let .deerAhead(distance):
+            audio.playEffect("fx_deer", volume: 0.8)
+            speech.speak(phrases.deerAhead(distance), priority: .high)
+            haptics.tap(intensity: 1, sharpness: 0.6)
+        case let .deerGone(scared):
+            if scared { audio.playEffect("fx_deer", volume: 0.5) }
+            speech.speak(phrases.deerGone(scared: scared), priority: .normal)
+        case let .enteredConstruction(limit):
+            speech.speak(phrases.enteredConstruction(speedLimit: limit), priority: .high)
+        case let .leftConstruction(limit):
+            speech.speak(phrases.leftConstruction(speedLimit: limit), priority: .normal)
+        case let .tollBoothAhead(distance):
+            speech.speak(phrases.tollBoothAhead(distance), priority: .normal)
+        case let .tollPaid(cost):
+            audio.playEffect("fx_toll", volume: 0.8)
+            speech.speak(phrases.tollPaid(cost), priority: .normal)
+        case let .ranToll(fine):
+            audio.airBrake()
+            speech.speak(phrases.ranToll(fine), priority: .high)
+            haptics.tap(intensity: 1, sharpness: 0.8)
         case .thunder:
             audio.thunder()
             haptics.tap(intensity: 0.5, sharpness: 0.1)
@@ -255,12 +278,33 @@ final class FeedbackCoordinator {
         }
     }
 
+    /// Town sounds near towns, crickets at night, birds at dawn, machines in work zones.
+    private func ambience(_ session: DrivingSession) -> [String: Float] {
+        var out: [String: Float] = [:]
+        let zone = session.road.speedZone(at: session.truck.position)
+        if session.inConstructionZone {
+            out["amb_construction"] = 0.55
+        } else if let zone {
+            let id = zone.name.lowercased().replacingOccurrences(of: " ", with: "_")
+            out["amb_town_" + id] = 0.5
+        }
+        switch session.timeOfDay {
+        case .night: out["amb_night"] = zone == nil ? 0.35 : 0.15
+        case .dawn: out["amb_dawn"] = zone == nil ? 0.35 : 0.15
+        case .day, .dusk: break
+        }
+        // Rain drowns out the countryside.
+        if session.weather != .clear { out["amb_night"] = nil; out["amb_dawn"] = nil }
+        return out
+    }
+
     /// Called every frame with the latest state.
     func update(session: DrivingSession) {
         let truck = session.truck
         audio.update(truck: truck, spec: session.spec)
         audio.setLaneGuidance(offset: session.laneGuidanceOffset)
         audio.updateTraffic(session.trafficSounds)
+        audio.setAmbience(ambience(session))
         audio.state.pumping = session.isRefueling
         audio.state.siren = session.sirenOn
         // Drop-off beacon: beeps speed up over the last 150 m, a steady tone right at the drop-off.

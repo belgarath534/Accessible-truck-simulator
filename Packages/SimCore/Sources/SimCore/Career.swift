@@ -144,6 +144,9 @@ public struct Payout: Equatable, Sendable {
         if stats.ticketCost > 0 {
             lines.append(Line(label: "Speeding ticket\(stats.tickets == 1 ? "" : "s, \(stats.tickets)")", amount: -stats.ticketCost))
         }
+        if stats.tollCost > 0 {
+            lines.append(Line(label: "Tolls", amount: -stats.tollCost))
+        }
         if stats.towCost > 0 {
             lines.append(Line(label: "Tow truck\(stats.tows == 1 ? "" : ", \(stats.tows) times")", amount: -stats.towCost))
         }
