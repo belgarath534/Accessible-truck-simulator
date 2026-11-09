@@ -308,6 +308,17 @@ struct SettingsView: View {
                     Text("Imperial").tag(UnitSystem.imperial)
                 }
             }
+            Section {
+                Picker("Menus", selection: $settings.menuOrientation) {
+                    ForEach(MenuOrientation.allCases, id: \.self) { Text($0.label).tag($0) }
+                }
+                Button("Run the Setup Again") { settings.setupDone = false }
+                    .accessibilityHint("The welcome screen that asks which settings suit you.")
+            } header: {
+                Text("Screen")
+            } footer: {
+                Text("Driving is always sideways. Menus, the pause menu and the results can be upright, sideways, or follow how you hold the phone.")
+            }
         }
         .navigationTitle("Settings")
     }

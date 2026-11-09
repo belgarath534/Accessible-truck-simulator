@@ -36,7 +36,9 @@ final class GameCenter: NSObject, ObservableObject, GKGameCenterControllerDelega
         let items = achievements.map { a -> GKAchievement in
             let item = GKAchievement(identifier: a.gameCenterID)
             item.percentComplete = 100
-            item.showsCompletionBanner = true
+            // No Game Center banner: the game speaks achievements itself, and a banner can pull VoiceOver's
+            // focus off the driving screen in the middle of a drive.
+            item.showsCompletionBanner = false
             return item
         }
         GKAchievement.report(items) { _ in }

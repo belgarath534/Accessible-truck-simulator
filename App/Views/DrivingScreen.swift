@@ -66,8 +66,18 @@ struct DrivingScreen: View {
                 )
             }
         }
-        .onAppear { controller.start() }
-        .onDisappear { controller.stop() }
+        .onAppear {
+            OrientationLock.driving()
+            controller.start()
+        }
+        .onDisappear {
+            controller.stop()
+            OrientationLock.menus(controller.settings.menuOrientation)
+        }
+        // The pause menu and the results are menus: they face the way menus do; driving turns sideways again.
+        .onChange(of: controller.isPaused || controller.finished != nil) { _, inMenu in
+            if inMenu { OrientationLock.menus(controller.settings.menuOrientation) } else { OrientationLock.driving() }
+        }
         .statusBarHidden()
         .persistentSystemOverlays(.hidden)
     }

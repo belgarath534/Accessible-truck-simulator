@@ -1,6 +1,11 @@
 Version 1.2 test build.
 
+New:
+- A welcome setup the first time you open the game (you'll see it once now too): pick speech, captions, steering, steering help, driving buttons, lane beeps, weather, traffic, menu direction and units. Run it again any time from Settings.
+- Menus are upright now. Driving is still sideways; the pause menu and results turn upright too. Prefer sideways menus? Settings, Screen, Menus.
+
 Fixes:
+- VoiceOver should no longer leave the driving screen in the middle of a drive (Game Center's banner is off, and if focus leaves, the game brings it back).
 - Vibration now comes back after you leave the game and return during a drive.
 - Junction warning: about 200 meters before each junction, if your turn signal doesn't match the GPS route, you hear it: "Signal left now to turn onto Highway 12", or "Your right signal is on, but the route goes straight", or "Wrong signal!". Missing a turn used to send you the long way round without much warning; that's what made a 4 mile trip suddenly 14 miles.
 

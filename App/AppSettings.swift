@@ -28,6 +28,12 @@ final class AppSettings: ObservableObject {
     @Published var captions: Bool { didSet { defaults.set(captions, forKey: "captions") } }
     /// On-screen buttons for every driving action (Voice Control, Switch Control, or anyone who prefers buttons).
     @Published var drivingButtons: Bool { didSet { defaults.set(drivingButtons, forKey: "drivingButtons") } }
+    /// Which way the menus face (driving is always sideways).
+    @Published var menuOrientation: MenuOrientation {
+        didSet { defaults.set(menuOrientation.rawValue, forKey: "menuOrientation") }
+    }
+    /// The first-launch setup has been done.
+    @Published var setupDone: Bool { didSet { defaults.set(setupDone, forKey: "setupDone") } }
     @Published var weather: Bool { didSet { defaults.set(weather, forKey: "weather") } }
     @Published var tutorialDone: Bool { didSet { defaults.set(tutorialDone, forKey: "tutorialDone") } }
 
@@ -51,6 +57,8 @@ final class AppSettings: ObservableObject {
         traffic = d.object(forKey: "traffic") as? Bool ?? false
         tutorialDone = d.object(forKey: "tutorialDone") as? Bool ?? false
         weather = d.object(forKey: "weather") as? Bool ?? true
+        menuOrientation = MenuOrientation(rawValue: d.string(forKey: "menuOrientation") ?? "") ?? .portrait
+        setupDone = d.bool(forKey: "setupDone")
         // Follow the iPhone's own settings the first time.
         captions = d.object(forKey: "captions") as? Bool ?? UIAccessibility.isClosedCaptioningEnabled
         drivingButtons = d.object(forKey: "drivingButtons") as? Bool ?? UIAccessibility.isSwitchControlRunning

@@ -10,8 +10,26 @@ import UIKit
 final class DrivingTouchView: UIView {
     weak var controller: DrivingController?
 
+    private var focusObserver: NSObjectProtocol?
+
     override init(frame: CGRect) {
         super.init(frame: frame)
+        // Safety net: if VoiceOver's focus leaves the driving screen mid-drive (a system banner, a notification),
+        // bring it back, so touches keep driving the truck. Not when the on-screen driving buttons are shown,
+        // since then moving focus is on purpose.
+        focusObserver = NotificationCenter.default.addObserver(
+            forName: UIAccessibility.elementFocusedNotification, object: nil, queue: .main
+        ) { [weak self] note in
+            guard let self, UIAccessibility.isVoiceOverRunning, self.window != nil,
+                  let controller = self.controller, !controller.isPaused, controller.finished == nil,
+                  !controller.settings.drivingButtons, !UIAccessibility.isSwitchControlRunning else { return }
+            let focused = note.userInfo?[UIAccessibility.focusedElementUserInfoKey] as AnyObject?
+            guard focused !== self else { return }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { [weak self] in
+                guard let self, !controller.isPaused, controller.finished == nil else { return }
+                UIAccessibility.post(notification: .layoutChanged, argument: self)
+            }
+        }
         isMultipleTouchEnabled = true
         isOpaque = true
         backgroundColor = UIColor(red: 0.13, green: 0.22, blue: 0.13, alpha: 1)
@@ -23,6 +41,10 @@ final class DrivingTouchView: UIView {
     }
 
     required init?(coder: NSCoder) { fatalError("init(coder:) is not used") }
+
+    deinit {
+        if let focusObserver { NotificationCenter.default.removeObserver(focusObserver) }
+    }
 
     override func didMoveToWindow() {
         super.didMoveToWindow()
