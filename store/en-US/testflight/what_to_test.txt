@@ -1,13 +1,7 @@
-Steering fix: with tilt steering, the truck no longer creeps into the next lane when you hold the phone still. "Straight" is now set when you start the engine (averaged over half a second), small tilts do nothing, and with steering help on, the truck eases back to the middle of your lane when you're not steering. You still steer through curves.
+Version 1.2 test build.
 
-New in 1.1: weather, eight new trucks, achievements and Game Center.
+Fixes:
+- Vibration now comes back after you leave the game and return during a drive.
+- Junction warning: about 200 meters before each junction, if your turn signal doesn't match the GPS route, you hear it: "Signal left now to turn onto Highway 12", or "Your right signal is on, but the route goes straight", or "Wrong signal!". Missing a turn used to send you the long way round without much warning; that's what made a 4 mile trip suddenly 14 miles.
 
-Weather: some drives now have rain or a storm. You hear rain on the cab, the wipers, your tires hissing through water, and thunder in a storm. Wet roads have less grip and take longer to stop, so curve warnings suggest slower speeds. Deliveries pay 10 percent extra in the rain and 20 percent in a storm. Turn it off in Settings if you want clear skies.
-
-Trucks: the garage now has 11 trucks, each with its own engine sound and its own feel. Farm Runner ($3,500), City Hauler ($10,000, sharpest steering), Mountain Goat ($14,000, strongest brakes), Highway Star ($24,000), Long Hauler ($28,000, huge tank), Iron Bull ($34,000, for heavy loads), Volt ($40,000, electric: no gears, a motor whine, charges at truck stops) and Titan ($60,000, the best at everything). Every truck now has its own recorded engine sound. Use "Hear the engine" in the garage to listen to each one.
-
-Achievements: 23 achievements, spoken when you earn them during a drive, or shown in an alert in the menus. The Achievements screen on the main menu lists them all. If you're signed in to Game Center, they're sent there too, with two leaderboards: money earned and deliveries.
-
-Accessibility: Settings has a new Accessibility section. Captions show everything the game says as text on the driving screen. Driving buttons add big on-screen buttons for every action (Engine, Faster, Slower, Stop, Steer Left and Right, signals, Dashboard, GPS, Horn, Pause) for Voice Control, Switch Control or anyone who likes buttons; Faster and Slower work like cruise control. The driving screen follows Larger Text, Increase Contrast and Reduce Motion, and traffic is labeled, not just colored. The game now also runs on iPad.
-
-Please tell us: Does each truck sound and drive different enough? Does the Volt's whine tell you your speed? Did any achievement unlock when it shouldn't?
+Please tell us: Do you hear the junction warning in time to signal? Does the vibration keep working after you switch apps?

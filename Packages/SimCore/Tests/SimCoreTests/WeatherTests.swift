@@ -126,3 +126,55 @@ final class LaneKeepingTests: XCTestCase {
         XCTAssertLessThan(s.truck.lateralOffset, -1, "steering moves you across, e.g. to pass")
     }
 }
+
+final class JunctionSignalTests: XCTestCase {
+    private let dt = 1.0 / 60
+
+    /// Drives a job from Millbrook with a given signal policy; returns the events.
+    private func driveToFirstJunction(signal: (NavInstruction) -> DrivingAction?) -> (events: [SimEvent], turn: Turn)? {
+        for town in WorldMap.standard.towns where town.id != "millbrook" {
+            guard let nav = Navigator(map: .standard, origin: "millbrook", destination: town.id) else { continue }
+            let s = DrivingSession(navigator: nav, seed: 1)
+            guard let first = nav.nextInstruction(at: 0), first.turn == .left || first.turn == .right else { continue }
+            _ = s.perform(.toggleEngine)
+            var events: [SimEvent] = []
+            var signalled = false
+            for _ in 0..<(60 * 900) {
+                if !signalled, let action = signal(first), (nav.road.totalLength - s.truck.position) < 600 {
+                    events += s.perform(action)
+                    signalled = true
+                }
+                let e = s.step(dt: dt, input: DrivingInput(throttle: s.truck.speed < 14 ? 0.6 : 0,
+                                                           steer: -s.laneGuidanceOffset * 0.8))
+                events += e
+                if e.contains(where: { if case .tookRoad = $0 { return true }; return false }) { break }
+            }
+            return (events, first.turn)
+        }
+        return nil
+    }
+
+    private func hasMismatch(_ events: [SimEvent]) -> Bool {
+        events.contains { if case .signalMismatch = $0 { return true }; return false }
+    }
+
+    func testForgettingToSignalIsWarnedBeforeTheJunction() throws {
+        let run = try XCTUnwrap(driveToFirstJunction { _ in nil })
+        XCTAssertTrue(hasMismatch(run.events))
+        guard case let .signalMismatch(instruction, signal)? = run.events.first(where: {
+            if case .signalMismatch = $0 { return true }; return false }) else { return XCTFail() }
+        XCTAssertEqual(signal, .off)
+        XCTAssertTrue(Phrases(units: .metric).signalMismatch(instruction, signal: signal).hasPrefix("Signal \(run.turn.rawValue) now"))
+    }
+
+    func testTheRightSignalGetsNoWarning() throws {
+        let run = try XCTUnwrap(driveToFirstJunction { .signal($0.turn == .left ? .left : .right) })
+        XCTAssertFalse(hasMismatch(run.events))
+        XCTAssertFalse(run.events.contains { if case .rerouted = $0 { return true }; return false })
+    }
+
+    func testTheWrongSignalIsWarned() throws {
+        let run = try XCTUnwrap(driveToFirstJunction { .signal($0.turn == .left ? .right : .left) })
+        XCTAssertTrue(hasMismatch(run.events))
+    }
+}

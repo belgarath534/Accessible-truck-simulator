@@ -704,12 +704,17 @@ final class MapTests: XCTestCase {
         var events: [SimEvent] = []
         var t = 0.0
         while s.summary == nil && t < 3_000 {
-            // Signal as instructed at 300 m.
-            if case let .navInstruction(n)? = events.last, n.distance <= 300 {
-                switch n.turn {
-                case .left: _ = s.perform(.signal(.left))
-                case .right: _ = s.perform(.signal(.right))
-                default: _ = s.perform(.cancelSignal)
+            // Signal as instructed at 300 m (any instruction heard since the last frame, like a player would).
+            let lastInstruction = events.reversed().lazy.compactMap { e -> NavInstruction? in
+                if case let .navInstruction(n) = e { return n }; return nil }.first
+            if let n = lastInstruction, n.distance <= 300 {
+                let want: SignalState = n.turn == .left ? .on(.left) : (n.turn == .right ? .on(.right) : .off)
+                if s.truck.signal != want {
+                    switch n.turn {
+                    case .left: _ = s.perform(.signal(.left))
+                    case .right: _ = s.perform(.signal(.right))
+                    default: _ = s.perform(.cancelSignal)
+                    }
                 }
             }
             var target = min(20, s.currentSpeedLimit)

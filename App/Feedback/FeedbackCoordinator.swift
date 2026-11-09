@@ -160,6 +160,9 @@ final class FeedbackCoordinator {
             speech.speak(phrases.junctionAhead(choices, distance: distance), priority: .normal)
         case let .tookRoad(roadName, toward, length, _):
             speech.speak(phrases.tookRoad(roadName: roadName, toward: toward, length: length), priority: .normal)
+        case let .signalMismatch(instruction, signal):
+            speech.speak(phrases.signalMismatch(instruction, signal: signal), priority: .high)
+            haptics.tap(intensity: 0.9, sharpness: 0.7)
         case let .rerouted(remaining):
             speech.speak(phrases.rerouted(remaining), priority: .high)
         case .missedDropOff:

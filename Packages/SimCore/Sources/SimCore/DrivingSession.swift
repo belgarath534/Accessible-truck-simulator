@@ -623,6 +623,17 @@ public final class DrivingSession {
                         events.append(.navInstruction(instruction))
                     }
                 }
+                // Last chance: about 200 m before the junction, check the signal matches the route.
+                if toEnd <= 200 && toEnd > 30 && !navAnnounced.contains(200) {
+                    navAnnounced.insert(200)
+                    if let instruction = nav.nextInstruction(at: position) {
+                        let wanted: SignalState = instruction.turn == .left ? .on(.left)
+                            : instruction.turn == .right ? .on(.right) : .off
+                        if instruction.turn != .uTurn && truck.signal != wanted {
+                            events.append(.signalMismatch(instruction, signal: truck.signal))
+                        }
+                    }
+                }
             } else if toEnd <= 800 && !navAnnounced.contains(800) {
                 navAnnounced.insert(800)
                 events.append(.junctionAhead(choices: nav.junctionChoices, distance: toEnd))

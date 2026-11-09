@@ -171,6 +171,18 @@ public struct Phrases {
         "\(roadName) toward \(toward), \(units.distance(length))."
     }
 
+    /// Warning just before a junction when the signal doesn't match the route.
+    public func signalMismatch(_ n: NavInstruction, signal: SignalState) -> String {
+        switch (n.turn, signal) {
+        case (.straight, .on(let side)):
+            return "Your \(side.rawValue) signal is on, but the route goes straight on \(n.roadName). Cancel the signal."
+        case (.left, .off), (.right, .off):
+            return "Signal \(n.turn.rawValue) now to turn onto \(n.roadName)."
+        default:
+            return "Wrong signal! The route turns \(n.turn.rawValue) onto \(n.roadName)."
+        }
+    }
+
     public func rerouted(_ remaining: Double) -> String {
         "That's off the route. Recalculating. New route: \(units.distance(remaining)) to the drop-off."
     }

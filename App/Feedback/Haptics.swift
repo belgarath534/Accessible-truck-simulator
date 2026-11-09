@@ -7,6 +7,9 @@ final class Haptics {
     private var engine: CHHapticEngine?
     private var rumblePlayer: CHHapticAdvancedPatternPlayer?
     private var lastUpdate: CFTimeInterval = 0
+    /// iOS stops the haptic engine when the game goes to the background (or for other reasons); it's started
+    /// again on the next update, so vibration comes back by itself.
+    private var needsRestart = false
 
     var isSupported: Bool { CHHapticEngine.capabilitiesForHardware().supportsHaptics }
 
@@ -19,6 +22,9 @@ final class Haptics {
             engine.resetHandler = { [weak self] in
                 try? self?.engine?.start()
                 self?.makeContinuousPlayer()
+            }
+            engine.stoppedHandler = { [weak self] _ in
+                DispatchQueue.main.async { self?.needsRestart = true }
             }
             try engine.start()
             self.engine = engine
@@ -67,10 +73,16 @@ final class Haptics {
 
     /// Call every frame; rate-limited internally.
     func update(engineRunning: Bool, rpmFraction: Double, load: Double, onRumbleStrip: Bool) {
-        guard enabled, engine != nil else { return }
+        guard enabled, let engine else { return }
         let now = CACurrentMediaTime()
         guard now - lastUpdate > 0.05 else { return }
         lastUpdate = now
+        if needsRestart {
+            // Back from the background: start the engine and the continuous vibration again.
+            guard (try? engine.start()) != nil else { return }
+            needsRestart = false
+            makeContinuousPlayer()
+        }
         var intensity: Float = engineRunning ? Float(0.06 + 0.18 * load + 0.06 * rpmFraction) : 0
         var sharpness: Float = Float(0.1 + 0.3 * rpmFraction)
         if onRumbleStrip {

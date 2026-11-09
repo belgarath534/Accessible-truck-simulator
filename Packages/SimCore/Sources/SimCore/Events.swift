@@ -96,6 +96,8 @@ public enum SimEvent: Equatable, Sendable {
     case junctionAhead(choices: [JunctionChoice], distance: Double)
     /// Took a junction onto a new road.
     case tookRoad(roadName: String, toward: String, length: Double, turn: Turn)
+    /// Close to a junction with a signal that doesn't match the route (or no signal where the route turns).
+    case signalMismatch(NavInstruction, signal: SignalState)
     /// Left the planned route; the GPS found a new one.
     case rerouted(remaining: Double)
     case missedDropOff
