@@ -36,6 +36,8 @@ final class AppSettings: ObservableObject {
     @Published var setupDone: Bool { didSet { defaults.set(setupDone, forKey: "setupDone") } }
     /// The app version a rating was last asked for (at most once per version).
     @Published var ratingAskedVersion: String { didSet { defaults.set(ratingAskedVersion, forKey: "ratingAskedVersion") } }
+    /// The version whose What's New the player has seen (it shows once by itself after an update).
+    @Published var whatsNewSeen: String { didSet { defaults.set(whatsNewSeen, forKey: "whatsNewSeen") } }
     @Published var weather: Bool { didSet { defaults.set(weather, forKey: "weather") } }
     @Published var tutorialDone: Bool { didSet { defaults.set(tutorialDone, forKey: "tutorialDone") } }
 
@@ -61,6 +63,7 @@ final class AppSettings: ObservableObject {
         weather = d.object(forKey: "weather") as? Bool ?? true
         menuOrientation = MenuOrientation(rawValue: d.string(forKey: "menuOrientation") ?? "") ?? .portrait
         setupDone = d.bool(forKey: "setupDone")
+        whatsNewSeen = d.string(forKey: "whatsNewSeen") ?? ""
         ratingAskedVersion = d.string(forKey: "ratingAskedVersion") ?? ""
         // Follow the iPhone's own settings the first time.
         captions = d.object(forKey: "captions") as? Bool ?? UIAccessibility.isClosedCaptioningEnabled

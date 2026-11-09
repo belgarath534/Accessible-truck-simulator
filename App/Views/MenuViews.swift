@@ -34,6 +34,11 @@ struct MainMenuView: View {
         }
     }
 
+    /// After an update: What's New shows once by itself (not during the welcome setup or screenshots).
+    private var showWhatsNew: Bool {
+        settings.setupDone && settings.whatsNewSeen != Changelog.current && !ScreenshotMode.isOn && drive == nil
+    }
+
     private var achievementTitle: String {
         career.justUnlocked.count == 1 ? "Achievement Unlocked!" : "\(career.justUnlocked.count) Achievements Unlocked!"
     }
@@ -105,6 +110,7 @@ struct MainMenuView: View {
                     Text("Jobs go from the town you're in to another town and pay the most, with bonuses for arriving on time, not crashing and a perfect stop. Free Drive roams the map and pays a little for every kilometer. Practice Drive is the practice loop and doesn't pay.")
                 }
                 Section {
+                    NavigationLink("What's New") { WhatsNewView() }
                     NavigationLink("Achievements") { AchievementsView() }
                     NavigationLink("How to Drive") { ControlsHelpView() }
                     NavigationLink("Settings") { SettingsView() }
@@ -115,7 +121,12 @@ struct MainMenuView: View {
             .onAppear { atMainMenu = true }
             .onDisappear { atMainMenu = false }
         }
+        .sheet(isPresented: Binding(get: { showWhatsNew }, set: { if !$0 { settings.whatsNewSeen = Changelog.current } })) {
+            NavigationStack { WhatsNewView { settings.whatsNewSeen = Changelog.current } }
+        }
         .onAppear {
+            // A brand new player gets the welcome setup instead; What's New starts with the next update.
+            if !settings.setupDone && settings.whatsNewSeen.isEmpty { settings.whatsNewSeen = Changelog.current }
             if settings.menuMusic { MusicPlayer.shared.playMenu() }
             reportDrivers()
         }

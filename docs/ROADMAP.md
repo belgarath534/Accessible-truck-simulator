@@ -1,12 +1,14 @@
 # Accessible Truck Simulator roadmap
 
-Every idea is planned. Each update has a theme, so each one feels like a real event for players.
+Every idea is planned. Decision (November 2026): everything below from 1.2 to 1.6 ships together as one
+update, **1.2: The Big Road Update**, built piece by piece and tested on TestFlight along the way. After it,
+1.3 is something new, shaped by player feedback. The sections below are the parts of the big update.
 
 ## 1.1: Big Update (in App Store review)
 11 trucks with recorded engines, weather with recorded rain and thunder, 23 achievements and Game Center,
 captions, driving buttons, Larger Text / Increase Contrast / Reduce Motion, iPad, steadier steering.
 
-## 1.2: Your Company (in progress)
+## Part 1: Your Company (done, on TestFlight)
 - Welcome setup on first launch (done)
 - Upright menus; driving stays sideways (done)
 - Fixes: vibration after leaving the game, junction signal warning, VoiceOver focus on the driving screen (done)
@@ -14,8 +16,9 @@ captions, driving buttons, Larger Text / Increase Contrast / Reduce Motion, iPad
 - Driver experience: drivers level up from 1 to 3 stars and earn more
 - Raises: good drivers ask for a raise; pay it or they may quit
 - Rate-this-game prompt after a great delivery
+- What's New page in the game (every version, plus coming soon), shown once after each update
 
-## 1.3: Living World
+## Part 2: Living World
 - Town sounds: seagulls and ship horns in Ridgeport, the steel mill in Ironton, farm animals in Bayview, the sawmill in Cedar Falls
 - Day and night: crickets and quiet roads at night, birds at dawn, rush hour traffic
 - Deer on the road: hear them, honk and brake
@@ -24,21 +27,21 @@ captions, driving buttons, Larger Text / Increase Contrast / Reduce Motion, iPad
 - Horn shop: train horn, musical horn, ship horn
 - Name your truck and your company
 
-## 1.4: On the Job
+## Part 3: On the Job
 - Docking by ear: back the trailer into the loading dock with reverse beeps
 - Special cargo: livestock (they moo and hate hard braking), refrigerated (spoils if you're slow), oversize (escort car, narrow roads), hazmat (big pay, one crash ends the job)
 - Company contracts: several deliveries for one client for a big bonus
 - Reputation: unlocks better jobs and clients
 - Weigh stations
 
-## 1.5: Voices on the Radio
+## Part 4: Voices on the Radio
 - A dispatcher with a real voice: jobs, jokes and storm warnings, using your company name
 - CB radio chatter from other truckers
 - Radio DJ between songs, and a weather report
 - Story missions ("Get this medicine to Bayview before the bridge closes")
 - Radio events from your drivers ("Nadia broke down near Bayview: send a tow or wait")
 
-## 1.6: Wild Roads
+## Part 5: Wild Roads
 - Real hills: the engine strains uphill, brakes overheat downhill, runaway truck ramps
 - Snow and ice in winter, with chains
 - Tire blowouts
