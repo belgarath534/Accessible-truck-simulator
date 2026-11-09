@@ -187,6 +187,11 @@ final class CareerStore: ObservableObject {
         save()
     }
 
+    // MARK: Ratings
+
+    /// Set after a great delivery: the main menu asks for a rating (Apple decides whether it really shows).
+    @Published var askForRating = false
+
     // MARK: Save and continue later
 
     var savedDrive: SavedDrive? { state.savedDrive }

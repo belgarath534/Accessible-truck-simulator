@@ -1,6 +1,7 @@
 Version 1.2 test build.
 
 New:
+- After a great delivery (no crashes, a good stop, at least 3 deliveries done), back at the main menu, Apple's rating window may appear. Once per version at most, and Apple limits it further.
 - Drivers grow: after 20 deliveries a 1-star driver asks for a raise ($1,500) to become 2-star; after 50, a 2-star asks ($3,500) to become 3-star. Pay it in the Company screen and they're faster and earn more. Say Not Now and they ask again after 15 more deliveries; ignore it for 15 deliveries and they quit.
 - Save and Continue Later: in the pause menu. It saves the drive exactly where you are (place, fuel, weather, time left), and the main menu shows Continue Your Drive at the top. Starting a different drive asks before replacing it.
 - A welcome setup the first time you open the game (you'll see it once now too): pick speech, captions, steering, steering help, driving buttons, lane beeps, weather, traffic, menu direction and units. Run it again any time from Settings.

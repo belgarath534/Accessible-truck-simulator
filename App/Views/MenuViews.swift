@@ -1,4 +1,5 @@
 import SimCore
+import StoreKit
 import SwiftUI
 
 struct MainMenuView: View {
@@ -10,6 +11,7 @@ struct MainMenuView: View {
     /// A new drive picked while a saved drive exists: asks first.
     @State private var replacingSaved: DriveMode?
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.requestReview) private var requestReview
 
     /// Starts a drive; if there's a saved drive, asks before replacing it (the tutorial never replaces it).
     private func start(_ mode: DriveMode) {
@@ -138,6 +140,11 @@ struct MainMenuView: View {
         }
         .fullScreenCover(item: $drive, onDismiss: {
             if settings.menuMusic { MusicPlayer.shared.playMenu() }
+            if career.askForRating {
+                career.askForRating = false
+                // A moment after the menu is back, so it doesn't land on top of the results speech.
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { requestReview() }
+            }
         }) { mode in
             DrivingScreen(settings: settings, career: career, drive: mode) { drive = nil }
         }

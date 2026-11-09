@@ -34,6 +34,8 @@ final class AppSettings: ObservableObject {
     }
     /// The first-launch setup has been done.
     @Published var setupDone: Bool { didSet { defaults.set(setupDone, forKey: "setupDone") } }
+    /// The app version a rating was last asked for (at most once per version).
+    @Published var ratingAskedVersion: String { didSet { defaults.set(ratingAskedVersion, forKey: "ratingAskedVersion") } }
     @Published var weather: Bool { didSet { defaults.set(weather, forKey: "weather") } }
     @Published var tutorialDone: Bool { didSet { defaults.set(tutorialDone, forKey: "tutorialDone") } }
 
@@ -59,6 +61,7 @@ final class AppSettings: ObservableObject {
         weather = d.object(forKey: "weather") as? Bool ?? true
         menuOrientation = MenuOrientation(rawValue: d.string(forKey: "menuOrientation") ?? "") ?? .portrait
         setupDone = d.bool(forKey: "setupDone")
+        ratingAskedVersion = d.string(forKey: "ratingAskedVersion") ?? ""
         // Follow the iPhone's own settings the first time.
         captions = d.object(forKey: "captions") as? Bool ?? UIAccessibility.isClosedCaptioningEnabled
         drivingButtons = d.object(forKey: "drivingButtons") as? Bool ?? UIAccessibility.isSwitchControlRunning

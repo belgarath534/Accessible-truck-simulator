@@ -250,6 +250,14 @@ final class DrivingController: NSObject, ObservableObject {
         if let result {
             career.record(result, distance: summary.stats.distance, completing: drive.job, trip: trip)
         }
+        // A great delivery (no crashes, a good stop) from a player who knows the game: a good moment to ask for a
+        // rating, once per version, when they're back at the main menu.
+        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
+        if drive.job != nil, summary.stats.crashes == 0, summary.stopRating != .overshot,
+           career.state.jobsCompleted >= 3, settings.ratingAskedVersion != version, !ScreenshotMode.isOn {
+            settings.ratingAskedVersion = version
+            career.askForRating = true
+        }
     }
 
     /// Speaks achievements just earned, after whatever is being said now.
