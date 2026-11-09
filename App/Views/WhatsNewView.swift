@@ -7,6 +7,8 @@ enum Changelog {
         let title: String
         let items: [String]
         var id: String { number }
+        /// "Version 1.1: Big Update", or "Test build 5: The very first drive" for the builds before the App Store.
+        var heading: String { number.contains(".") ? "Version \(number): \(title)" : "Test build \(number): \(title)" }
     }
 
     /// Newest first. Add to the top for each update.
@@ -29,11 +31,78 @@ enum Changelog {
             "iPad support.",
             "Steadier steering: the truck eases back to the middle of your lane when you're not steering.",
         ]),
-        Version(number: "1.0", title: "First release", items: [
+        Version(number: "1.0", title: "First release on the App Store", items: [
+            "Everything from the test builds below, approved by Apple and free for everyone.",
             "Drive a truck by sound: engine, lane beeps, rumble strips and curves called out ahead.",
             "A guided tutorial and a practice road.",
             "Jobs between towns with turn-by-turn GPS, money, three trucks, upgrades, fuel and truck stops.",
             "Police, traffic, hired drivers and a truck radio.",
+        ]),
+    ]
+
+    /// The test builds before the App Store, oldest last. The whole game went from nothing to the App Store in a
+    /// day, November 7, 2026, tested build by build on TestFlight.
+    static let earlyBuilds: [Version] = [
+        Version(number: "23", title: "The tutorial", items: [
+            "A guided first drive that teaches every control, one step at a time.",
+            "Traffic off by default; turn it on in Settings.",
+            "This build became version 1.0.",
+        ]),
+        Version(number: "21", title: "Traffic", items: [
+            "Oncoming cars, slower vehicles ahead to pass, and a passing lane on the interstate, all in 3D sound.",
+        ]),
+        Version(number: "20", title: "The drop-off beacon", items: [
+            "Beeps like a parking sensor in the last 150 meters, so you can stop right on the drop-off.",
+            "The fuel check before a job uses real measured fuel use.",
+        ]),
+        Version(number: "19", title: "Fairer money", items: [
+            "Fuel, tows and crash costs rebalanced, after a job that should have paid $2,000 paid about $300.",
+            "A warning before a job if you don't have enough fuel.",
+        ]),
+        Version(number: "18", title: "Hired drivers", items: [
+            "Hire drivers who deliver in your trucks and earn money, even while the game is closed.",
+        ]),
+        Version(number: "17", title: "Air horn and police", items: [
+            "A real air horn for every truck.",
+            "Police cars that give you a ticket for speeding, but only when one is nearby.",
+        ]),
+        Version(number: "16", title: "The map", items: [
+            "Towns, highways and turn-by-turn GPS: signal left or right at each junction.",
+        ]),
+        Version(number: "15", title: "Menu music fix", items: [
+            "The menu music comes back after a drive.",
+        ]),
+        Version(number: "14", title: "Fuel and truck stops", items: [
+            "Fuel runs down as you drive. Signal right to pull into a truck stop and fill up, or get towed.",
+        ]),
+        Version(number: "13", title: "Upgrades", items: [
+            "Upgrade the engine, brakes, tires and fuel tank.",
+        ]),
+        Version(number: "12", title: "The garage", items: [
+            "Three trucks to buy, each with its own engine sound: Old Reliable, the Workhorse and the Road King.",
+        ]),
+        Version(number: "11", title: "Tilt fix", items: [
+            "Tilt steering works however you hold the phone, even flat.",
+        ]),
+        Version(number: "10", title: "Easier steering", items: [
+            "Steering help: the truck moves sideways when you steer and stops drifting when you let go. Made after a first delivery with 111 crashes.",
+        ]),
+        Version(number: "9", title: "Money and jobs", items: [
+            "Money in the bank, delivery jobs with pay and bonuses, and pay for Free Drive.",
+        ]),
+        Version(number: "8", title: "A real engine", items: [
+            "Recorded engine sounds for Old Reliable, and new upbeat music.",
+        ]),
+        Version(number: "7", title: "Music", items: [
+            "Menu music and a radio in the truck.",
+        ]),
+        Version(number: "6", title: "Drives that end", items: [
+            "The practice drive ends at a drop-off, and the pause menu shows how your trip is going.",
+        ]),
+        Version(number: "5", title: "The very first drive", items: [
+            "One truck on a practice road full of curves.",
+            "Start the engine, accelerate, brake and steer by tilting the phone or with a one-finger joystick.",
+            "Lane beeps in the ear you're drifting toward, rumble strips, curves called out ahead, and a spoken dashboard.",
         ]),
     ]
 
@@ -64,12 +133,11 @@ struct WhatsNewView: View {
                     ForEach(version.items, id: \.self) { Text($0) }
                 } header: {
                     if version.number == Changelog.versions[0].number {
-                        Text("Version \(version.number): \(version.title)")
+                        Text(version.heading)
                             .accessibilityAddTraits(.isHeader)
                             .accessibilityFocused($titleFocused)
                     } else {
-                        Text("Version \(version.number): \(version.title)")
-                            .accessibilityAddTraits(.isHeader)
+                        Text(version.heading).accessibilityAddTraits(.isHeader)
                     }
                 }
             }
@@ -79,6 +147,18 @@ struct WhatsNewView: View {
                 Text("Coming soon").accessibilityAddTraits(.isHeader)
             } footer: {
                 Text("Have an idea or found a problem? We'd love to hear it: what players ask for shapes every update.")
+            }
+            Section {
+                Text("Accessible Truck Simulator went from nothing to the App Store in one day, November 7, 2026, tested build by build. Here's how it grew, newest first.")
+            } header: {
+                Text("Before the App Store").accessibilityAddTraits(.isHeader)
+            }
+            ForEach(Changelog.earlyBuilds) { build in
+                Section {
+                    ForEach(build.items, id: \.self) { Text($0) }
+                } header: {
+                    Text(build.heading).accessibilityAddTraits(.isHeader)
+                }
             }
             if let onDone {
                 Section {
