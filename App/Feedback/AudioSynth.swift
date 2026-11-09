@@ -480,7 +480,7 @@ final class AudioSynth {
     private var ambienceTarget: [String: Float] = [:]
     private var effects: [String: (player: AVAudioPlayerNode, buffer: AVAudioPCMBuffer)] = [:]
 
-    func start(sound: EngineSound = .recorded, idleRPM: Float = 600, maxRPM: Float = 2_100) {
+    func start(sound: EngineSound = .recorded, idleRPM: Float = 600, maxRPM: Float = 2_100, horn: String = "horn") {
         state.pitch = Float(sound.pitch)
         state.roughness = Float(sound.roughness)
         state.turboAmount = Float(sound.turbo)
@@ -531,7 +531,7 @@ final class AudioSynth {
         } else {
             sampled = nil
         }
-        if let buffer = SampledEngine.load("horn") {
+        if let buffer = SampledEngine.load(horn) ?? SampledEngine.load("horn") {
             let player = AVAudioPlayerNode()
             engine.attach(player)
             engine.connect(player, to: engine.mainMixerNode, format: buffer.format)

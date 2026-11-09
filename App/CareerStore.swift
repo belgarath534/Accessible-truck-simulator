@@ -132,6 +132,27 @@ final class CareerStore: ObservableObject {
         return result
     }
 
+    func buyHorn(_ horn: Horn) -> CareerState.PurchaseResult {
+        let result = state.buyHorn(horn)
+        save()
+        return result
+    }
+
+    func selectHorn(_ horn: Horn) {
+        state.selectHorn(horn)
+        save()
+    }
+
+    func setNickname(_ name: String, for truck: TruckSpec) {
+        state.setNickname(name, for: truck)
+        save()
+    }
+
+    func setCompanyName(_ name: String) {
+        state.setCompanyName(name)
+        save()
+    }
+
     func select(_ truck: TruckSpec) {
         state.select(truck)
         save()

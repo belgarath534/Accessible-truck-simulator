@@ -238,6 +238,13 @@ public struct CareerState: Codable, Equatable, Sendable {
     public var visitedTowns: [String]
     /// A drive saved part-way, to continue later.
     public var savedDrive: SavedDrive?
+    /// Your company's name (nil until you pick one).
+    public var companyName: String?
+    /// Names you gave your trucks, by truck id.
+    public var truckNames: [String: String] = [:]
+    /// Horns bought at the horn shop (the air horn is free and not listed).
+    public var ownedHorns: [String] = []
+    public var selectedHorn: String = Horn.air.rawValue
     public static let homeTown = "millbrook"
 
     /// Dollars per litre to fill up at your own yard (truck stops are cheaper).
@@ -267,6 +274,7 @@ public struct CareerState: Codable, Equatable, Sendable {
     // Saves from before the garage existed have no truck fields: give them the starter truck.
     enum CodingKeys: String, CodingKey {
         case money, jobsCompleted, kilometersDriven, totalEarned, jobBoard, seed, ownedTrucks, selectedTruck, upgrades, fuel, currentTown, drivers, candidates, achievements, visitedTowns, savedDrive
+        case companyName, truckNames, ownedHorns, selectedHorn
     }
 
     public init(from decoder: Decoder) throws {
@@ -291,6 +299,10 @@ public struct CareerState: Codable, Equatable, Sendable {
         }
         achievements = try c.decodeIfPresent([String].self, forKey: .achievements) ?? []
         savedDrive = try c.decodeIfPresent(SavedDrive.self, forKey: .savedDrive)
+        companyName = try c.decodeIfPresent(String.self, forKey: .companyName)
+        truckNames = try c.decodeIfPresent([String: String].self, forKey: .truckNames) ?? [:]
+        ownedHorns = try c.decodeIfPresent([String].self, forKey: .ownedHorns) ?? []
+        selectedHorn = try c.decodeIfPresent(String.self, forKey: .selectedHorn) ?? Horn.air.rawValue
         visitedTowns = try c.decodeIfPresent([String].self, forKey: .visitedTowns)
             ?? Array(Set([CareerState.homeTown, currentTown])).sorted()
         // Jobs saved before the map (or from another town) are replaced with jobs from here.

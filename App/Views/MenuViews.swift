@@ -60,7 +60,10 @@ struct MainMenuView: View {
                         Text("Jobs delivered: \(career.state.jobsCompleted)")
                     }
                     Text("You're in \(career.state.currentTownName).")
-                    Text("Driving: \(career.truck.name). Fuel \(Int((career.fuelLiters / career.truck.fuelCapacityLiters * 100).rounded())) percent.")
+                    if let company = career.state.companyName {
+                        Text(company).font(.headline).accessibilityAddTraits(.isHeader)
+                    }
+                    Text("Driving: \(career.state.displayName(for: career.truck)). Fuel \(Int((career.fuelLiters / career.truck.fuelCapacityLiters * 100).rounded())) percent.")
                 }
                 if career.savedDrive != nil {
                     Section {
@@ -413,6 +416,8 @@ struct GarageView: View {
         List {
             Section {
                 Text("Bank: \(Phrases.money(career.money))")
+                NavigationLink("Horn Shop") { HornShopView() }
+                    .accessibilityHint("Your horn: \(career.state.horn.title). Train, ship and musical horns for every truck.")
             }
             ForEach(TruckSpec.catalog, id: \.id) { truck in
                 Section {
@@ -430,6 +435,9 @@ struct GarageView: View {
                                               : "Not enough money to fill up completely. Got what you could afford.")
                             }
                             .accessibilityHint("Truck stops on the road are cheaper.")
+                        }
+                        NameField(label: "Name this truck", current: career.state.nickname(for: truck)) { name in
+                            career.setNickname(name, for: truck)
                         }
                         NavigationLink("Upgrades") { UpgradesView(truck: truck) }
                             .accessibilityHint("Engine, brakes, tires and fuel tank for the \(truck.name).")
@@ -454,7 +462,8 @@ struct GarageView: View {
                         if preview.playingTruckID == truck.id { preview.stop() } else { preview.play(career.upgraded(truck), volume: settings.volume) }
                     }
                 } header: {
-                    Text(truck.price == 0 ? truck.name : "\(truck.name), \(Phrases.money(truck.price))")
+                    let title = truck.price == 0 ? truck.name : "\(truck.name), \(Phrases.money(truck.price))"
+                    Text(career.state.nickname(for: truck).map { "\($0): \(title)" } ?? title)
                 }
             }
         }
@@ -543,6 +552,7 @@ struct CompanyView: View {
         List {
             Section {
                 Text("Bank: \(Phrases.money(career.money))")
+                NameField(label: "Company name", current: career.state.companyName) { career.setCompanyName($0) }
                 Text("Drivers deliver jobs in your trucks and earn money for the company, even while the game is closed, for up to 8 hours at a time. Each driver needs a truck other than the one you drive.")
             }
             Section("Your drivers") {

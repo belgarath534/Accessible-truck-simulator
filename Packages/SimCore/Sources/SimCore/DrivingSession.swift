@@ -775,6 +775,7 @@ public final class DrivingSession {
         if let d = deer {
             if time >= d.leavesAt {
                 deer = nil
+                if d.scared { stats.deerScared += 1 }
                 events.append(.deerGone(scared: d.scared))
                 return
             }

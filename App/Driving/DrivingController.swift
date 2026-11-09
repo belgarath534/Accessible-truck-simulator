@@ -129,6 +129,8 @@ final class DrivingController: NSObject, ObservableObject {
         feedback.maxRPM = session.spec.maxRPM
         feedback.weather = session.weather
         feedback.timeOfDay = session.timeOfDay
+        feedback.hornFile = career.state.horn.soundFile
+        feedback.truckNickname = career.state.nickname(for: session.spec)
         feedback.freeDriveTown = career.state.currentTownName
         feedback.startingFuel = session.truck.fuelLiters
         feedback.start()

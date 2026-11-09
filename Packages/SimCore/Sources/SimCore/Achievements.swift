@@ -28,6 +28,8 @@ public enum Achievement: String, CaseIterable, Codable, Sendable {
     case firstDriver = "first_driver"
     case fleetOwner = "fleet_owner"
     case collector
+    case ohDeer = "oh_deer"
+    case newHorn = "new_horn"
 
     public var gameCenterID: String { "trucksim." + rawValue }
 
@@ -56,6 +58,8 @@ public enum Achievement: String, CaseIterable, Codable, Sendable {
         case .firstDriver: return "Now Hiring"
         case .fleetOwner: return "Fleet Owner"
         case .collector: return "Collector"
+        case .ohDeer: return "Oh Deer"
+        case .newHorn: return "Make Some Noise"
         }
     }
 
@@ -85,14 +89,16 @@ public enum Achievement: String, CaseIterable, Codable, Sendable {
         case .firstDriver: return "Hire your first driver."
         case .fleetOwner: return "Have two drivers working for you at once."
         case .collector: return "Own every truck in the garage."
+        case .ohDeer: return "Scare a deer off the road with your horn."
+        case .newHorn: return "Buy a horn at the horn shop."
         }
     }
 
     /// Game Center points (all together at most 1,000).
     public var points: Int {
         switch self {
-        case .tutorial, .fillUp, .busted, .onTime: return 10
-        case .firstDelivery, .cleanRun, .firstUpgrade: return 20
+        case .tutorial, .fillUp, .busted, .onTime, .newHorn: return 10
+        case .firstDelivery, .cleanRun, .firstUpgrade, .ohDeer: return 20
         case .perfectStop, .heavyHauler, .handleWithCare, .deliveries10, .workhorse, .firstDriver: return 30
         case .earned10k: return 40
         case .maxedOut, .thousandKilometers: return 50
@@ -162,6 +168,7 @@ public extension CareerState {
             let s = trip.stats
             check(.fillUp, s.fuelCost > 0 && s.tows == 0) // a tow's fuel doesn't count
             check(.busted, s.tickets > 0)
+            check(.ohDeer, s.deerScared > 0)
             if let job = trip.job, let summary = trip.summary {
                 check(.perfectStop, summary.stopRating == .perfect)
                 check(.cleanRun, s.crashes == 0)
@@ -185,6 +192,7 @@ public extension CareerState {
         check(.firstDriver, !drivers.isEmpty)
         check(.fleetOwner, drivers.filter { $0.truckID != nil }.count >= 2)
         check(.collector, TruckSpec.catalog.allSatisfy { owns($0) })
+        check(.newHorn, !ownedHorns.isEmpty)
         return earned
     }
 }

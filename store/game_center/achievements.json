@@ -21,5 +21,7 @@
   {"id": "road_king", "title": "King of the Road", "detail": "Buy the Road King.", "points": 80, "group": "business"},
   {"id": "first_driver", "title": "Now Hiring", "detail": "Hire your first driver.", "points": 30, "group": "business"},
   {"id": "fleet_owner", "title": "Fleet Owner", "detail": "Have two drivers working for you at once.", "points": 60, "group": "business"},
-  {"id": "collector", "title": "Collector", "detail": "Own every truck in the garage.", "points": 100, "group": "business"}
+  {"id": "collector", "title": "Collector", "detail": "Own every truck in the garage.", "points": 100, "group": "business"},
+  {"id": "oh_deer", "title": "Oh Deer", "detail": "Scare a deer off the road with your horn.", "points": 20, "group": "skill"},
+  {"id": "new_horn", "title": "Make Some Noise", "detail": "Buy a horn at the horn shop.", "points": 10, "group": "business"}
 ]

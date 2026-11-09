@@ -26,6 +26,10 @@ final class FeedbackCoordinator {
     var weather: Weather = .clear {
         didSet { audio.setWeather(weather) }
     }
+    /// The horn from the horn shop (its recording's name); set before start().
+    var hornFile = "horn"
+    /// The name the player gave this truck, if any; set before start().
+    var truckNickname: String?
     /// Day or night; set before start().
     var timeOfDay: TimeOfDay = .day
 
@@ -45,7 +49,7 @@ final class FeedbackCoordinator {
         }
         // The App Store screenshot simulator on the build Mac has no working sound device,
         // and starting audio there aborts the app. Screenshots don't need sound.
-        if !ScreenshotMode.isOn { audio.start(sound: engineSound, idleRPM: Float(idleRPM), maxRPM: Float(maxRPM)) }
+        if !ScreenshotMode.isOn { audio.start(sound: engineSound, idleRPM: Float(idleRPM), maxRPM: Float(maxRPM), horn: hornFile) }
         haptics.start()
     }
 
@@ -115,6 +119,7 @@ final class FeedbackCoordinator {
                     : " Warning: you may not have enough fuel. Listen for truck stops and fill up on the way."
             }
         }
+        if let name = truckNickname, drive != .tutorial { trip = "\(name) is ready to roll. " + trip }
         if let forecast = weather.announcement { trip += " " + forecast }
         if drive != .tutorial && drive != .practice, let time = timeOfDay.announcement { trip += " " + time }
         speech.speak(

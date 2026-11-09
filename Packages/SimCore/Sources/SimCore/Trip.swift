@@ -42,12 +42,13 @@ public struct TripStats: Codable, Equatable, Sendable {
     public var tickets: Int = 0
     public var ticketCost: Int = 0
     public var tollCost: Int = 0
+    public var deerScared: Int = 0
 
     public init() {}
 
     enum CodingKeys: String, CodingKey {
         case drivingTime, distance, crashes, topSpeed, tooFastWarnings, fuelUsedLiters, fuelBoughtLiters, fuelCost
-        case tows, towCost, tickets, ticketCost, tollCost
+        case tows, towCost, tickets, ticketCost, tollCost, deerScared
     }
 
     /// Saved drives from before tolls existed load fine.
@@ -66,6 +67,7 @@ public struct TripStats: Codable, Equatable, Sendable {
         tickets = try c.decode(Int.self, forKey: .tickets)
         ticketCost = try c.decode(Int.self, forKey: .ticketCost)
         tollCost = try c.decodeIfPresent(Int.self, forKey: .tollCost) ?? 0
+        deerScared = try c.decodeIfPresent(Int.self, forKey: .deerScared) ?? 0
     }
 
     public var averageSpeed: Double { drivingTime > 0 ? distance / drivingTime : 0 }

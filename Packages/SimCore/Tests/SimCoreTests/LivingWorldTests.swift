@@ -125,6 +125,7 @@ final class LivingWorldTests: XCTestCase {
         XCTAssertTrue(events.contains(.deerGone(scared: true)))
         XCTAssertFalse(events.contains(.crashed(.animal)))
         XCTAssertEqual(s.stats.crashes, 0)
+        XCTAssertEqual(s.stats.deerScared, 1)
     }
 
     func testIgnoringTheDeerAtSpeedIsACrash() {
