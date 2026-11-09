@@ -173,6 +173,15 @@ final class FeedbackCoordinator {
             audio.airBrake()
             speech.speak(phrases.ranToll(fine), priority: .high)
             haptics.tap(intensity: 1, sharpness: 0.8)
+        case let .weighStationAhead(distance):
+            speech.speak(phrases.weighStationAhead(distance), priority: .high)
+        case let .weighedIn(cargoKg, fine):
+            haptics.tap(intensity: 0.6, sharpness: 0.4)
+            speech.speak(phrases.weighedIn(cargoKg: cargoKg, fine: fine), priority: .high)
+        case let .skippedWeighStation(fine, tooFast):
+            audio.airBrake()
+            speech.speak(phrases.skippedWeighStation(fine: fine, tooFast: tooFast), priority: .high)
+            haptics.tap(intensity: 1, sharpness: 0.8)
         case .thunder:
             audio.thunder()
             haptics.tap(intensity: 0.5, sharpness: 0.1)

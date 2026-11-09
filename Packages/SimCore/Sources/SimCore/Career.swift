@@ -147,6 +147,9 @@ public struct Payout: Equatable, Sendable {
         if stats.tollCost > 0 {
             lines.append(Line(label: "Tolls", amount: -stats.tollCost))
         }
+        if stats.weighStationFines > 0 {
+            lines.append(Line(label: "Weigh station fine", amount: -stats.weighStationFines))
+        }
         if stats.towCost > 0 {
             lines.append(Line(label: "Tow truck\(stats.tows == 1 ? "" : ", \(stats.tows) times")", amount: -stats.towCost))
         }

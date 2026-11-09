@@ -133,6 +133,12 @@ public enum SimEvent: Equatable, Sendable {
     case tollPaid(cost: Int)
     /// Drove through a toll booth too fast to pay.
     case ranToll(fine: Int)
+    /// A weigh station ahead (metres): signal right and slow down to pull in.
+    case weighStationAhead(distance: Double)
+    /// Pulled in and weighed. `fine` is 0 when the truck passes, or the unsafe load fine.
+    case weighedIn(cargoKg: Double, fine: Int)
+    /// Drove past a weigh station without pulling in (`tooFast`: signalled, but too fast to take the exit).
+    case skippedWeighStation(fine: Int, tooFast: Bool)
     case dashboard(DashboardReading)
     case roadAhead(UpcomingCurve?, remaining: Double?, timeLeft: Double?, truckStop: Double?)
     /// Delivery deadline reminders (5 minutes and 1 minute left).

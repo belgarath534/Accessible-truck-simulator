@@ -55,4 +55,12 @@ public extension DrivingSession {
     static let tollSpeed = 30 / 3.6
     /// Hitting a deer faster than this is a crash; slower, it just jumps away, m/s.
     static let deerSafeSpeed = 15 / 3.6
+    /// How far ahead (metres) a weigh station is announced: about half a mile.
+    static let weighStationWarning = 800.0
+    /// Fine for driving past a weigh station without pulling in. Counts as a ticket.
+    static let weighStationSkipFine = 200
+    /// Fine at the scale for a heavy load on a truck that crashed this trip.
+    static let unsafeLoadFine = 150
+    /// Loads heavier than this (kg) are checked for crash damage at the scale.
+    static let heavyLoadKg = 20_000.0
 }

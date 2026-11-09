@@ -79,6 +79,8 @@ public struct Road: Sendable {
     public var policeSpots: [Double] = []
     /// Toll booths (metres along the road): slow down to pay.
     public var tollBooths: [Double] = []
+    /// Weigh stations (metres along the road): trucks must signal right and pull in.
+    public var weighStations: [Double] = []
     /// Deer may cross this road.
     public var hasWildlife = false
     /// True on divided highways (interstates): the left lane goes your way, as a passing lane.

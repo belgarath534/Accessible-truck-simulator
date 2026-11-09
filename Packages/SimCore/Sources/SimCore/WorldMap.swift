@@ -84,6 +84,14 @@ public struct WorldMap: Sendable {
         }
         // The interstate is a toll road: one booth on each stretch.
         if style == .interstate { r.tollBooths = [r.totalLength * 0.6] }
+        // A weigh station on the longer country roads, clear of towns, truck stops and road works.
+        if style == .country && r.totalLength >= weighStationMinRoadLength,
+           let spot = [0.3, 0.25, 0.35, 0.2, 0.4].map({ r.totalLength * $0 }).first(where: { spot in
+               r.truckStops.allSatisfy { abs($0 - spot) > 400 }
+                   && r.speedZones.allSatisfy { spot < $0.start - 300 || spot > $0.end + 300 }
+           }) {
+            r.weighStations = [spot]
+        }
         // Deer live along the country and mountain roads.
         r.hasWildlife = style != .interstate
         r.policeSpots.sort()
@@ -186,6 +194,8 @@ public struct SpeedZone: Equatable, Sendable {
 public let constructionSpeedLimit = 40 / 3.6
 /// How long a construction zone is, metres.
 public let constructionZoneLength = 700.0
+/// Country roads at least this long (metres) have a weigh station.
+public let weighStationMinRoadLength = 6_000.0
 
 // MARK: - Road helpers
 
@@ -205,6 +215,7 @@ public extension Road {
         r.policeSpots = policeSpots.map { totalLength - $0 }.sorted()
         r.leftLaneSameDirection = leftLaneSameDirection
         r.tollBooths = tollBooths.map { totalLength - $0 }.sorted()
+        r.weighStations = weighStations.map { totalLength - $0 }.sorted()
         r.hasWildlife = hasWildlife
         return r
     }

@@ -225,6 +225,32 @@ public struct Phrases {
         "You blew through the toll booth! Fine: \(Phrases.money(fine)). Slow down for tolls next time."
     }
 
+    public func weighStationAhead(_ distance: Double) -> String {
+        "Weigh station ahead. Trucks must pull in. It's in \(units.distance(distance)): signal right and slow below \(units.speed(DrivingSession.truckStopExitSpeed)) to pull in."
+    }
+
+    /// The load's weight the way the scale reads it out.
+    public func cargoWeight(_ kg: Double) -> String {
+        if units == .metric {
+            let t = Int((kg / 1_000).rounded())
+            return "\(t) tonne\(t == 1 ? "" : "s")"
+        }
+        let t = Int((kg / 907.185).rounded())
+        return "\(t) ton\(t == 1 ? "" : "s")"
+    }
+
+    public func weighedIn(cargoKg: Double, fine: Int) -> String {
+        let load = cargoKg > 0 ? "On the scale. Your load weighs \(cargoWeight(cargoKg))." : "On the scale. No load."
+        if fine == 0 { return "\(load) You're good to go, driver." }
+        return "\(load) That's a heavy load on a truck that crashed this trip. Unsafe load fine: \(Phrases.money(fine))."
+    }
+
+    public func skippedWeighStation(fine: Int, tooFast: Bool) -> String {
+        tooFast
+            ? "Too fast to pull into the weigh station! That counts as skipping it. Fine: \(Phrases.money(fine)). Slow down sooner next time."
+            : "You skipped the weigh station! Fine: \(Phrases.money(fine)). Signal right to pull in next time."
+    }
+
     // MARK: Company
 
     public func driver(_ d: Driver) -> String {

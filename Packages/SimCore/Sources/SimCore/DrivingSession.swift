@@ -265,6 +265,11 @@ public final class DrivingSession {
             announcedLate = t < 0
         }
         currentZone = road.speedZone(at: truck.position)?.name
+        // Weigh stations already behind the truck were dealt with before the save.
+        for (i, station) in road.weighStations.enumerated() where station <= truck.position {
+            weighStationsHandled.insert(i)
+            weighStationsAnnounced.insert(i)
+        }
         let fraction = truck.fuelLiters / spec.fuelCapacityLiters
         warnedQuarter = fraction < 0.25
         fuelWarned = fraction < 0.1
@@ -365,6 +370,8 @@ public final class DrivingSession {
     var deerTimer: Double = 120
     var tollsHandled: Set<Int> = []
     var tollsAnnounced: Set<Int> = []
+    var weighStationsHandled: Set<Int> = []
+    var weighStationsAnnounced: Set<Int> = []
     /// Inside a construction zone (for its sounds).
     public var inConstructionZone: Bool { road.speedZone(at: truck.position)?.kind == .construction }
 
@@ -421,6 +428,7 @@ public final class DrivingSession {
         checkCurves(events: &events)
         checkMap(events: &events)
         checkTolls(events: &events)
+        checkWeighStations(events: &events)
         stepDeer(dt: dt, events: &events)
         stepTraffic(dt: dt, events: &events)
         checkPolice(dt: dt, events: &events)
@@ -738,6 +746,8 @@ public final class DrivingSession {
         policeDecided = [:]
         tollsHandled = []
         tollsAnnounced = []
+        weighStationsHandled = []
+        weighStationsAnnounced = []
         deer = nil
         clearTraffic()
         currentZone = road.speedZone(at: truck.position)?.name
@@ -767,6 +777,36 @@ public final class DrivingSession {
                     stats.ticketCost += DrivingSession.tollFine
                     events.append(.ranToll(fine: DrivingSession.tollFine))
                 }
+            }
+        }
+    }
+
+    // MARK: - Weigh stations
+
+    /// Announced about half a mile ahead. Pull in like a truck stop: right signal on and slow enough as you reach it.
+    /// A heavy load on a truck that crashed this trip is fined at the scale; driving past is a ticket.
+    private func checkWeighStations(events: inout [SimEvent]) {
+        for (i, station) in road.weighStations.enumerated() {
+            let ahead = station - truck.position
+            if ahead > 0 && ahead < DrivingSession.weighStationWarning && !weighStationsAnnounced.contains(i) && truck.speed > 2 {
+                weighStationsAnnounced.insert(i)
+                events.append(.weighStationAhead(distance: ahead))
+            }
+            guard ahead <= 0 && ahead > -50 && !weighStationsHandled.contains(i) else { continue }
+            weighStationsHandled.insert(i)
+            let signalledRight = truck.signal == .on(.right)
+            if signalledRight && truck.speed <= DrivingSession.truckStopExitSpeed {
+                truck.signal = .off
+                var fine = 0
+                if cargoMassKg > DrivingSession.heavyLoadKg && stats.crashes > 0 {
+                    fine = DrivingSession.unsafeLoadFine
+                    stats.weighStationFines += fine
+                }
+                events.append(.weighedIn(cargoKg: cargoMassKg, fine: fine))
+            } else {
+                stats.tickets += 1
+                stats.ticketCost += DrivingSession.weighStationSkipFine
+                events.append(.skippedWeighStation(fine: DrivingSession.weighStationSkipFine, tooFast: signalledRight))
             }
         }
     }
