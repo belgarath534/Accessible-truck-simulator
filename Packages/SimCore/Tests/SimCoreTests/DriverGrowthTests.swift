@@ -87,3 +87,22 @@ final class DriverGrowthTests: XCTestCase {
         XCTAssertNil(back.raiseRequest)
     }
 }
+
+final class DriverTrucksTests: XCTestCase {
+    func testDriversCanUseTheNewTrucks() {
+        var c = CareerState(seed: 31)
+        c.money = 1_000_000
+        c.buy(.cityHauler)
+        c.buy(.titan)
+        c.buy(.volt)
+        c.select(.starter)
+        let now = Date(timeIntervalSince1970: 1_000_000)
+        for _ in 0..<3 { c.hire(c.candidates[2], now: now) } // three 3-star drivers
+        let trucks = Set(c.drivers.compactMap(\.truckID))
+        XCTAssertEqual(trucks, ["city_hauler", "titan", "volt"])
+        // A fourth driver waits: every truck is in use.
+        c.hire(c.candidates[0], now: now)
+        XCTAssertNil(c.drivers.last?.truckID)
+        XCTAssertTrue(c.freeTrucks.isEmpty)
+    }
+}

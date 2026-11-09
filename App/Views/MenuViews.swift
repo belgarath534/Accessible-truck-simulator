@@ -10,6 +10,9 @@ struct MainMenuView: View {
     @State private var driverReport: String?
     /// A new drive picked while a saved drive exists: asks first.
     @State private var replacingSaved: DriveMode?
+    /// The main menu itself is showing (not the Garage, Company or another screen on top of it). Achievement
+    /// alerts wait for this, so they never knock a screen's own message (like "You hired Rosa") away.
+    @State private var atMainMenu = true
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.requestReview) private var requestReview
 
@@ -109,6 +112,8 @@ struct MainMenuView: View {
                 }
             }
             .navigationTitle("Truck Sim")
+            .onAppear { atMainMenu = true }
+            .onDisappear { atMainMenu = false }
         }
         .onAppear {
             if settings.menuMusic { MusicPlayer.shared.playMenu() }
@@ -121,7 +126,7 @@ struct MainMenuView: View {
         .onChange(of: settings.menuMusic) { _, on in
             if on { MusicPlayer.shared.playMenu() } else if MusicPlayer.shared.mode == .menu { MusicPlayer.shared.stop() }
         }
-        .alert(achievementTitle, isPresented: Binding(get: { drive == nil && !career.justUnlocked.isEmpty },
+        .alert(achievementTitle, isPresented: Binding(get: { drive == nil && atMainMenu && !career.justUnlocked.isEmpty },
                                                        set: { if !$0 { career.justUnlocked = [] } })) {
             Button("OK", role: .cancel) {}
         } message: {
@@ -605,7 +610,7 @@ struct CompanyView: View {
             if let hired = career.state.drivers.last, let truckID = hired.truckID {
                 message = "You hired \(candidate.name). They're out on the road in the \(TruckSpec.withID(truckID).name)."
             } else {
-                message = "You hired \(candidate.name). Give them a truck to start: buy another truck in the Garage."
+                message = "You hired \(candidate.name). They're waiting for a truck: every truck you own is already in use, by you or your drivers. Buy another truck in the Garage, and give it to them here."
             }
         case let .notEnoughMoney(short):
             message = "Not enough money. You need \(Phrases.money(short)) more."
