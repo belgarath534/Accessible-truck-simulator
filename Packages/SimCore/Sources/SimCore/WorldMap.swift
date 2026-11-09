@@ -86,16 +86,26 @@ public struct WorldMap: Sendable {
         if style == .interstate { r.tollBooths = [r.totalLength * 0.6] }
         // A weigh station on the longer country roads, clear of towns, truck stops and road works.
         if style == .country && r.totalLength >= weighStationMinRoadLength,
-           let spot = [0.3, 0.25, 0.35, 0.2, 0.4].map({ r.totalLength * $0 }).first(where: { spot in
-               r.truckStops.allSatisfy { abs($0 - spot) > 400 }
-                   && r.speedZones.allSatisfy { spot < $0.start - 300 || spot > $0.end + 300 }
-           }) {
+           let spot = WorldMap.weighStationSpot(on: r) {
             r.weighStations = [spot]
         }
         // Deer live along the country and mountain roads.
         r.hasWildlife = style != .interstate
         r.policeSpots.sort()
         return r
+    }
+
+    /// Where a weigh station goes on a road: about a third of the way along, clear of truck stops, towns and road works.
+    static func weighStationSpot(on road: Road) -> Double? {
+        let fractions: [Double] = [0.3, 0.25, 0.35, 0.2, 0.4]
+        for fraction in fractions {
+            let spot: Double = road.totalLength * fraction
+            var clear = true
+            for stop in road.truckStops where abs(stop - spot) <= 400 { clear = false }
+            for zone in road.speedZones where spot >= zone.start - 300 && spot <= zone.end + 300 { clear = false }
+            if clear { return spot }
+        }
+        return nil
     }
 
     /// Compass direction (radians, counter-clockwise from east) of a directed edge as it leaves its start.
