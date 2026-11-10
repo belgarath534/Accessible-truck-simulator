@@ -362,6 +362,8 @@ struct SettingsView: View {
             Section {
                 Toggle("Traffic", isOn: $settings.traffic)
                     .accessibilityHint("Other vehicles on the map's roads. The practice loop never has traffic.")
+                Toggle("Back into the loading dock", isOn: $settings.docking)
+                    .accessibilityHint("After stopping at a delivery's drop-off, back the trailer into the dock by ear for a bonus.")
                 Toggle("Deer on the road", isOn: $settings.wildlife)
                     .accessibilityHint("Deer sometimes step onto country and mountain roads, more at night. Honk to scare them off, or slow down.")
                 Toggle("Weather", isOn: $settings.weather)

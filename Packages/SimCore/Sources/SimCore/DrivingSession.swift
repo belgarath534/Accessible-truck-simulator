@@ -97,11 +97,11 @@ public final class DrivingSession {
     public var assist: SteeringAssist
     /// Set before driving. Rain and storms reduce grip and braking.
     public var weather: Weather = .clear
-    public private(set) var truck: TruckState
+    public internal(set) var truck: TruckState
     public private(set) var time: Double = 0
     public private(set) var stats = TripStats()
     /// Set when the trip is finished; the simulation stops changing after that.
-    public private(set) var summary: TripSummary?
+    public internal(set) var summary: TripSummary?
 
     /// How close (metres) to the drop-off the truck must stop to finish the trip.
     public static let arrivalTolerance = 60.0
@@ -316,6 +316,11 @@ public final class DrivingSession {
                 }
             }
             return events
+        case .skipDocking:
+            guard docking != nil else { return [] }
+            var events: [SimEvent] = []
+            finishDocking(.skipped, events: &events)
+            return events
         case .pause, .toggleRadio, .nextSong, .previousSong:
             return []
         }
@@ -371,6 +376,12 @@ public final class DrivingSession {
     var tollsHandled: Set<Int> = []
     var tollsAnnounced: Set<Int> = []
     var weighStationsHandled: Set<Int> = []
+    /// Back into the loading dock after stopping at the drop-off (deliveries). Set before driving.
+    public var dockingEnabled = false
+    /// Backing into the dock right now.
+    public internal(set) var docking: DockingState?
+    public internal(set) var dockRating: DockRating?
+    var pendingStopError = 0.0
     /// The load's kind (special cargo rules). Set before driving.
     public var cargoKind: CargoKind = .standard
     var lastLivestockScare = -100.0
@@ -429,6 +440,11 @@ public final class DrivingSession {
         )
 
         stepEngineState(dt: dt, events: &events)
+        // Backing into the dock: its own slow, careful steps; the delivery clock has stopped.
+        if docking != nil {
+            stepDocking(dt: dt, input: input, events: &events)
+            return events
+        }
         if truck.engine == .off, input.throttle > 0.5, time - lastEngineOffHint > 6 {
             lastEngineOffHint = time
             events.append(.engineNotRunning)
@@ -503,6 +519,7 @@ public final class DrivingSession {
         defer { wasStopped = stopped }
         guard stopped else { return }
         if remaining <= DrivingSession.arrivalTolerance && stats.drivingTime > 0 {
+            if startDocking(stopError: -remaining, events: &events) { return }
             let result = TripSummary(goalName: goal.name, stats: stats, stopError: -remaining)
             summary = result
             events.append(.arrived(result))

@@ -187,6 +187,15 @@ final class FeedbackCoordinator {
             audio.airBrake()
             speech.speak(phrases.skippedWeighStation(fine: fine, tooFast: tooFast), priority: .high)
             haptics.tap(intensity: 1, sharpness: 0.8)
+        case let .dockingStarted(distance):
+            audio.airBrake()
+            speech.speak(phrases.dockingStarted(distance), priority: .high)
+        case let .dockingProgress(distance, lateral):
+            speech.speak(phrases.dockingProgress(distance, lateral: lateral), priority: .high)
+        case let .docked(rating):
+            audio.state.backupAlarm = false
+            if rating == .bumped { audio.crash(); haptics.tap(intensity: 1, sharpness: 0.3) }
+            if rating != .skipped { speech.speak(phrases.docked(rating), priority: .high) }
         case .livestockScared:
             audio.playEffect(livestockEffect, volume: 1)
             speech.speak(phrases.livestockScared, priority: .high)
@@ -349,8 +358,12 @@ final class FeedbackCoordinator {
         audio.setAmbience(ambience(session))
         audio.state.pumping = session.isRefueling
         audio.state.siren = session.sirenOn
+        // Docking: the beacon counts down to the dock (steady in the last metre or two), with the backup alarm.
+        audio.state.backupAlarm = (session.docking?.speed ?? 0) > 0.05
+        if let dock = session.docking {
+            audio.state.beaconDistance = Float(max(0, dock.distance) * 7)
         // Drop-off beacon: beeps speed up over the last 150 m, a steady tone right at the drop-off.
-        if session.summary == nil, let r = session.remaining, r < 150, r > -60 {
+        } else if session.summary == nil, let r = session.remaining, r < 150, r > -60 {
             audio.state.beaconDistance = Float(r)
         } else {
             audio.state.beaconDistance = -1_000

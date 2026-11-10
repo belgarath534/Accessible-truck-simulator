@@ -259,6 +259,7 @@ public struct Payout: Equatable, Sendable {
             lines.append(Line(label: "Perfect stop bonus", amount: Int((Double(base) * 0.05).rounded())))
         }
         if let turbo = turboBonus(stats) { lines.append(turbo) }
+        if let dock = dockingLine(summary.dockRating, pay: base) { lines.append(dock) }
         return Payout(lines: lines + expenses(stats))
     }
 }

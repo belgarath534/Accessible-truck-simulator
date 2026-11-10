@@ -251,6 +251,37 @@ public struct Phrases {
             : "You skipped the weigh station! Fine: \(Phrases.money(fine)). Signal right to pull in next time."
     }
 
+    // MARK: Docking
+
+    /// Short distances said exactly (docking): "5 meters", "16 feet".
+    func dockDistance(_ metres: Double) -> String {
+        if units == .metric {
+            let m = Int(metres.rounded())
+            return "\(m) meter\(m == 1 ? "" : "s")"
+        }
+        let ft = Int((metres * 3.280_84).rounded())
+        return "\(ft) \(ft == 1 ? "foot" : "feet")"
+    }
+
+    public func dockingStarted(_ distance: Double) -> String {
+        "Now back into the loading dock. It's \(dockDistance(distance)) behind you. Accelerate to back up slowly, brake to stop. The beeps speed up as you get close. If the lane beep sounds, steer away from it to straighten the trailer. To skip docking, pause and choose Skip Docking."
+    }
+
+    public func dockingProgress(_ distance: Double, lateral: Double) -> String {
+        let side = abs(lateral) <= 0.3 ? "Straight." : (lateral > 0 ? "A little left." : "A little right.")
+        return "\(dockDistance(distance)). \(side)"
+    }
+
+    public func docked(_ rating: DockRating) -> String {
+        switch rating {
+        case .perfect: return "Perfect docking! Right in the middle of the dock."
+        case .good: return "Docked. A little off center, but good."
+        case .crooked: return "Docked, but crooked. Straighten up sooner next time."
+        case .bumped: return "Bang! You bumped the dock. Back up slower at the end."
+        case .skipped: return "Docking skipped."
+        }
+    }
+
     // MARK: Special cargo
 
     /// How to drive with this load, said when the job starts.

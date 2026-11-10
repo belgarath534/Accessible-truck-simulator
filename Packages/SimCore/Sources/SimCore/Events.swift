@@ -36,6 +36,8 @@ public enum DrivingAction: Equatable, Sendable {
     case speakDashboard
     case speakRoadAhead
     case pause
+    /// Finish a delivery without backing into the dock.
+    case skipDocking
     // Radio (handled by the app, not the simulation).
     case toggleRadio
     case nextSong
@@ -139,6 +141,12 @@ public enum SimEvent: Equatable, Sendable {
     case weighedIn(cargoKg: Double, fine: Int)
     /// Drove past a weigh station without pulling in (`tooFast`: signalled, but too fast to take the exit).
     case skippedWeighStation(fine: Int, tooFast: Bool)
+    // Docking
+    /// Stopped at the drop-off: now back into the dock, this many metres behind.
+    case dockingStarted(distance: Double)
+    /// Metres left, and how far right (+) or left (-) the trailer is.
+    case dockingProgress(distance: Double, lateral: Double)
+    case docked(DockRating)
     // Special cargo
     /// Livestock: hard braking or a fast curve scared the animals.
     case livestockScared

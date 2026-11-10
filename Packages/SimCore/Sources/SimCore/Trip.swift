@@ -93,6 +93,8 @@ public struct TripSummary: Equatable, Sendable {
     public var stats: TripStats
     /// Metres between where the truck stopped and the drop-off; positive means it stopped past it.
     public var stopError: Double
+    /// How the trailer went into the loading dock (nil: no docking).
+    public var dockRating: DockRating?
 
     public init(goalName: String, stats: TripStats, stopError: Double) {
         self.goalName = goalName

@@ -87,6 +87,12 @@ public extension CareerState {
         change += s.crashes == 0 ? 5 : -min(15, 3 * s.crashes)
         if summary.stopRating == .perfect { change += 3 }
         change -= 2 * s.tickets
+        switch summary.dockRating {
+        case .perfect: change += 5
+        case .good: change += 2
+        case .bumped: change -= 3
+        default: break
+        }
         return change
     }
 

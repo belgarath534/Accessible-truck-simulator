@@ -57,6 +57,10 @@ struct DrivingScreen: View {
                     status: controller.tripStatus,
                     drive: controller.drive,
                     resume: controller.resume,
+                    skipDocking: controller.session.docking == nil ? nil : {
+                        controller.resume()
+                        controller.perform(.skipDocking)
+                    },
                     restart: controller.restart,
                     endFreeDrive: controller.endFreeDrive,
                     saveForLater: controller.drive == .tutorial ? nil : {
@@ -91,6 +95,8 @@ struct PauseMenuView: View {
     let status: String
     let drive: DriveMode
     let resume: () -> Void
+    /// Finishes a delivery without docking (nil unless backing into the dock).
+    let skipDocking: (() -> Void)?
     let restart: () -> Void
     let endFreeDrive: () -> Void
     /// Saves the drive to continue later (nil for the tutorial).
@@ -115,6 +121,11 @@ struct PauseMenuView: View {
                 .accessibilityFocused($focused)
                 Button("Resume Driving", action: resume)
                     .buttonStyle(.borderedProminent)
+                if let skipDocking {
+                    Button("Skip Docking", action: skipDocking)
+                        .buttonStyle(.bordered)
+                        .accessibilityHint("Finishes the delivery without backing into the dock. No docking bonus.")
+                }
                 if let saveForLater {
                     Button("Save and Continue Later", action: saveForLater)
                         .buttonStyle(.bordered)

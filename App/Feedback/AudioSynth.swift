@@ -21,6 +21,8 @@ final class SynthState {
     var pumping = false
     /// Police siren behind the truck.
     var siren = false
+    /// Reversing into the dock: the truck's beep-beep backup alarm.
+    var backupAlarm = false
     /// Metres to the drop-off for the beacon (negative = past it); -1000 = off.
     var beaconDistance: Float = -1_000
     /// Seconds left of a police radio crackle (passing a parked police car).
@@ -346,6 +348,7 @@ private final class FXVoice: Voice {
     var signalPhase: Float = 0, hornA: Float = 0, hornB: Float = 0, clickOsc: Float = 0, lp: Float = 0
     var pumpPhase: Float = 0, pumpLP: Float = 0
     var sirenTime: Float = 0, sirenPhase: Float = 0, sirenAmp: Float = 0
+    var backupClock: Float = 0, backupPhase: Float = 0
     var beaconClock: Float = 0, beaconOsc: Float = 0
     var carHornA: Float = 0, carHornB: Float = 0, carHornLP: Float = 0
     var crackleHP: Float = 0, crackleLP: Float = 0, crackleTone: Float = 0
@@ -418,6 +421,14 @@ private final class FXVoice: Voice {
                     carHornLP += (Float(sq) - carHornLP) * 0.25
                     s += carHornLP * 0.22
                 }
+            }
+            // Backup alarm: half a second on, half a second off, behind the truck.
+            if state.backupAlarm && !state.muted {
+                backupClock += dt; if backupClock >= 1 { backupClock -= 1 }
+                backupPhase += 1_150 / sr; if backupPhase >= 1 { backupPhase -= 1 }
+                if backupClock < 0.5 { s += (backupPhase < 0.5 ? 1 : -1) * 0.05 }
+            } else {
+                backupClock = 0
             }
             // Police siren: a wail sweeping up and down, fading in and out.
             sirenAmp += ((state.siren ? 1 : 0) - sirenAmp) * 0.0005

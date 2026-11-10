@@ -30,9 +30,9 @@ captions, driving buttons, Larger Text / Increase Contrast / Reduce Motion, iPad
 ## 1.2 extras (done)
 - Turbo Mode: no speed limit, a top speed bonus, Speed Demon and a Top Speed leaderboard (idea from a player, Reece)
 
-## 1.2, Part 3: On the Job (in progress)
+## 1.2, Part 3: On the Job (done)
 - Weigh stations (done)
-- Docking by ear: back the trailer into the loading dock with reverse beeps
+- Docking by ear: back the trailer into the loading dock with reverse beeps (done)
 - Special cargo: livestock (they moo and hate hard braking), refrigerated (spoils if you're slow), oversize (escort car, narrow roads), hazmat (big pay, one crash ends the job) (done)
 - Company contracts: several deliveries for one client for a big bonus (done)
 - Reputation: unlocks better jobs and clients (done)
