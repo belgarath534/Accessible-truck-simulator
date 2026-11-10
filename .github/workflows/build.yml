@@ -106,60 +106,53 @@ jobs:
           fi
           rm -rf .certs
           echo "KEY_PATH=$KEY_PATH" >> "$GITHUB_ENV"
+          echo "ASC_KEY_ID=$ASC_KEY_ID" >> "$GITHUB_ENV"
           echo "Using App Store Connect key $ASC_KEY_ID"
-      - name: Archive (cloud-managed signing)
+      - name: Sign on this Mac with a temporary certificate, and upload
+        # Works with a non-Admin (App Manager) key: a temporary Apple Distribution certificate and App Store
+        # profile are made for this build and deleted afterwards (apps already uploaded keep working).
+        env:
+          BUNDLE_ID: com.accessibletrucksim.TruckSim
         run: |
-          set -o pipefail
-          xcodebuild \
-            -project TruckSim.xcodeproj \
-            -scheme TruckSim \
-            -configuration Release \
-            -destination 'generic/platform=iOS' \
-            -archivePath "$RUNNER_TEMP/TruckSim.xcarchive" \
-            -allowProvisioningUpdates \
-            -authenticationKeyPath "$KEY_PATH" \
-            -authenticationKeyID "$ASC_KEY_ID" \
-            -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
-            DEVELOPMENT_TEAM="$TEAM_ID" \
-            CURRENT_PROJECT_VERSION="$((10000 + ${{ github.run_number }}))" \
-            archive
-      - name: Export and upload to App Store Connect
+          set -e
+          pip3 install --quiet --break-system-packages codemagic-cli-tools 2>/dev/null || pip3 install --quiet codemagic-cli-tools
+          export APP_STORE_CONNECT_ISSUER_ID="$ASC_ISSUER_ID"
+          export APP_STORE_CONNECT_KEY_IDENTIFIER="$ASC_KEY_ID"
+          export APP_STORE_CONNECT_PRIVATE_KEY="@file:$KEY_PATH"
+          W="$RUNNER_TEMP/signing"; mkdir -p "$W"
+          echo "W=$W" >> "$GITHUB_ENV"
+
+          sed -i '' "s/CURRENT_PROJECT_VERSION: \"[0-9]*\"/CURRENT_PROJECT_VERSION: \"$((10000 + ${{ github.run_number }}))\"/" project.yml
+          xcodegen generate
+
+          keychain initialize
+          openssl genrsa -out "$W/cert_key.pem" 2048
+          CERT_ID=$(app-store-connect certificates create --type DISTRIBUTION --certificate-key "@file:$W/cert_key.pem" \
+            --save --json | python3 -c 'import json,sys; print(json.load(sys.stdin)["id"])')
+          echo "$CERT_ID" > "$W/cert_id"
+          echo "Temporary certificate $CERT_ID"
+          keychain add-certificates
+
+          BID=$(app-store-connect bundle-ids list --bundle-id-identifier "$BUNDLE_ID" --strict-match-identifier --platform IOS --json \
+            | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d[0]["id"])')
+          PROFILE_ID=$(app-store-connect profiles create "$BID" --type IOS_APP_STORE --certificate-ids "$CERT_ID" \
+            --name "Truck Sim GitHub ${{ github.run_number }}" --save --profiles-dir "$W/profiles" --json \
+            | python3 -c 'import json,sys; print(json.load(sys.stdin)["id"])')
+          echo "$PROFILE_ID" > "$W/profile_id"
+          echo "Temporary profile $PROFILE_ID"
+
+          xcode-project use-profiles --project TruckSim.xcodeproj --profile "$W/profiles/*.mobileprovision"
+          xcode-project build-ipa --project TruckSim.xcodeproj --scheme TruckSim --ipa-directory "$W/ipa"
+          app-store-connect publish --path "$W/ipa/*.ipa"
+      - name: Delete the temporary certificate and profile
+        if: always()
         run: |
-          set -o pipefail
-          cat > "$RUNNER_TEMP/ExportOptions.plist" <<PLIST
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0">
-          <dict>
-            <key>method</key><string>app-store-connect</string>
-            <key>destination</key><string>upload</string>
-            <key>teamID</key><string>${TEAM_ID}</string>
-            <key>signingStyle</key><string>automatic</string>
-            <key>manageAppVersionAndBuildNumber</key><false/>
-          </dict>
-          </plist>
-          PLIST
-          # Cloud signing needs an Admin key: try the chosen key, then any others from iOS-certificates.
-          KEYS="$KEY_PATH"
-          if [ -d "$RUNNER_TEMP/keys" ]; then KEYS="$KEYS $(ls "$RUNNER_TEMP"/keys/AuthKey_*.p8 | grep -v "AuthKey_${ASC_KEY_ID}.p8" || true)"; fi
-          ok=""
-          for K in $KEYS; do
-            ID=$(basename "$K" .p8 | sed 's/^AuthKey_//')
-            echo "Uploading with App Store Connect key $ID"
-            if xcodebuild -exportArchive \
-                -archivePath "$RUNNER_TEMP/TruckSim.xcarchive" \
-                -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" \
-                -exportPath "$RUNNER_TEMP/export" \
-                -allowProvisioningUpdates \
-                -authenticationKeyPath "$K" \
-                -authenticationKeyID "$ID" \
-                -authenticationKeyIssuerID "$ASC_ISSUER_ID"; then
-              ok="$ID"; break
-            fi
-            echo "Key $ID couldn't sign and upload (it may not have Admin access)."
-          done
-          [ -n "$ok" ] || { echo "::error::No key could sign the app. Cloud signing needs an App Store Connect key with Admin access."; exit 1; }
-          echo "Uploaded with key $ok"
+          export APP_STORE_CONNECT_ISSUER_ID="$ASC_ISSUER_ID"
+          export APP_STORE_CONNECT_KEY_IDENTIFIER="$ASC_KEY_ID"
+          export APP_STORE_CONNECT_PRIVATE_KEY="@file:$KEY_PATH"
+          if [ -f "$W/profile_id" ]; then app-store-connect profiles delete "$(cat "$W/profile_id")" --ignore-not-found || true; fi
+          if [ -f "$W/cert_id" ]; then app-store-connect certificates delete "$(cat "$W/cert_id")" --ignore-not-found || true; fi
+          rm -rf "$W"
       - name: Remove key
         if: always()
         run: rm -rf "$KEY_PATH" "$RUNNER_TEMP/keys"
