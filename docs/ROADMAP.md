@@ -37,12 +37,12 @@ captions, driving buttons, Larger Text / Increase Contrast / Reduce Motion, iPad
 - Company contracts: several deliveries for one client for a big bonus (done)
 - Reputation: unlocks better jobs and clients (done)
 
-## 1.2, Part 4: Voices on the Radio
-- A dispatcher with a real voice: jobs, jokes and storm warnings, using your company name
-- CB radio chatter from other truckers
-- Radio DJ between songs, and a weather report
-- Story missions ("Get this medicine to Bayview before the bridge closes")
-- Radio events from your drivers ("Nadia broke down near Bayview: send a tow or wait")
+## 1.2, Part 4: Voices on the Radio (done; voice recordings pending)
+- A dispatcher with a real voice: jobs, jokes and storm warnings, using your company name (done)
+- CB radio chatter from other truckers (done)
+- Radio DJ between songs, and a weather report (done)
+- Story missions ("Get this medicine to Bayview before the bridge closes") (done)
+- Radio events from your drivers ("Nadia broke down near Bayview: send a tow or wait") (done)
 
 ## 1.2, Part 5: Wild Roads
 - Real hills: the engine strains uphill, brakes overheat downhill, runaway truck ramps

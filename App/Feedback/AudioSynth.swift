@@ -490,6 +490,12 @@ final class AudioSynth {
     private var ambienceLevel: [String: Float] = [:]
     private var ambienceTarget: [String: Float] = [:]
     private var effects: [String: (player: AVAudioPlayerNode, buffer: AVAudioPCMBuffer)] = [:]
+    // Recorded radio voices (dispatcher, CB truckers): through a band-pass filter, like a real CB.
+    private let voicePlayer = AVAudioPlayerNode()
+    private let voiceEQ = AVAudioUnitEQ(numberOfBands: 2)
+    private var voiceBuffers: [String: AVAudioPCMBuffer] = [:]
+    /// A radio voice is playing now.
+    private(set) var radioVoicePlaying = false
 
     func start(sound: EngineSound = .recorded, idleRPM: Float = 600, maxRPM: Float = 2_100, horn: String = "horn") {
         state.pitch = Float(sound.pitch)
@@ -565,6 +571,15 @@ final class AudioSynth {
             player.volume = 0
             if name.hasPrefix("fx_") { effects[name] = (player, buffer) } else { ambienceLoops[name] = (player, buffer) }
         }
+        if let voiceFormat = AVAudioFormat(standardFormatWithSampleRate: 44_100, channels: 1) {
+            engine.attach(voicePlayer)
+            engine.attach(voiceEQ)
+            let low = voiceEQ.bands[0], high = voiceEQ.bands[1]
+            low.filterType = .highPass; low.frequency = 350; low.bypass = false
+            high.filterType = .lowPass; high.frequency = 3_200; high.bypass = false
+            engine.connect(voicePlayer, to: voiceEQ, format: voiceFormat)
+            engine.connect(voiceEQ, to: engine.mainMixerNode, format: voiceFormat)
+        }
         state.useSampledEngine = sampled != nil
         state.hasStartSample = sampled?.has("engine_start") ?? false
 
@@ -625,6 +640,28 @@ final class AudioSynth {
             }
             loop.player.volume = level * state.volume
         }
+    }
+
+    /// Plays a recorded radio line (with a CB crackle). Returns false if there's no recording for it.
+    @discardableResult
+    func playRadioVoice(_ name: String, done: @escaping () -> Void) -> Bool {
+        guard engine.isRunning, !state.muted else { return false }
+        let buffer = voiceBuffers[name] ?? SampledEngine.load(name)
+        guard let buffer else { return false }
+        voiceBuffers[name] = buffer
+        voicePlayer.stop()
+        voicePlayer.volume = state.volume * 0.9
+        state.crackleSeconds = 0.35
+        radioVoicePlaying = true
+        voicePlayer.scheduleBuffer(buffer, at: nil) { [weak self] in
+            DispatchQueue.main.async {
+                self?.radioVoicePlaying = false
+                self?.state.crackleSeconds = 0.25
+                done()
+            }
+        }
+        voicePlayer.play()
+        return true
     }
 
     /// Plays a one-shot effect, panned (-1 left ... 1 right).

@@ -66,6 +66,9 @@ final class DrivingController: NSObject, ObservableObject {
         feedback.speech.onCaption = { [weak self] text in
             DispatchQueue.main.async { self?.showCaption(text) }
         }
+        MusicPlayer.shared.onDJ = { [weak self] line in
+            DispatchQueue.main.async { self?.showCaption(line.caption) }
+        }
         hardware.onAction = { [weak self] action in self?.perform(action) }
     }
 
@@ -97,6 +100,7 @@ final class DrivingController: NSObject, ObservableObject {
         session.turbo = settings.turbo && navigator != nil && !ScreenshotMode.isOn
         session.cargoKind = drive.job?.cargo.kind ?? .standard
         session.dockingEnabled = settings.docking && drive.job != nil && !ScreenshotMode.isOn
+        session.cbRadioEnabled = settings.radioVoices && navigator != nil && !ScreenshotMode.isOn
         // Weather for every drive except the tutorial (and screenshots).
         if settings.weather && drive != .tutorial && !ScreenshotMode.isOn {
             var rng = SystemRandomNumberGenerator()
@@ -135,6 +139,8 @@ final class DrivingController: NSObject, ObservableObject {
         feedback.timeOfDay = session.timeOfDay
         feedback.turbo = session.turbo
         feedback.cargo = drive.job?.cargo
+        feedback.radioVoices = settings.radioVoices
+        MusicPlayer.shared.weatherForDJ = session.weather
         feedback.hornFile = career.state.horn.soundFile
         feedback.truckNickname = career.state.nickname(for: session.spec)
         feedback.freeDriveTown = career.state.currentTownName

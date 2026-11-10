@@ -85,6 +85,17 @@ final class CareerStore: ObservableObject {
         return news
     }
 
+    func sendTow(_ driver: Driver) -> Bool {
+        let ok = state.sendTow(driver)
+        save()
+        return ok
+    }
+
+    func letWait(_ driver: Driver) {
+        state.letWait(driver)
+        save()
+    }
+
     func acceptContract() {
         state.acceptContract()
         save()

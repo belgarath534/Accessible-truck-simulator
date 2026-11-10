@@ -30,6 +30,12 @@ final class FeedbackCoordinator {
     var hornFile = "horn"
     /// The name the player gave this truck, if any; set before start().
     var truckNickname: String?
+    /// Dispatcher and CB radio voices; set before start().
+    var radioVoices = true
+    /// Lines waiting for a quiet moment to come over the radio.
+    private var radioQueue: [RadioLine] = []
+    private var gameSpeaking = false
+    private var nextCB = 0
     /// The load, for special cargo sounds; set before start().
     var cargo: Cargo?
     /// Turbo Mode is on; set before start().
@@ -48,9 +54,13 @@ final class FeedbackCoordinator {
         audio.state.laneToneEnabled = settings.laneGuidanceTone
         speech.output = settings.speechOutput
         haptics.enabled = settings.haptics
-        speech.onSpeakingChanged = { speaking in
-            DispatchQueue.main.async { MusicPlayer.shared.setDucked(speaking) }
+        speech.onSpeakingChanged = { [weak self] speaking in
+            DispatchQueue.main.async {
+                self?.gameSpeaking = speaking
+                MusicPlayer.shared.setDucked(speaking || (self?.audio.radioVoicePlaying ?? false))
+            }
         }
+        nextCB = Int.random(in: 0..<RadioLines.cb.count)
         // The App Store screenshot simulator on the build Mac has no working sound device,
         // and starting audio there aborts the app. Screenshots don't need sound.
         if !ScreenshotMode.isOn { audio.start(sound: engineSound, idleRPM: Float(idleRPM), maxRPM: Float(maxRPM), horn: hornFile) }
@@ -92,6 +102,7 @@ final class FeedbackCoordinator {
     }
 
     func reset() {
+        radioQueue = []
         audio.setMuted(false)
         onRumbleStrip = false
         lastSpokenSpeedStep = nil
@@ -126,6 +137,15 @@ final class FeedbackCoordinator {
         if let name = truckNickname, drive != .tutorial { trip = "\(name) is ready to roll. " + trip }
         if let forecast = weather.announcement { trip += " " + forecast }
         if turbo { trip += " " + phrases.turboIntro }
+        // The dispatcher calls in once the intro is done: a story briefing, or a word for the road.
+        if case let .job(job) = drive {
+            if let mission = StoryMission.withID(job.storyID) {
+                radio(RadioLines.storyBriefing(mission))
+            } else {
+                radio(RadioLines.dispatchStart.randomElement()!)
+            }
+            if weather == .storm { radio(RadioLines.dispatchStorm) }
+        }
         if drive != .tutorial && drive != .practice, let time = timeOfDay.announcement { trip += " " + time }
         speech.speak(
             "\(trip) Engine off. \(controls) Three-finger double tap starts the engine. Two-finger double tap reads the dashboard. Two-finger swipe down pauses.",
@@ -301,6 +321,15 @@ final class FeedbackCoordinator {
             speech.speak(phrases.timeLeft(seconds), priority: .normal)
         case .lateForDelivery:
             speech.speak(phrases.lateForDelivery, priority: .high)
+            radio(RadioLines.dispatchLate)
+        case .cbChatter:
+            // Mostly other truckers; now and then the dispatcher checks in with a joke.
+            if Int.random(in: 0..<5) == 0 {
+                radio(RadioLines.dispatchJokes.randomElement()!)
+            } else {
+                radio(RadioLines.cb[nextCB % RadioLines.cb.count])
+                nextCB += 1
+            }
         case let .tripProgress(remaining):
             speech.speak(phrases.tripProgress(remaining: remaining), priority: .normal)
         case let .destinationAhead(distance):
@@ -321,6 +350,29 @@ final class FeedbackCoordinator {
             } else {
                 speech.speak(phrases.arrived(summary), priority: .high)
             }
+        }
+    }
+
+    // MARK: Radio voices
+
+    /// Queues a line for the radio; it plays when the game isn't talking.
+    func radio(_ line: RadioLine) {
+        guard radioVoices else { return }
+        radioQueue.append(line)
+    }
+
+    private func playQueuedRadio() {
+        guard !radioQueue.isEmpty, !gameSpeaking, !audio.radioVoicePlaying else { return }
+        let line = radioQueue.removeFirst()
+        let played = !ScreenshotMode.isOn && audio.playRadioVoice(line.fileName) {
+            MusicPlayer.shared.setDucked(false)
+        }
+        if played {
+            MusicPlayer.shared.setDucked(true)
+            speech.onCaption?(line.caption)
+        } else {
+            // No recording: the game's own voice reads it.
+            speech.speak(line.caption, priority: .low)
         }
     }
 
@@ -356,6 +408,7 @@ final class FeedbackCoordinator {
         audio.setLaneGuidance(offset: session.laneGuidanceOffset)
         audio.updateTraffic(session.trafficSounds)
         audio.setAmbience(ambience(session))
+        playQueuedRadio()
         audio.state.pumping = session.isRefueling
         audio.state.siren = session.sirenOn
         // Docking: the beacon counts down to the dock (steady in the last metre or two), with the backup alarm.

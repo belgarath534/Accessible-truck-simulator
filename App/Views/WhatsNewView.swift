@@ -35,6 +35,9 @@ enum Changelog {
             "Reputation, from Rookie to Legend: deliver on time, without crashes and stop on the mark to climb. Higher reputation pays more and unlocks oversize loads, hazmat and contracts.",
             "Company contracts: a client wants several loads delivered on time, for a big bonus at the end. Be late once and the contract is broken.",
             "Back into the loading dock by ear after each delivery: the beeps speed up as you get close, the backup alarm sounds, and the lane beep tells you if the trailer is crooked. A perfect dock pays a bonus. Skip it from the pause menu, or turn it off in Settings.",
+            "Voices on the radio: a dispatcher who calls in at the start of jobs and warns you about storms, other truckers chatting on the CB, and a DJ with a weather report between songs on Big Rig Radio. Everything they say shows as captions.",
+            "Five story missions, from The Medicine Run to The Legend's Load: each waits in its own town, opens with your reputation, and pays a big bonus when it's on time.",
+            "Calls from your drivers: when a truck breaks down, send a tow or let them wait it out.",
             "Three new achievements: Oh Deer, Make Some Noise and Speed Demon. And a new Top Speed leaderboard.",
         ]),
         Version(number: "1.1", title: "Big Update", items: [
@@ -121,7 +124,6 @@ enum Changelog {
     ]
 
     static let comingSoon: [String] = [
-        "A dispatcher with a real voice, CB radio chatter and a radio DJ.",
         "Hills, snow and ice, tire blowouts and detours.",
         "Truck wear, depots in other towns and bank loans.",
     ]

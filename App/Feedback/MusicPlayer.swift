@@ -1,4 +1,5 @@
 import AVFoundation
+import SimCore
 
 /// Menu music and the in-truck radio. Tracks live in App/Music:
 ///   menu_*.m4a   main menu music (loops)
@@ -13,6 +14,13 @@ final class MusicPlayer: NSObject, AVAudioPlayerDelegate {
     private var player: AVAudioPlayer?
     private var radioIndex = 0
     private var ducked = false
+
+    /// Today's weather, for the DJ's weather report; set when a drive starts.
+    var weatherForDJ: Weather = .clear
+    /// Shows a caption when the DJ talks.
+    var onDJ: ((RadioLine) -> Void)?
+    private var playingDJ = false
+    private var songsSinceDJ = 0
 
     /// 0...1, from Settings.
     var volume: Float = 0.5 { didSet { applyVolume(fade: 0.2) } }
@@ -122,6 +130,27 @@ final class MusicPlayer: NSObject, AVAudioPlayerDelegate {
 
     func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
         guard mode == .radio, player === self.player else { return }
+        // Between songs the DJ talks now and then: a weather report or a word for the truckers.
+        if playingDJ {
+            playingDJ = false
+            nextSong()
+            return
+        }
+        songsSinceDJ += 1
+        if songsSinceDJ >= 1, Bool.random(), playDJ() { return }
         nextSong()
+    }
+
+    private func playDJ() -> Bool {
+        let line = Bool.random() ? RadioLines.djWeather(weatherForDJ) : RadioLines.dj.randomElement()!
+        guard let url = ["wav", "m4a", "caf", "mp3"].lazy.compactMap({
+            Bundle.main.url(forResource: line.fileName, withExtension: $0)
+                ?? Bundle.main.url(forResource: line.fileName, withExtension: $0, subdirectory: "Sounds")
+        }).first else { return false }
+        songsSinceDJ = 0
+        playingDJ = true
+        play(url, loop: false)
+        onDJ?(line)
+        return true
     }
 }

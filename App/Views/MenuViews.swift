@@ -200,6 +200,23 @@ struct JobBoardView: View {
                                            : "Hazmat loads open at Respected.")
                 }
             }
+            if let mission = career.state.nextStoryMission {
+                Section {
+                    if mission.from == career.state.currentTown {
+                        Text("\(mission.title) is first on the board. Deliver it on time for a \(Phrases.money(mission.bonus)) story bonus.")
+                    } else {
+                        Text("\(mission.title) is waiting for you in \(WorldMap.standard.node(mission.from)?.name ?? "another town"). Drive there with a job or Free Drive to start it.")
+                    }
+                } header: {
+                    Text("Story mission \(mission.id) of \(StoryMission.all.count)")
+                }
+            } else if let locked = career.state.lockedStoryMission {
+                Section {
+                    Text("The next story mission, \(locked.title), opens when you're \(locked.level.title).")
+                } header: {
+                    Text("Story mission \(locked.id) of \(StoryMission.all.count)")
+                }
+            }
             if let contract = career.state.contract {
                 Section {
                     Text("\(contract.client): \(contract.cargoName.lowercased()), \(contract.done) of \(contract.total) delivered. Bonus when all are on time: \(Phrases.money(contract.bonus)).")
@@ -224,7 +241,7 @@ struct JobBoardView: View {
                         start(job)
                     } label: {
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("\(job.contractID != nil ? "Contract: " : "")\(job.cargo.name): \(Phrases.money(job.pay))").font(.headline)
+                            Text("\(StoryMission.withID(job.storyID).map { "Story: \($0.title). " } ?? "")\(job.contractID != nil ? "Contract: " : "")\(job.cargo.name): \(Phrases.money(job.pay))").font(.headline)
                             Text(phrases.job(job)).font(.subheadline)
                             Text(fuelText(job)).font(.subheadline)
                         }
@@ -362,6 +379,8 @@ struct SettingsView: View {
             Section {
                 Toggle("Traffic", isOn: $settings.traffic)
                     .accessibilityHint("Other vehicles on the map's roads. The practice loop never has traffic.")
+                Toggle("Radio voices: dispatcher and CB", isOn: $settings.radioVoices)
+                    .accessibilityHint("The dispatcher calls in at the start of jobs, and other truckers talk on the CB radio.")
                 Toggle("Back into the loading dock", isOn: $settings.docking)
                     .accessibilityHint("After stopping at a delivery's drop-off, back the trailer into the dock by ear for a bonus.")
                 Toggle("Deer on the road", isOn: $settings.wildlife)
@@ -610,6 +629,17 @@ struct CompanyView: View {
                         }
                     }
                     .accessibilityElement(children: .combine)
+                    if let town = driver.brokeDownIn {
+                        if driver.stuckUntil != nil {
+                            Text("\(driver.name) is broken down near \(town), waiting for a repair.")
+                        } else {
+                            Text("\(driver.name) called on the radio: their truck broke down near \(town).")
+                            Button("Send a Tow: \(Phrases.money(Driver.towCost))") { sendTow(driver) }
+                                .accessibilityHint("\(driver.name) is back on the road right away.")
+                            Button("Let Them Wait") { career.letWait(driver) }
+                                .accessibilityHint("Free, but \(driver.name) can't work for two hours.")
+                        }
+                    }
                     if let raise = driver.raiseRequest {
                         Text("\(driver.name) has the experience to become a \(driver.skill + 1)-star driver and asks for a raise of \(Phrases.money(raise)). Answer within \(driver.deliveriesUntilQuit ?? Driver.patience) more deliveries, or they may quit.")
                         Button("Give \(driver.name) the Raise: \(Phrases.money(raise))") { giveRaise(driver) }
@@ -655,6 +685,12 @@ struct CompanyView: View {
                 confirmFire = nil
             }
         }
+    }
+
+    private func sendTow(_ driver: Driver) {
+        message = career.sendTow(driver)
+            ? "The tow is on its way. \(driver.name) is back on the road. \(Phrases.money(career.money)) left in the bank."
+            : "Not enough money for a tow. You need \(Phrases.money(Driver.towCost))."
     }
 
     private func giveRaise(_ driver: Driver) {
