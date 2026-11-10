@@ -75,3 +75,45 @@ final class WearTests: XCTestCase {
         XCTAssertEqual(n, 0)
     }
 }
+
+final class TruckStopStopTests: XCTestCase {
+    private let dt = 1.0 / 60
+
+    /// Drives to a truck stop with no signal and stops `offset` metres from it (negative: before it).
+    private func stopNear(offset: Double) -> (DrivingSession, [SimEvent]) {
+        let road = Road(segments: [.straight(5_000)], loops: false, truckStops: [1_000])
+        let s = DrivingSession(road: road, seed: 1)
+        _ = s.perform(.toggleEngine)
+        for _ in 0..<(60 * 3) { _ = s.step(dt: dt, input: .idle) }
+        var events: [SimEvent] = []
+        let target = 1_000 + offset
+        while s.truck.position < target - 25 { events += s.step(dt: dt, input: DrivingInput(throttle: s.truck.speed < 8 ? 0.5 : 0)) }
+        while s.truck.speed > 0.05 { events += s.step(dt: dt, input: DrivingInput(brake: 0.8)) }
+        for _ in 0..<30 { events += s.step(dt: dt, input: .idle) }
+        return (s, events)
+    }
+
+    func testStoppingAtATruckStopSaysHowToPullIn() {
+        let (_, events) = stopNear(offset: -5)
+        XCTAssertEqual(events.filter { $0 == .atTruckStop }.count, 1)
+        XCTAssertEqual(Phrases(units: .metric).atTruckStop, "You're at the truck stop. Signal right to pull in and fill up.")
+    }
+
+    func testSignalingRightWhileStoppedPullsIn() {
+        for offset in [-20.0, 0, 30] {
+            let (s, _) = stopNear(offset: offset)
+            var events = s.perform(.signal(.right))
+            for _ in 0..<60 { events += s.step(dt: dt, input: .idle) }
+            XCTAssertTrue(events.contains(.pulledIntoTruckStop), "offset \(offset)")
+            XCTAssertTrue(events.contains(.refuelStarted), "offset \(offset)")
+        }
+    }
+
+    func testFarFromATruckStopNothingHappens() {
+        let (s, events) = stopNear(offset: -300)
+        XCTAssertFalse(events.contains(.atTruckStop))
+        var after = s.perform(.signal(.right))
+        for _ in 0..<60 { after += s.step(dt: dt, input: .idle) }
+        XCTAssertFalse(after.contains(.pulledIntoTruckStop))
+    }
+}

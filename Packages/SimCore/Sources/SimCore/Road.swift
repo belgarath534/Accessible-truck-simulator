@@ -150,6 +150,16 @@ public struct Road: Sendable {
         return (0, truckStops[0] + totalLength - s)
     }
 
+    /// The truck stop within `range` metres of a position, before or after it.
+    public func truckStopNear(_ position: Double, within range: Double) -> Int? {
+        let s = normalized(position)
+        return truckStops.indices.first { i in
+            var d = abs(truckStops[i] - s)
+            if loops { d = min(d, totalLength - d) }
+            return d <= range
+        }
+    }
+
     /// Puts truck stops in the middle of the given straight segments.
     func withTruckStops(onSegments indices: [Int]) -> Road {
         var r = self

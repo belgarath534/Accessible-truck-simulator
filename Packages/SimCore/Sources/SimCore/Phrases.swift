@@ -109,6 +109,10 @@ public struct Phrases {
                  : "Pulling into the truck stop. Stop at the pump to fill up."
     }
 
+    public var atTruckStop: String {
+        "You're at the truck stop. Signal right to pull in and \(electric ? "charge" : "fill up")."
+    }
+
     public func missedTruckStop(tooFast: Bool) -> String {
         tooFast ? "Too fast to take the truck stop exit. You missed it." : "You passed the truck stop."
     }

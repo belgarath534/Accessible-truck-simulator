@@ -125,6 +125,8 @@ public final class DrivingSession {
     public static let fuelGameScale = 10.0
     /// Dollars per litre at truck stops.
     public static let truckStopFuelPrice = 2.5
+    /// Stopped this close to a truck stop (metres, either side), a right signal still pulls in.
+    public static let truckStopStopRange = 60.0
     /// Pumps fill this many litres per second.
     public static let pumpRate = 40.0
     /// Fastest you can take a truck stop exit, m/s.
@@ -387,6 +389,7 @@ public final class DrivingSession {
     var tollsAnnounced: Set<Int> = []
     var weighStationsHandled: Set<Int> = []
     var lastBrakeDecel = 0.0
+    var hintedStop: Int?
     /// The truck's condition, percent (blowouts are likelier on a worn truck). Set before driving.
     public var condition = 100.0
     /// Tires can blow out (map drives). Set before driving.
@@ -1022,7 +1025,22 @@ public final class DrivingSession {
         let fraction = truck.fuelLiters / spec.fuelCapacityLiters
         switch truckStopState {
         case .driving:
-            guard let next = road.nextTruckStop(after: truck.position) else { break }
+            // Stopped at a truck stop (just before or a little past it): say how to pull in, and let a right
+            // signal pull in from there.
+            if truck.speed < 0.3, let near = road.truckStopNear(truck.position, within: DrivingSession.truckStopStopRange) {
+                if truck.signal == .on(.right) && truckStopState == .driving {
+                    truckStopState = .pulledIn(index: near)
+                    exitChecked = near
+                    truck.signal = .off
+                    events.append(.pulledIntoTruckStop)
+                } else if hintedStop != near {
+                    hintedStop = near
+                    events.append(.atTruckStop)
+                }
+            } else if truck.speed > 5 {
+                hintedStop = nil
+            }
+            guard truckStopState == .driving, let next = road.nextTruckStop(after: truck.position) else { break }
             // Heads-up when fuel is under half.
             if next.distance < 1_500 && announcedStop != next.index && fraction < 0.5 && truck.speed > 2 {
                 announcedStop = next.index

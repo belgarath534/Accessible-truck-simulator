@@ -22,6 +22,7 @@ enum Changelog {
             "Vibration comes back after you leave the game and return.",
             "VoiceOver stays on the driving screen during a drive.",
             "This What's New page.",
+            "Fix: stopping at a truck stop without signaling now tells you to signal right, and signaling right while stopped there pulls you in, even a little past it. Thanks to Yara for reporting it!",
             "Day and night, from your phone's clock: crickets and quiet roads at night, birds at dawn.",
             "Deer on country and mountain roads, more of them at night. You hear them ahead: honk to scare them off, or slow right down. Turn them off in Settings.",
             "Construction zones: machines, backup beepers and a 25 mph (40 km/h) limit.",
