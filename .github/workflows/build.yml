@@ -100,6 +100,9 @@ jobs:
             echo "ASC_KEY_ID=$ASC_KEY_ID" >> "$GITHUB_ENV"
             KEY_PATH="$RUNNER_TEMP/$(basename "$SRC")"
             cp "$SRC" "$KEY_PATH"
+            # Keep every key: cloud signing needs an Admin key, so the upload tries each one.
+            mkdir -p "$RUNNER_TEMP/keys"
+            cp .certs/AuthKey_*.p8 "$RUNNER_TEMP/keys/"
           fi
           rm -rf .certs
           echo "KEY_PATH=$KEY_PATH" >> "$GITHUB_ENV"
@@ -136,14 +139,27 @@ jobs:
           </dict>
           </plist>
           PLIST
-          xcodebuild -exportArchive \
-            -archivePath "$RUNNER_TEMP/TruckSim.xcarchive" \
-            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" \
-            -exportPath "$RUNNER_TEMP/export" \
-            -allowProvisioningUpdates \
-            -authenticationKeyPath "$KEY_PATH" \
-            -authenticationKeyID "$ASC_KEY_ID" \
-            -authenticationKeyIssuerID "$ASC_ISSUER_ID"
+          # Cloud signing needs an Admin key: try the chosen key, then any others from iOS-certificates.
+          KEYS="$KEY_PATH"
+          if [ -d "$RUNNER_TEMP/keys" ]; then KEYS="$KEYS $(ls "$RUNNER_TEMP"/keys/AuthKey_*.p8 | grep -v "AuthKey_${ASC_KEY_ID}.p8" || true)"; fi
+          ok=""
+          for K in $KEYS; do
+            ID=$(basename "$K" .p8 | sed 's/^AuthKey_//')
+            echo "Uploading with App Store Connect key $ID"
+            if xcodebuild -exportArchive \
+                -archivePath "$RUNNER_TEMP/TruckSim.xcarchive" \
+                -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" \
+                -exportPath "$RUNNER_TEMP/export" \
+                -allowProvisioningUpdates \
+                -authenticationKeyPath "$K" \
+                -authenticationKeyID "$ID" \
+                -authenticationKeyIssuerID "$ASC_ISSUER_ID"; then
+              ok="$ID"; break
+            fi
+            echo "Key $ID couldn't sign and upload (it may not have Admin access)."
+          done
+          [ -n "$ok" ] || { echo "::error::No key could sign the app. Cloud signing needs an App Store Connect key with Admin access."; exit 1; }
+          echo "Uploaded with key $ok"
       - name: Remove key
         if: always()
-        run: rm -f "$KEY_PATH"
+        run: rm -rf "$KEY_PATH" "$RUNNER_TEMP/keys"
