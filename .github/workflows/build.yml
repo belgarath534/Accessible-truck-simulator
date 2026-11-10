@@ -107,6 +107,11 @@ jobs:
       - name: Find the key Apple accepts
         run: ruby scripts/check_asc_key.rb
 
+      # Apple only accepts apps built with the newest SDK, so use the newest Xcode on the runner.
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
       - name: Generate Xcode project
         run: |
           brew install xcodegen
