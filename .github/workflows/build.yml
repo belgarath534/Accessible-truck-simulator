@@ -49,120 +49,72 @@ jobs:
 
 
   testflight:
-    # Backup route to TestFlight for when Codemagic credits run out.
+    # Backup route to TestFlight for when Codemagic credits run out: fastlane match, the same way as the RPG game.
     # Only runs when started by hand: Actions tab, Build, Run workflow. See docs/GITHUB_TESTFLIGHT.md.
     name: Upload to TestFlight (backup)
     needs: [simcore-tests, ios-build]
     runs-on: macos-15
+    timeout-minutes: 90
     if: github.event_name == 'workflow_dispatch'
     env:
-      TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
       ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
-      # The key comes from the private iOS-certificates repo (AuthKey_<KEY ID>.p8), read with this token.
-      # (ASC_KEY_ID and ASC_KEY_P8 secrets still work instead, if set.)
-      CERTS_REPO_TOKEN: ${{ secrets.CERTS_REPO_TOKEN }}
       ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
-      ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+      MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+      CERTS_REPO_TOKEN: ${{ secrets.CERTS_REPO_TOKEN }}
     steps:
-      - name: Check that signing secrets are set
-        run: |
-          missing=""
-          for v in TEAM_ID ASC_ISSUER_ID; do
-            if [ -z "${!v}" ]; then missing="$missing $v"; fi
-          done
-          if [ -z "$CERTS_REPO_TOKEN" ] && [ -z "$ASC_KEY_P8" ]; then missing="$missing CERTS_REPO_TOKEN"; fi
-          if [ -n "$missing" ]; then
-            echo "::error::Missing repository secrets:$missing (see docs/GITHUB_TESTFLIGHT.md)"
-            exit 1
-          fi
       - uses: actions/checkout@v4
-      - name: Get the App Store Connect key from iOS-certificates
-        if: env.CERTS_REPO_TOKEN != ''
+
+      - name: Check secrets
+        run: |
+          missing=0
+          for name in MATCH_PASSWORD CERTS_REPO_TOKEN ASC_ISSUER_ID; do
+            if [ -n "${!name}" ]; then echo "✅ $name is set"; else echo "❌ $name is missing"; missing=1; fi
+          done
+          CLEAN=$(printf '%s' "$CERTS_REPO_TOKEN" | tr -d '[:space:]')
+          echo "::add-mask::$CLEAN"
+          echo "CLEAN_CERTS_TOKEN=$CLEAN" >> "$GITHUB_ENV"
+          CODE=$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $CLEAN" https://api.github.com/repos/belgarath534/ios-certificates)
+          if [ "$CODE" = "200" ]; then echo "✅ Token can reach ios-certificates"; else echo "❌ Token can't reach ios-certificates (HTTP $CODE)"; missing=1; fi
+          exit $missing
+
+      - name: Get key files from ios-certificates
+        continue-on-error: true
         uses: actions/checkout@v4
         with:
-          repository: belgarath534/iOS-certificates
-          token: ${{ secrets.CERTS_REPO_TOKEN }}
-          path: .certs
-      - name: Install XcodeGen
-        run: brew install xcodegen
-      - name: Generate Xcode project
-        run: xcodegen generate
-      - name: Write App Store Connect key
-        run: |
-          if [ -n "$ASC_KEY_P8" ]; then
-            KEY_PATH="$RUNNER_TEMP/AuthKey_${ASC_KEY_ID}.p8"
-            printf '%s\n' "$ASC_KEY_P8" > "$KEY_PATH"
-          else
-            # The key named by ASC_KEY_ID if set, otherwise the first key in the repo; its ID is in the file name.
-            if [ -n "$ASC_KEY_ID" ]; then SRC=".certs/AuthKey_${ASC_KEY_ID}.p8"; else SRC=$(ls .certs/AuthKey_*.p8 | head -1); fi
-            [ -f "$SRC" ] || { echo "::error::No AuthKey_*.p8 found in iOS-certificates"; exit 1; }
-            ASC_KEY_ID=$(basename "$SRC" .p8 | sed 's/^AuthKey_//')
-            echo "ASC_KEY_ID=$ASC_KEY_ID" >> "$GITHUB_ENV"
-            KEY_PATH="$RUNNER_TEMP/$(basename "$SRC")"
-            cp "$SRC" "$KEY_PATH"
-            # Keep every key: cloud signing needs an Admin key, so the upload tries each one.
-            mkdir -p "$RUNNER_TEMP/keys"
-            cp .certs/AuthKey_*.p8 "$RUNNER_TEMP/keys/"
-          fi
-          rm -rf .certs
-          echo "KEY_PATH=$KEY_PATH" >> "$GITHUB_ENV"
-          echo "ASC_KEY_ID=$ASC_KEY_ID" >> "$GITHUB_ENV"
-          echo "Using App Store Connect key $ASC_KEY_ID"
-      - name: Sign on this Mac with a temporary certificate, and upload
-        # Works with a non-Admin (App Manager) key: a temporary Apple Distribution certificate and App Store
-        # profile are made for this build and deleted afterwards (apps already uploaded keep working).
-        env:
-          BUNDLE_ID: com.accessibletrucksim.TruckSim
-        run: |
-          set -e
-          pip3 install --quiet --break-system-packages codemagic-cli-tools 2>/dev/null || pip3 install --quiet codemagic-cli-tools
-          export APP_STORE_CONNECT_ISSUER_ID="$ASC_ISSUER_ID"
-          export APP_STORE_CONNECT_KEY_IDENTIFIER="$ASC_KEY_ID"
-          export APP_STORE_CONNECT_PRIVATE_KEY="@file:$KEY_PATH"
-          W="$RUNNER_TEMP/signing"; mkdir -p "$W"
-          echo "W=$W" >> "$GITHUB_ENV"
+          repository: belgarath534/ios-certificates
+          token: ${{ env.CLEAN_CERTS_TOKEN }}
+          path: .certs-repo
 
-          sed -i '' "s/CURRENT_PROJECT_VERSION: \"[0-9]*\"/CURRENT_PROJECT_VERSION: \"$((10000 + ${{ github.run_number }}))\"/" project.yml
+      - name: Collect Apple API keys
+        env:
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+        run: |
+          mkdir -p "$HOME/.asc/candidates"
+          if [ -d .certs-repo ]; then
+            find .certs-repo -name '*.p8' -not -path '*/.git/*' -exec cp {} "$HOME/.asc/candidates/" \;
+          fi
+          if [ -n "$ASC_KEY_P8" ] && [ -n "$ASC_KEY_ID" ]; then
+            printf '%s\n' "$ASC_KEY_P8" > "$HOME/.asc/candidates/secret_$(printf '%s' "$ASC_KEY_ID" | tr -d '[:space:]').p8"
+          fi
+          rm -rf .certs-repo
+          echo "Keys found: $(ls "$HOME/.asc/candidates" | tr '\n' ' ')"
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+          bundler-cache: true
+
+      - name: Find the key Apple accepts
+        run: ruby scripts/check_asc_key.rb
+
+      - name: Generate Xcode project
+        run: |
+          brew install xcodegen
           xcodegen generate
 
-          keychain initialize
-          openssl genrsa -out "$W/cert_key.pem" 2048
-          CERT_ID=$(app-store-connect certificates create --type DISTRIBUTION --certificate-key "@file:$W/cert_key.pem" \
-            --save --json | python3 -c 'import json,sys; print(json.load(sys.stdin)["id"])')
-          echo "$CERT_ID" > "$W/cert_id"
-          echo "Temporary certificate $CERT_ID"
-          keychain add-certificates
+      - name: Build, sign and upload to TestFlight
+        run: bundle exec fastlane beta
 
-          BID=$(app-store-connect bundle-ids list --bundle-id-identifier "$BUNDLE_ID" --strict-match-identifier --platform IOS --json \
-            | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d[0]["id"])')
-          PROFILE_ID=$(app-store-connect profiles create "$BID" --type IOS_APP_STORE --certificate-ids "$CERT_ID" \
-            --name "Truck Sim GitHub ${{ github.run_number }}" --save --profiles-dir "$W/profiles" --json \
-            | python3 -c 'import json,sys; print(json.load(sys.stdin)["id"])')
-          echo "$PROFILE_ID" > "$W/profile_id"
-          echo "Temporary profile $PROFILE_ID"
-
-          # Install the profile where Xcode looks for it (Xcode 16 uses the UserData folder, older Xcode the other).
-          for D in "$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles" "$HOME/Library/MobileDevice/Provisioning Profiles"; do
-            mkdir -p "$D"
-            for P in "$W"/profiles/*.mobileprovision; do cp "$P" "$D/$(basename "$P")"; done
-          done
-          xcode-project use-profiles --project TruckSim.xcodeproj --profile "$W/profiles/*.mobileprovision"
-          if ! xcode-project build-ipa --project TruckSim.xcodeproj --scheme TruckSim --ipa-directory "$W/ipa"; then
-            echo "::group::Xcode errors"
-            grep -h -E "error:|Signing for|requires a development team|provisioning profile|entitlement" /tmp/xcodebuild_logs/*.log 2>/dev/null | sort -u | head -40 || true
-            echo "::endgroup::"
-            exit 1
-          fi
-          app-store-connect publish --path "$W/ipa/*.ipa"
-      - name: Delete the temporary certificate and profile
+      - name: Remove keys
         if: always()
-        run: |
-          export APP_STORE_CONNECT_ISSUER_ID="$ASC_ISSUER_ID"
-          export APP_STORE_CONNECT_KEY_IDENTIFIER="$ASC_KEY_ID"
-          export APP_STORE_CONNECT_PRIVATE_KEY="@file:$KEY_PATH"
-          if [ -f "$W/profile_id" ]; then app-store-connect profiles delete "$(cat "$W/profile_id")" --ignore-not-found || true; fi
-          if [ -f "$W/cert_id" ]; then app-store-connect certificates delete "$(cat "$W/cert_id")" --ignore-not-found || true; fi
-          rm -rf "$W"
-      - name: Remove key
-        if: always()
-        run: rm -rf "$KEY_PATH" "$RUNNER_TEMP/keys"
+        run: rm -rf "$HOME/.asc"

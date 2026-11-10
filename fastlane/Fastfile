@@ -1,0 +1,65 @@
+require "base64"
+
+default_platform(:ios)
+
+APP_ID = "com.accessibletrucksim.TruckSim"
+CERTS_REPO = "https://github.com/belgarath534/ios-certificates.git"
+TESTFLIGHT_DIR = File.expand_path("../store/en-US/testflight", __dir__)
+
+platform :ios do
+  desc "Build Accessible Truck Simulator, sign it with fastlane match and upload it to TestFlight (GitHub backup route)"
+  lane :beta do
+    setup_ci
+
+    # The workflow's "Find the key Apple accepts" step picks the working key.
+    api_key = app_store_connect_api_key(
+      key_id: ENV.fetch("GOOD_KEY_ID"),
+      issuer_id: ENV.fetch("ASC_ISSUER_ID"),
+      key_filepath: ENV.fetch("ASC_KEY_PATH"),
+      duration: 1200,
+      in_house: false
+    )
+
+    # Downloads (or, the first time, creates) the shared App Store certificate and this app's profile,
+    # stored encrypted in the private ios-certificates repo, the same as the RPG game.
+    match(
+      type: "appstore",
+      app_identifier: APP_ID,
+      git_url: CERTS_REPO,
+      git_basic_authorization: Base64.strict_encode64("x-access-token:#{ENV.fetch('CLEAN_CERTS_TOKEN')}"),
+      api_key: api_key,
+      readonly: false
+    )
+    team_id = ENV.fetch("sigh_#{APP_ID}_appstore_team-id")
+    profile = ENV.fetch("sigh_#{APP_ID}_appstore_profile-name")
+    UI.success("✅ Signing ready (team #{team_id})")
+
+    build_app(
+      project: "TruckSim.xcodeproj",
+      scheme: "TruckSim",
+      configuration: "Release",
+      export_method: "app-store",
+      output_directory: "build",
+      xcargs: [
+        "CODE_SIGN_STYLE=Manual",
+        "DEVELOPMENT_TEAM=#{team_id}",
+        "CODE_SIGN_IDENTITY='Apple Distribution'",
+        "PROVISIONING_PROFILE_SPECIFIER='#{profile}'",
+        # GitHub builds are numbered from 10001 up, so they never clash with Codemagic's.
+        "CURRENT_PROJECT_VERSION=#{10_000 + ENV.fetch('GITHUB_RUN_NUMBER', '1').to_i}"
+      ].join(" "),
+      export_options: { provisioningProfiles: { APP_ID => profile } }
+    )
+    UI.success("✅ App built and signed")
+
+    upload_to_testflight(
+      api_key: api_key,
+      changelog: File.read(File.join(TESTFLIGHT_DIR, "what_to_test.txt")).strip,
+      uses_non_exempt_encryption: false,
+      distribute_external: false,
+      skip_waiting_for_build_processing: false,
+      wait_processing_timeout_duration: 2700
+    )
+    UI.success("🚀 Build is on TestFlight with its 'What to Test' notes")
+  end
+end

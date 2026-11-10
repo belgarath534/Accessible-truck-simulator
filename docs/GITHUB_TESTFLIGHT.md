@@ -4,34 +4,22 @@ Codemagic is the main route to TestFlight (see `CODEMAGIC.md`). This backup uses
 runners for when Codemagic build credits run out. It's the **Upload to TestFlight (backup)** job in
 `.github/workflows/build.yml`, and it only runs when you start it by hand.
 
-Apple signs the app in the cloud, so no certificate file is needed, just an App Store Connect API key.
+It works the same way as the RPG game: **fastlane match** keeps one shared App Store certificate, and each
+app's profile, encrypted in the private **iOS-certificates** repository (its `master` branch). The App Store
+Connect key comes from that repository too: every `AuthKey_<KEY ID>.p8` there is tried until Apple accepts one.
 Builds from GitHub are numbered from 10001 up, so they never clash with Codemagic's build numbers.
 
-## One-time setup: three repository secrets
+## One-time setup: repository secrets
 
-The key itself comes from the private **iOS-certificates** repository (`AuthKey_<KEY ID>.p8`; the Key ID is
-read from the file name). This public repository needs a token to read it, plus two IDs that aren't in any file.
-
-On github.com, open this repository, go to **Settings**, then **Secrets and variables**, then **Actions**,
-then **New repository secret**. Add:
+On github.com, open this repository, go to **Settings**, then **Secrets and variables**, then **Actions**:
 
 | Name | Value |
 |---|---|
-| `CERTS_REPO_TOKEN` | A fine-grained personal access token that can read iOS-certificates (see below) |
-| `APPLE_TEAM_ID` | Your Team ID: developer.apple.com/account, Membership details |
-| `ASC_ISSUER_ID` | The Issuer ID: App Store Connect, Users and Access, Integrations, App Store Connect API, near the top |
+| `MATCH_PASSWORD` | The same match password the RPG game uses (it unlocks the certificates) |
+| `CERTS_REPO_TOKEN` | A fine-grained token with **Contents: Read and write** on iOS-certificates (match saves new profiles there) |
+| `ASC_ISSUER_ID` | The Issuer ID: App Store Connect, Users and Access, Integrations, App Store Connect API |
 
-Optional: `ASC_KEY_ID` picks one key when iOS-certificates holds several (otherwise the first one is used).
-The old way still works too: `ASC_KEY_ID` plus `ASC_KEY_P8` (the key's full text) instead of the token.
-
-**Making the token:** github.com, your picture, **Settings**, **Developer settings**, **Personal access tokens**,
-**Fine-grained tokens**, **Generate new token**. Repository access: **Only select repositories**, pick
-**iOS-certificates**. Permissions: **Contents: Read-only**. Generate, copy it, and paste it into the
-`CERTS_REPO_TOKEN` secret.
-
-The key must have **Admin** access in App Store Connect, because Apple's cloud signing requires it.
-
-Never paste a key or token into a chat. They only go into GitHub secrets.
+Never paste a key, password or token into a chat. They only go into GitHub secrets.
 
 ## Sending a build
 
