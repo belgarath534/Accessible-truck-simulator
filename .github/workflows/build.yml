@@ -142,7 +142,12 @@ jobs:
           echo "Temporary profile $PROFILE_ID"
 
           xcode-project use-profiles --project TruckSim.xcodeproj --profile "$W/profiles/*.mobileprovision"
-          xcode-project build-ipa --project TruckSim.xcodeproj --scheme TruckSim --ipa-directory "$W/ipa"
+          if ! xcode-project build-ipa --project TruckSim.xcodeproj --scheme TruckSim --ipa-directory "$W/ipa"; then
+            echo "::group::Xcode errors"
+            grep -h -E "error:|Signing for|requires a development team|provisioning profile|entitlement" /tmp/xcodebuild_logs/*.log 2>/dev/null | sort -u | head -40 || true
+            echo "::endgroup::"
+            exit 1
+          fi
           app-store-connect publish --path "$W/ipa/*.ipa"
       - name: Delete the temporary certificate and profile
         if: always()
