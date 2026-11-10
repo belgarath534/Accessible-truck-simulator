@@ -141,6 +141,11 @@ jobs:
           echo "$PROFILE_ID" > "$W/profile_id"
           echo "Temporary profile $PROFILE_ID"
 
+          # Install the profile where Xcode looks for it (Xcode 16 uses the UserData folder, older Xcode the other).
+          for D in "$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles" "$HOME/Library/MobileDevice/Provisioning Profiles"; do
+            mkdir -p "$D"
+            for P in "$W"/profiles/*.mobileprovision; do cp "$P" "$D/$(basename "$P")"; done
+          done
           xcode-project use-profiles --project TruckSim.xcodeproj --profile "$W/profiles/*.mobileprovision"
           if ! xcode-project build-ipa --project TruckSim.xcodeproj --scheme TruckSim --ipa-directory "$W/ipa"; then
             echo "::group::Xcode errors"
