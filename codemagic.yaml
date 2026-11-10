@@ -32,7 +32,12 @@ workflows:
       - name: Set build number and make the Xcode project
         script: |
           set -e
-          sed -i '' "s/CURRENT_PROJECT_VERSION: \"[0-9]*\"/CURRENT_PROJECT_VERSION: \"$BUILD_NUMBER\"/" project.yml
+          # The next build number after the newest one on TestFlight (from Codemagic or GitHub), so they always go up.
+          LATEST=$(app-store-connect get-latest-testflight-build-number 6831855843 2>/dev/null | tail -1 | tr -dc '0-9')
+          NEXT=$(( ${LATEST:-0} + 1 ))
+          [ "$NEXT" -gt "$BUILD_NUMBER" ] || NEXT=$BUILD_NUMBER
+          echo "Build number $NEXT"
+          sed -i '' "s/CURRENT_PROJECT_VERSION: \"[0-9]*\"/CURRENT_PROJECT_VERSION: \"$NEXT\"/" project.yml
           grep CURRENT_PROJECT_VERSION project.yml
           brew install xcodegen
           xcodegen generate

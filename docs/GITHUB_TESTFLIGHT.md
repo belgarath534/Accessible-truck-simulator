@@ -7,7 +7,7 @@ runners for when Codemagic build credits run out. It's the **Upload to TestFligh
 It works the same way as the RPG game: **fastlane match** keeps one shared App Store certificate, and each
 app's profile, encrypted in the private **iOS-certificates** repository (its `master` branch). The App Store
 Connect key comes from that repository too: every `AuthKey_<KEY ID>.p8` there is tried until Apple accepts one.
-Builds from GitHub are numbered from 10001 up, so they never clash with Codemagic's build numbers.
+Both GitHub and Codemagic number each build one higher than the newest build on TestFlight, so the numbers always go up.
 
 ## One-time setup: repository secrets
 
