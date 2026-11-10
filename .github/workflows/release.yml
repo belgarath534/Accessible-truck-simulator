@@ -1,0 +1,97 @@
+name: Release to the App Store
+
+# The GitHub version of Codemagic's truck-sim-release: makes the App Store version from project.yml, adds
+# Game Center, fills in the store text and What's New, takes fresh screenshots, attaches the newest
+# processed build of that version and (with submit = yes) sends it to App Review.
+# Uses the same secrets as the TestFlight backup (see docs/GITHUB_TESTFLIGHT.md).
+
+on:
+  workflow_dispatch:
+    inputs:
+      submit:
+        description: Send it to App Review at the end?
+        type: choice
+        default: "no"
+        options: ["no", "yes"]
+      screenshots:
+        description: Take and upload fresh screenshots?
+        type: choice
+        default: "yes"
+        options: ["yes", "no"]
+
+jobs:
+  release:
+    runs-on: macos-15
+    timeout-minutes: 120
+    env:
+      ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+      CERTS_REPO_TOKEN: ${{ secrets.CERTS_REPO_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check secrets
+        run: |
+          missing=0
+          for name in CERTS_REPO_TOKEN ASC_ISSUER_ID; do
+            if [ -n "${!name}" ]; then echo "✅ $name is set"; else echo "❌ $name is missing"; missing=1; fi
+          done
+          CLEAN=$(printf '%s' "$CERTS_REPO_TOKEN" | tr -d '[:space:]')
+          echo "::add-mask::$CLEAN"
+          echo "CLEAN_CERTS_TOKEN=$CLEAN" >> "$GITHUB_ENV"
+          exit $missing
+
+      - name: Get key files from ios-certificates
+        uses: actions/checkout@v4
+        with:
+          repository: belgarath534/ios-certificates
+          token: ${{ env.CLEAN_CERTS_TOKEN }}
+          path: .certs-repo
+
+      - name: Collect Apple API keys
+        run: |
+          mkdir -p "$HOME/.asc/candidates"
+          find .certs-repo -name '*.p8' -not -path '*/.git/*' -exec cp {} "$HOME/.asc/candidates/" \;
+          rm -rf .certs-repo
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+
+      - name: Find the key Apple accepts
+        run: ruby scripts/check_asc_key.rb
+
+      - name: App Store Connect settings for the store scripts
+        run: |
+          echo "APP_STORE_CONNECT_ISSUER_ID=$ASC_ISSUER_ID" >> "$GITHUB_ENV"
+          echo "APP_STORE_CONNECT_KEY_IDENTIFIER=$GOOD_KEY_ID" >> "$GITHUB_ENV"
+          echo "APP_STORE_CONNECT_PRIVATE_KEY=@file:$ASC_KEY_PATH" >> "$GITHUB_ENV"
+          python3 -m pip install --quiet --break-system-packages pyjwt cryptography requests 2>/dev/null \
+            || python3 -m pip install --quiet pyjwt cryptography requests
+
+      - name: Create the version and add Game Center
+        run: python3 store/prepare_version.py
+
+      - name: Store text and What's New
+        run: python3 store/fill_store_info.py
+
+      - uses: maxim-lobanov/setup-xcode@v1
+        if: inputs.screenshots == 'yes'
+        with:
+          xcode-version: latest-stable
+
+      - name: Take and upload screenshots
+        if: inputs.screenshots == 'yes'
+        # If the simulators misbehave, the version keeps the screenshots it already has.
+        continue-on-error: true
+        run: |
+          brew install xcodegen
+          bash store/take_screenshots.sh
+          python3 store/upload_screenshots.py shots/iphone APP_IPHONE_67
+          python3 store/upload_screenshots.py shots/ipad APP_IPAD_PRO_3GEN_129
+
+      - name: Attach the build and submit
+        run: SUBMIT=${{ inputs.submit }} python3 store/submit_for_review.py
+
+      - name: Remove keys
+        if: always()
+        run: rm -rf "$HOME/.asc"
