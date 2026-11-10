@@ -37,7 +37,7 @@ public struct Cargo: Codable, Equatable, Hashable, Sendable {
         fragile = try c.decode(Bool.self, forKey: .fragile)
         urgent = try c.decode(Bool.self, forKey: .urgent)
         let saved = try c.decodeIfPresent(CargoKind.self, forKey: .kind)
-        kind = saved ?? Cargo.catalog.first { $0.name == name }?.kind ?? .standard
+        kind = saved ?? (Cargo.catalog + Holiday.allCases.flatMap(\.cargo)).first { $0.name == name }?.kind ?? .standard
     }
 
     public static let catalog: [Cargo] = [
@@ -263,6 +263,9 @@ public struct Payout: Equatable, Sendable {
 
         let late = stats.drivingTime - job.timeLimit
         lines += specialCargoLines(job, stats: stats, late: late > 0)
+        if Holiday.isHolidayCargo(job.cargo.name) {
+            lines.append(Line(label: "Holiday bonus", amount: Int((Double(base) * Holiday.bonus).rounded())))
+        }
         if late > 0 {
             let minutes = Int((late / 60).rounded(.up))
             let fraction = min(0.5, Double(minutes) * 0.03)
@@ -345,6 +348,8 @@ public struct CareerState: Codable, Equatable, Sendable {
     /// The contract being worked on, and one on offer.
     public var contract: Contract?
     public var contractOffer: Contract?
+    /// The date the job board is made for (tests set it; nil means today).
+    public var boardDate: Date?
     /// Story missions finished, in order.
     public var storyProgress: Int = 0
     /// Hired drivers' trucks can break down (not saved; tests that count deliveries turn it off).
@@ -554,6 +559,7 @@ public struct CareerState: Codable, Equatable, Sendable {
             return
         }
         jobBoard = JobBoard.makeBoard(using: &rng, from: currentTown, level: reputationLevel, contract: contract)
+        JobBoard.addHolidayJob(to: &jobBoard, holiday: Holiday.on(boardDate ?? Date()), using: &rng, from: currentTown, level: reputationLevel)
         // The next story mission goes on the board in its own town.
         if let mission = nextStoryMission, mission.from == currentTown {
             jobBoard.insert(mission.job(), at: 0)

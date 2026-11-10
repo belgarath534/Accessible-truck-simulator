@@ -111,7 +111,7 @@ final class DrivingController: NSObject, ObservableObject {
         if settings.weather && drive != .tutorial && !ScreenshotMode.isOn {
             var rng = SystemRandomNumberGenerator()
             // Snow some days in winter, by the player's own calendar.
-            session.weather = Weather.random(using: &rng, month: Calendar.current.component(.month, from: Date()))
+            session.weather = Holiday.weather(using: &rng, date: Date())
         }
         return session
     }

@@ -144,6 +144,7 @@ final class FeedbackCoordinator {
                 : " You don't have snow chains. They're in the Garage for next time."
         }
         if turbo { trip += " " + phrases.turboIntro }
+        if drive != .tutorial, let holiday = Holiday.on(Date()) { trip += " " + holiday.greeting }
         // The dispatcher calls in once the intro is done: a story briefing, or a word for the road.
         if case let .job(job) = drive {
             if let mission = StoryMission.withID(job.storyID) {

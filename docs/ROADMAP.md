@@ -64,7 +64,7 @@ Player ideas first; a weekly-update rhythm.
 - "What's around me": a gesture that describes what's nearby
 - A second tutorial for the 1.2 features
 - Your own music on the radio: Apple Music songs or imported files (done)
-- Holiday events (Thanksgiving, Christmas)
+- Holiday events (Halloween, Thanksgiving, Christmas, New Year) (done)
 - A rival company
 - Career stats page
 - Daily delivery streak
