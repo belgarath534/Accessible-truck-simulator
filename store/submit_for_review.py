@@ -172,10 +172,19 @@ elif version and not problems:
                 "type": "reviewSubmissions", "attributes": {"platform": "IOS"},
                 "relationships": {"app": rel("apps", APP)}}})["data"]
         try:
-            call("POST", "/reviewSubmissionItems", json={"data": {
-                "type": "reviewSubmissionItems", "relationships": {
-                    "reviewSubmission": rel("reviewSubmissions", sub["id"]),
-                    "appStoreVersion": rel("appStoreVersions", version["id"])}}})
+            # Freshly uploaded screenshots take Apple a few minutes to process: wait and try again.
+            for attempt in range(20):
+                try:
+                    call("POST", "/reviewSubmissionItems", json={"data": {
+                        "type": "reviewSubmissionItems", "relationships": {
+                            "reviewSubmission": rel("reviewSubmissions", sub["id"]),
+                            "appStoreVersion": rel("appStoreVersions", version["id"])}}})
+                    break
+                except ApiError as e:
+                    if "ASSET_IN_POST_PROCESSING" not in str(e) or attempt == 19:
+                        raise
+                    print("   Apple is still processing the screenshots; waiting a minute...")
+                    time.sleep(60)
         except ApiError as e:
             items = call("GET", f"/reviewSubmissions/{sub['id']}/items")["data"]
             if not items:
