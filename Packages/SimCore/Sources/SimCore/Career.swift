@@ -306,6 +306,10 @@ public struct CareerState: Codable, Equatable, Sendable {
     public var selectedHorn: String = Horn.air.rawValue
     /// Snow chains, for every truck.
     public var hasChains = false
+    /// Towns with a depot of yours (cheap fuel, better-paying jobs).
+    public var depots: [String] = []
+    /// What you still owe the bank, dollars.
+    public var loanOwed = 0
     /// Each truck's condition (percent), by truck id; missing means 100.
     public var truckCondition: [String: Double] = [:]
     /// Fastest speed reached in Turbo Mode, m/s (for the Top Speed leaderboard).
@@ -348,7 +352,7 @@ public struct CareerState: Codable, Equatable, Sendable {
     // Saves from before the garage existed have no truck fields: give them the starter truck.
     enum CodingKeys: String, CodingKey {
         case money, jobsCompleted, kilometersDriven, totalEarned, jobBoard, seed, ownedTrucks, selectedTruck, upgrades, fuel, currentTown, drivers, candidates, achievements, visitedTowns, savedDrive
-        case companyName, truckNames, ownedHorns, selectedHorn, bestTurboSpeed, hasChains, truckCondition
+        case companyName, truckNames, ownedHorns, selectedHorn, bestTurboSpeed, hasChains, truckCondition, depots, loanOwed
         case reputation, contract, contractOffer, storyProgress
     }
 
@@ -381,6 +385,8 @@ public struct CareerState: Codable, Equatable, Sendable {
         bestTurboSpeed = try c.decodeIfPresent(Double.self, forKey: .bestTurboSpeed) ?? 0
         hasChains = try c.decodeIfPresent(Bool.self, forKey: .hasChains) ?? false
         truckCondition = try c.decodeIfPresent([String: Double].self, forKey: .truckCondition) ?? [:]
+        depots = try c.decodeIfPresent([String].self, forKey: .depots) ?? []
+        loanOwed = try c.decodeIfPresent(Int.self, forKey: .loanOwed) ?? 0
         // Saves from before reputation: credit the deliveries already made.
         reputation = try c.decodeIfPresent(Int.self, forKey: .reputation) ?? jobsCompleted * 15
         contract = try c.decodeIfPresent(Contract.self, forKey: .contract)
@@ -410,7 +416,7 @@ public struct CareerState: Codable, Equatable, Sendable {
     /// Cost to fill a truck at the yard.
     public func yardFillCost(for truck: TruckSpec) -> Int {
         let capacity = truck.upgraded(upgradeLevels(for: truck)).fuelCapacityLiters
-        return Int(((capacity - fuelLiters(for: truck)) * CareerState.yardFuelPrice).rounded())
+        return Int(((capacity - fuelLiters(for: truck)) * fuelPriceHere).rounded())
     }
 
     /// Fills the tank at the yard. Returns false if there isn't enough money (fills what you can afford).
@@ -418,9 +424,9 @@ public struct CareerState: Codable, Equatable, Sendable {
     public mutating func fillAtYard(_ truck: TruckSpec) -> Bool {
         let capacity = truck.upgraded(upgradeLevels(for: truck)).fuelCapacityLiters
         let current = fuelLiters(for: truck)
-        let affordable = Double(max(0, money)) / CareerState.yardFuelPrice
+        let affordable = Double(max(0, money)) / fuelPriceHere
         let liters = min(capacity - current, affordable)
-        money -= Int((liters * CareerState.yardFuelPrice).rounded())
+        money -= Int((liters * fuelPriceHere).rounded())
         fuel[truck.id] = current + liters
         return current + liters >= capacity - 0.01
     }

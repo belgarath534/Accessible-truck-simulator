@@ -693,6 +693,49 @@ struct CompanyView: View {
             } footer: {
                 Text("Better drivers cost more to hire but deliver faster. You still earn the most by driving yourself.")
             }
+            Section {
+                ForEach(WorldMap.standard.towns.filter { $0.id != CareerState.homeTown }, id: \.id) { town in
+                    if career.state.hasDepot(in: town.id) {
+                        Text("\(town.name): your depot.")
+                    } else {
+                        Button("Buy a Depot in \(town.name): \(Phrases.money(CareerState.depotPrice))") {
+                            switch career.buyDepot(in: town.id) {
+                            case .bought: message = "You own a depot in \(town.name) now. \(Phrases.money(career.money)) left in the bank."
+                            case let .notEnoughMoney(short): message = "Not enough money. You need \(Phrases.money(short)) more. The bank can lend you some."
+                            case .alreadyOwned: break
+                            }
+                        }
+                    }
+                }
+            } header: {
+                Text("Depots")
+            } footer: {
+                Text("At your depots, fuel at the yard costs half, and jobs leaving that town pay 10 percent more.")
+            }
+            Section {
+                if career.state.loanOwed > 0 {
+                    Text("You owe the bank \(Phrases.money(career.state.loanOwed)). 15 percent of each delivery's pay goes to the bank until it's paid.")
+                    Button("Pay Off the Loan" + (career.money < career.state.loanOwed ? ": Pay What You Can" : "")) {
+                        let paid = career.repayLoan()
+                        message = career.state.loanOwed == 0
+                            ? "Loan paid off! Paid \(Phrases.money(paid))."
+                            : "Paid \(Phrases.money(paid)). You still owe \(Phrases.money(career.state.loanOwed))."
+                    }
+                } else {
+                    ForEach(career.state.loanOptions, id: \.self) { amount in
+                        Button("Borrow \(Phrases.money(amount))") {
+                            if career.takeLoan(amount) {
+                                message = "The bank lent you \(Phrases.money(amount)). You owe \(Phrases.money(career.state.loanOwed)), paid back from your deliveries."
+                            }
+                        }
+                        .accessibilityHint("You pay back \(Phrases.money(Int(Double(amount) * 1.1))), 15 percent of each delivery's pay.")
+                    }
+                }
+            } header: {
+                Text("Bank")
+            } footer: {
+                Text("Loans cost 10 percent interest. Bigger loans open up as your reputation grows.")
+            }
         }
         .navigationTitle("Company")
         .onAppear { career.refreshDrivers() }

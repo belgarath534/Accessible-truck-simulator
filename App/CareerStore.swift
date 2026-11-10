@@ -76,7 +76,7 @@ final class CareerStore: ObservableObject {
         var news: [String] = []
         if let job {
             if let summary = trip?.summary {
-                news = state.completeDelivery(job, summary: summary)
+                news = state.completeDelivery(job, summary: summary, payout: payout)
             } else {
                 state.completeJob(job)
             }
@@ -101,6 +101,24 @@ final class CareerStore: ObservableObject {
         let result = state.buyChains()
         save()
         return result
+    }
+
+    func buyDepot(in town: String) -> CareerState.PurchaseResult {
+        let result = state.buyDepot(in: town)
+        save()
+        return result
+    }
+
+    func takeLoan(_ amount: Int) -> Bool {
+        let ok = state.takeLoan(amount)
+        save()
+        return ok
+    }
+
+    func repayLoan() -> Int {
+        let paid = state.repayLoan()
+        save()
+        return paid
     }
 
     func acceptContract() {

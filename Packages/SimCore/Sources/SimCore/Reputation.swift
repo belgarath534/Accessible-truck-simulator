@@ -114,6 +114,11 @@ public extension CareerState {
         if let mission = StoryMission.withID(job.storyID), Self.countsForStory(job, summary: summary) {
             payout.lines.append(Payout.Line(label: "Story bonus: \(mission.title)", amount: mission.bonus))
         }
+        if let origin = job.origin, hasDepot(in: origin), !spilled {
+            payout.lines.append(Payout.Line(label: "Depot bonus", amount: Int((Double(job.pay) * CareerState.depotPayBonus).rounded())))
+        }
+        // The bank takes its share last.
+        if let loan = loanRepaymentLine(for: payout) { payout.lines.append(loan) }
         return payout
     }
 
@@ -124,8 +129,12 @@ public extension CareerState {
     /// Records a finished delivery: reputation, contract progress, the move to the next town and a new job board.
     /// Returns news to tell the player (contract progress, a new reputation level).
     @discardableResult
-    mutating func completeDelivery(_ job: DeliveryJob, summary: TripSummary) -> [String] {
+    mutating func completeDelivery(_ job: DeliveryJob, summary: TripSummary, payout: Payout? = nil) -> [String] {
         var news: [String] = []
+        if let paid = payout?.lines.first(where: { $0.label == "Loan repayment" })?.amount {
+            loanOwed = max(0, loanOwed + paid)
+            news.append(loanOwed == 0 ? "Your bank loan is paid off!" : "You still owe the bank \(Phrases.money(loanOwed)).")
+        }
         let before = reputationLevel
         var change = Self.reputationChange(job: job, summary: summary)
 

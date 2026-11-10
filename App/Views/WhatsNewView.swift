@@ -42,6 +42,8 @@ enum Changelog {
             "Snow and ice in winter, by your phone's calendar: the most slippery roads in the game, and deliveries pay 30 percent extra. Buy snow chains in the Garage for much better grip.",
             "Tire blowouts: a bang, and the truck pulls hard to one side. Hold your lane, slow down gently and stop for a roadside tire change.",
             "Truck wear: miles and crashes wear your trucks down. Worn trucks lose power and blow tires more often. Service them in the Garage.",
+            "Depots: buy one in another town for half-price fuel there and 10 percent more pay on jobs leaving it.",
+            "Bank loans: borrow up to $30,000 to grow faster, paid back a little from every delivery.",
             "Three new achievements: Oh Deer, Make Some Noise and Speed Demon. And a new Top Speed leaderboard.",
         ]),
         Version(number: "1.1", title: "Big Update", items: [
@@ -129,7 +131,6 @@ enum Changelog {
 
     static let comingSoon: [String] = [
         "Detours around closed roads.",
-        "Depots in other towns and bank loans.",
     ]
 
     static var current: String { Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? versions[0].number }

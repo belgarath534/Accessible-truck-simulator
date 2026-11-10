@@ -50,8 +50,8 @@ captions, driving buttons, Larger Text / Increase Contrast / Reduce Motion, iPad
 - Tire blowouts (done)
 - Detours and road closures
 - Truck wear and servicing (done)
-- Depots in other towns
-- Bank loans
+- Depots in other towns (done)
+- Bank loans (done)
 
 ## Windows version
 Stage 1 done (tutorial and practice drive). Next: jobs, money, trucks and the map; then music, settings and the Microsoft Store.
