@@ -23,6 +23,12 @@ final class AppSettings: ObservableObject {
     }
     @Published var menuMusic: Bool { didSet { defaults.set(menuMusic, forKey: "menuMusic") } }
     @Published var radioOnStart: Bool { didSet { defaults.set(radioOnStart, forKey: "radioOnStart") } }
+    @Published var radioSource: RadioSource {
+        didSet {
+            defaults.set(radioSource.rawValue, forKey: "radioSource")
+            MusicPlayer.shared.source = radioSource
+        }
+    }
     @Published var traffic: Bool { didSet { defaults.set(traffic, forKey: "traffic") } }
     @Published var wildlife: Bool { didSet { defaults.set(wildlife, forKey: "wildlife") } }
     @Published var turbo: Bool { didSet { defaults.set(turbo, forKey: "turbo") } }
@@ -62,6 +68,9 @@ final class AppSettings: ObservableObject {
         musicVolume = d.object(forKey: "musicVolume") as? Double ?? 0.45
         menuMusic = d.object(forKey: "menuMusic") as? Bool ?? true
         radioOnStart = d.object(forKey: "radioOnStart") as? Bool ?? true
+        let source = RadioSource(rawValue: d.string(forKey: "radioSource") ?? "") ?? .gameRadio
+        radioSource = source
+        MusicPlayer.shared.source = source
         traffic = d.object(forKey: "traffic") as? Bool ?? false
         wildlife = d.object(forKey: "wildlife") as? Bool ?? true
         turbo = d.object(forKey: "turbo") as? Bool ?? false

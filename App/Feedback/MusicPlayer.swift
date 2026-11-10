@@ -1,5 +1,24 @@
 import AVFoundation
+import MediaPlayer
 import SimCore
+
+/// Where the truck radio's music comes from.
+enum RadioSource: String, CaseIterable {
+    /// Big Rig Radio: the game's own songs, with the DJ.
+    case gameRadio
+    /// Audio files the player imported (MP3, M4A, WAV...), kept in the app's own folder.
+    case myFiles
+    /// Songs picked from the iPhone's music library (Apple Music).
+    case appleMusic
+
+    var label: String {
+        switch self {
+        case .gameRadio: return "Big Rig Radio (the game's songs)"
+        case .myFiles: return "My music files"
+        case .appleMusic: return "Apple Music"
+        }
+    }
+}
 
 /// Menu music and the in-truck radio. Tracks live in App/Music:
 ///   menu_*.m4a   main menu music (loops)
@@ -37,14 +56,99 @@ final class MusicPlayer: NSObject, AVAudioPlayerDelegate {
         super.init()
     }
 
-    var hasRadio: Bool { !radioTracks.isEmpty }
+    /// Where the radio's songs come from (Settings).
+    var source: RadioSource = .gameRadio {
+        didSet { if oldValue != source && mode == .radio { stop() } }
+    }
+
+    // MARK: My music files
+
+    /// The folder imported songs are copied into.
+    static var myMusicFolder: URL {
+        let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        let url = docs.appendingPathComponent("My Music", isDirectory: true)
+        try? FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
+        return url
+    }
+
+    /// Imported songs, by name.
+    var myFiles: [URL] {
+        let exts: Set<String> = ["mp3", "m4a", "wav", "aac", "aif", "aiff", "caf", "flac"]
+        let all = (try? FileManager.default.contentsOfDirectory(at: Self.myMusicFolder, includingPropertiesForKeys: nil)) ?? []
+        return all.filter { exts.contains($0.pathExtension.lowercased()) }
+            .sorted { $0.lastPathComponent.localizedStandardCompare($1.lastPathComponent) == .orderedAscending }
+    }
+
+    /// Copies picked files into the app's own folder. Returns how many were added.
+    @discardableResult
+    func importFiles(_ urls: [URL]) -> Int {
+        var added = 0
+        for url in urls {
+            let scoped = url.startAccessingSecurityScopedResource()
+            defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+            let dest = Self.myMusicFolder.appendingPathComponent(url.lastPathComponent)
+            try? FileManager.default.removeItem(at: dest)
+            if (try? FileManager.default.copyItem(at: url, to: dest)) != nil { added += 1 }
+        }
+        return added
+    }
+
+    func removeFile(_ url: URL) { try? FileManager.default.removeItem(at: url) }
+
+    // MARK: Apple Music
+
+    private let appleMusicKey = "appleMusicSongIDs"
+    private var appleMusicPlayer: MPMusicPlayerController { MPMusicPlayerController.applicationQueuePlayer }
+
+    /// The songs picked from the music library, by persistent ID.
+    var appleMusicSongIDs: [UInt64] {
+        get { (UserDefaults.standard.array(forKey: appleMusicKey) as? [NSNumber])?.map(\.uint64Value) ?? [] }
+        set { UserDefaults.standard.set(newValue.map { NSNumber(value: $0) }, forKey: appleMusicKey) }
+    }
+
+    func setAppleMusicSongs(_ items: [MPMediaItem]) {
+        appleMusicSongIDs = items.map(\.persistentID)
+    }
+
+    private func appleMusicItems() -> [MPMediaItem] {
+        guard MPMediaLibrary.authorizationStatus() == .authorized else { return [] }
+        return appleMusicSongIDs.compactMap { id in
+            let q = MPMediaQuery.songs()
+            q.addFilterPredicate(MPMediaPropertyPredicate(value: NSNumber(value: id), forProperty: MPMediaItemPropertyPersistentID))
+            return q.items?.first
+        }
+    }
+
+    /// Titles of the picked Apple Music songs.
+    var appleMusicTitles: [String] { appleMusicItems().map { $0.title ?? "Untitled" } }
+
+    var hasRadio: Bool {
+        switch source {
+        case .gameRadio: return !radioTracks.isEmpty
+        case .myFiles: return !myFiles.isEmpty
+        case .appleMusic: return !appleMusicSongIDs.isEmpty
+        }
+    }
+
+    /// The song files the radio plays (game songs or imported files).
+    private var currentTracks: [URL] { source == .myFiles ? myFiles : radioTracks }
 
     /// The current radio song's name, for speech ("radio_2_empty_stretch" -> "Empty Stretch").
     var currentSongName: String? {
-        guard mode == .radio, radioTracks.indices.contains(radioIndex) else { return nil }
-        let base = radioTracks[radioIndex].deletingPathExtension().lastPathComponent
-        let words = base.split(separator: "_").dropFirst(2)
-        return words.map { $0.capitalized }.joined(separator: " ")
+        guard mode == .radio else { return nil }
+        switch source {
+        case .appleMusic:
+            return appleMusicPlayer.nowPlayingItem?.title
+        case .myFiles:
+            let files = myFiles
+            guard files.indices.contains(radioIndex % max(1, files.count)) else { return nil }
+            return files[radioIndex % files.count].deletingPathExtension().lastPathComponent
+        case .gameRadio:
+            guard radioTracks.indices.contains(radioIndex) else { return nil }
+            let base = radioTracks[radioIndex].deletingPathExtension().lastPathComponent
+            let words = base.split(separator: "_").dropFirst(2)
+            return words.map { $0.capitalized }.joined(separator: " ")
+        }
     }
 
     // MARK: Menu
@@ -67,25 +171,47 @@ final class MusicPlayer: NSObject, AVAudioPlayerDelegate {
     func startRadio() {
         guard hasRadio, !ScreenshotMode.isOn else { return }
         prepareSession()
+        if source == .appleMusic {
+            player?.stop()
+            player = nil
+            let items = appleMusicItems()
+            guard !items.isEmpty else { return }
+            mode = .radio
+            appleMusicPlayer.setQueue(with: MPMediaItemCollection(items: items))
+            appleMusicPlayer.play()
+            return
+        }
+        let tracks = currentTracks
+        guard !tracks.isEmpty else { return }
         mode = .radio
-        play(radioTracks[radioIndex % radioTracks.count], loop: false)
+        play(tracks[radioIndex % tracks.count], loop: false)
     }
 
     func nextSong() {
         guard hasRadio else { return }
-        radioIndex = (radioIndex + 1) % radioTracks.count
+        if source == .appleMusic {
+            if mode == .radio { appleMusicPlayer.skipToNextItem() } else { startRadio() }
+            return
+        }
+        radioIndex = (radioIndex + 1) % max(1, currentTracks.count)
         startRadio()
     }
 
     func previousSong() {
         guard hasRadio else { return }
-        radioIndex = (radioIndex - 1 + radioTracks.count) % radioTracks.count
+        if source == .appleMusic {
+            if mode == .radio { appleMusicPlayer.skipToPreviousItem() } else { startRadio() }
+            return
+        }
+        let n = max(1, currentTracks.count)
+        radioIndex = (radioIndex - 1 + n) % n
         startRadio()
     }
 
     func stop() {
         player?.stop()
         player = nil
+        if source == .appleMusic && mode == .radio { appleMusicPlayer.stop() }
         mode = .off
     }
 
@@ -98,6 +224,10 @@ final class MusicPlayer: NSObject, AVAudioPlayerDelegate {
 
     /// Silences everything without losing the place (pause menu, results screen).
     func setPaused(_ paused: Bool) {
+        if source == .appleMusic && mode == .radio {
+            if paused { appleMusicPlayer.pause() } else { appleMusicPlayer.play() }
+            return
+        }
         if paused { player?.pause() } else if mode != .off { player?.play() }
     }
 
@@ -137,7 +267,8 @@ final class MusicPlayer: NSObject, AVAudioPlayerDelegate {
             return
         }
         songsSinceDJ += 1
-        if songsSinceDJ >= 1, Bool.random(), playDJ() { return }
+        // The DJ is part of Big Rig Radio only, not your own music.
+        if source == .gameRadio, songsSinceDJ >= 1, Bool.random(), playDJ() { return }
         nextSong()
     }
 

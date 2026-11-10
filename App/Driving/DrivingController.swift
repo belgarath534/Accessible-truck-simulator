@@ -374,7 +374,8 @@ final class DrivingController: NSObject, ObservableObject {
     private func handleRadio(_ action: DrivingAction) {
         let music = MusicPlayer.shared
         guard music.hasRadio else {
-            feedback.speech.speak("No radio in this truck yet.", priority: .high)
+            feedback.speech.speak(MusicPlayer.shared.source == .gameRadio ? "No radio in this truck yet."
+                                  : "No songs chosen for the radio yet. Add some in Settings, Truck radio.", priority: .high)
             return
         }
         switch action {

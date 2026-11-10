@@ -16,6 +16,7 @@ enum Changelog {
         Version(number: "1.3", title: "Weekly Update", items: [
             "Weekly Challenges: a new challenge every Monday, the same for every player, with a money prize. Find it at the top of the Job Board, and climb the new Weekly Challenges Won leaderboard.",
             "Tow truck jobs: buy the Tow Truck in the Garage and the Job Board fills with tow calls. Drive out to the stranded car, follow the beeps, stop right next to it to hook it up, and tow it to the mechanic or the owner's home. Crashes damage the customer's car.",
+            "Your own music on the truck radio: pick songs from Apple Music, or add your own music files (MP3, M4A, WAV) from the Files app. Settings, Truck radio.",
         ]),
         Version(number: "1.2", title: "The Big Road Update", items: [
             "Save and Continue Later: pause a long drive and pick it up from the main menu, right where you left off.",

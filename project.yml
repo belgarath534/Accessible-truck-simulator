@@ -24,6 +24,7 @@ targets:
       path: App/Info.plist
       properties:
         CFBundleDisplayName: Truck Sim
+        NSAppleMusicUsageDescription: "Truck Sim can play songs from your music library on the truck radio, if you choose to."
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         UILaunchScreen: {}

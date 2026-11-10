@@ -63,6 +63,11 @@ Player ideas first; a weekly-update rhythm.
 - Manual gearbox option
 - "What's around me": a gesture that describes what's nearby
 - A second tutorial for the 1.2 features
+- Your own music on the radio: Apple Music songs or imported files (done)
+- Holiday events (Thanksgiving, Christmas)
+- A rival company
+- Career stats page
+- Daily delivery streak
 - Send Feedback button
 - Recorded radio voices (dispatcher, CB, DJ), when ElevenLabs credits are back
 - Later: bus driving (a separate mode; not for now)
