@@ -360,7 +360,7 @@ final class CareerTests: XCTestCase {
         XCTAssertEqual(career.currentTown, job.destination, "delivering moves you to the destination")
         XCTAssertTrue(career.jobBoard.allSatisfy { $0.origin == career.currentTown })
         XCTAssertFalse(career.jobBoard.contains(job))
-        XCTAssertEqual(career.jobBoard.count, 3)
+        XCTAssertEqual(career.jobBoard.filter { $0.storyID == nil }.count, 3, "three jobs, plus a story mission in its town")
 
         let data = try JSONEncoder().encode(career)
         XCTAssertEqual(try JSONDecoder().decode(CareerState.self, from: data), career)
@@ -827,6 +827,7 @@ final class CompanyTests: XCTestCase {
 
     private func careerWithTwoTrucks() -> CareerState {
         var c = CareerState(seed: 11)
+        c.driverBreakdowns = false // these tests count deliveries exactly
         c.money = 50_000
         c.buy(.workhorse)
         c.select(.starter)

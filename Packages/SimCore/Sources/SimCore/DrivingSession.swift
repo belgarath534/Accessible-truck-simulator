@@ -376,6 +376,9 @@ public final class DrivingSession {
     var tollsHandled: Set<Int> = []
     var tollsAnnounced: Set<Int> = []
     var weighStationsHandled: Set<Int> = []
+    /// Other truckers talk on the CB now and then (map drives). Set before driving.
+    public var cbRadioEnabled = false
+    var nextCB = 90.0
     /// Back into the loading dock after stopping at the drop-off (deliveries). Set before driving.
     public var dockingEnabled = false
     /// Backing into the dock right now.
@@ -459,6 +462,10 @@ public final class DrivingSession {
         checkWeighStations(events: &events)
         checkTurboSpeed(events: &events)
         checkSpecialCargo(input: input, events: &events)
+        if cbRadioEnabled && time >= nextCB {
+            nextCB = time + Double.random(in: DrivingSession.cbInterval, using: &rng)
+            if truck.speed > 5 && chase == nil { events.append(.cbChatter) }
+        }
         stepDeer(dt: dt, events: &events)
         stepTraffic(dt: dt, events: &events)
         checkPolice(dt: dt, events: &events)

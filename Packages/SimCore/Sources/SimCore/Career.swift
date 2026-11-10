@@ -74,6 +74,8 @@ public struct DeliveryJob: Codable, Equatable, Hashable, Identifiable, Sendable 
     public var timeLimit: Double
     /// The contract this job is part of, if any.
     public var contractID: UUID?
+    /// The story mission this job is, if any.
+    public var storyID: Int?
     /// Map town ids (nil for jobs from before the map).
     public var origin: String?
     public var destination: String?
@@ -306,6 +308,10 @@ public struct CareerState: Codable, Equatable, Sendable {
     /// The contract being worked on, and one on offer.
     public var contract: Contract?
     public var contractOffer: Contract?
+    /// Story missions finished, in order.
+    public var storyProgress: Int = 0
+    /// Hired drivers' trucks can break down (not saved; tests that count deliveries turn it off).
+    public var driverBreakdowns = true
     public static let homeTown = "millbrook"
 
     /// Dollars per litre to fill up at your own yard (truck stops are cheaper).
@@ -336,7 +342,7 @@ public struct CareerState: Codable, Equatable, Sendable {
     enum CodingKeys: String, CodingKey {
         case money, jobsCompleted, kilometersDriven, totalEarned, jobBoard, seed, ownedTrucks, selectedTruck, upgrades, fuel, currentTown, drivers, candidates, achievements, visitedTowns, savedDrive
         case companyName, truckNames, ownedHorns, selectedHorn, bestTurboSpeed
-        case reputation, contract, contractOffer
+        case reputation, contract, contractOffer, storyProgress
     }
 
     public init(from decoder: Decoder) throws {
@@ -370,6 +376,7 @@ public struct CareerState: Codable, Equatable, Sendable {
         reputation = try c.decodeIfPresent(Int.self, forKey: .reputation) ?? jobsCompleted * 15
         contract = try c.decodeIfPresent(Contract.self, forKey: .contract)
         contractOffer = try c.decodeIfPresent(Contract.self, forKey: .contractOffer)
+        storyProgress = try c.decodeIfPresent(Int.self, forKey: .storyProgress) ?? 0
         visitedTowns = try c.decodeIfPresent([String].self, forKey: .visitedTowns)
             ?? Array(Set([CareerState.homeTown, currentTown])).sorted()
         // Jobs saved before the map (or from another town) are replaced with jobs from here.
@@ -491,6 +498,10 @@ public struct CareerState: Codable, Equatable, Sendable {
         seed = seed &* 6_364_136_223_846_793_005 &+ 1
         var rng = SeededRandom(seed: seed)
         jobBoard = JobBoard.makeBoard(using: &rng, from: currentTown, level: reputationLevel, contract: contract)
+        // The next story mission goes on the board in its own town.
+        if let mission = nextStoryMission, mission.from == currentTown {
+            jobBoard.insert(mission.job(), at: 0)
+        }
         if contract == nil && contractOffer == nil {
             contractOffer = CareerState.makeOffer(using: &rng, level: reputationLevel)
         }

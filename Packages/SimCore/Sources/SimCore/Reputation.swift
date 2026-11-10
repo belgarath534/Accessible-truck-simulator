@@ -111,6 +111,9 @@ public extension CareerState {
            contract.done + 1 >= contract.total {
             payout.lines.append(Payout.Line(label: "Contract bonus from \(contract.client)", amount: contract.bonus))
         }
+        if let mission = StoryMission.withID(job.storyID), Self.countsForStory(job, summary: summary) {
+            payout.lines.append(Payout.Line(label: "Story bonus: \(mission.title)", amount: mission.bonus))
+        }
         return payout
     }
 
@@ -141,6 +144,22 @@ public extension CareerState {
                 news.append("Contract broken: \(c.client) needed that load on time. No contract bonus.")
                 change -= 15
                 contract = nil
+            }
+        }
+
+        if let mission = StoryMission.withID(job.storyID) {
+            if Self.countsForStory(job, summary: summary) {
+                storyProgress = max(storyProgress, mission.id)
+                news.append(mission.success)
+                change += 20
+                if let next = StoryMission.withID(mission.id + 1) {
+                    news.append("A new story mission is coming: \(next.title)" + (reputationLevel >= next.level || ReputationLevel.level(for: reputation + change) >= next.level
+                        ? ". It's on the Job Board." : ", once you're \(next.level.title)."))
+                } else {
+                    news.append("That's the last story mission. You've finished the story!")
+                }
+            } else {
+                news.append("\(mission.title) failed: it had to be there on time. Try it again from the Job Board.")
             }
         }
 

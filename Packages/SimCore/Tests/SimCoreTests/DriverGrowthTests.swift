@@ -4,6 +4,7 @@ import XCTest
 final class DriverGrowthTests: XCTestCase {
     private func hiredCareer() -> (CareerState, UUID, Date) {
         var c = CareerState(seed: 21)
+        c.driverBreakdowns = false // these tests count deliveries exactly
         c.money = 100_000
         c.buy(.workhorse)
         c.select(.starter)

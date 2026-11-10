@@ -20,6 +20,10 @@ public struct Driver: Codable, Equatable, Identifiable, Sendable {
     public var deliveriesUntilQuit: Int?
     /// After "not now", they don't ask again until this many deliveries.
     public var nextRaiseAt: Int?
+    /// Broken down near this town (waiting for a tow or a repair), or nil.
+    public var brokeDownIn: String?
+    /// Waiting out a breakdown until then (after "let them wait").
+    public var stuckUntil: Date?
 
     public init(id: UUID = UUID(), name: String, skill: Int, truckID: String? = nil, lastUpdate: Date = Date(),
                 progress: Double = 0, jobsDone: Int = 0, earned: Int = 0) {
@@ -61,13 +65,16 @@ public struct DriverReport: Equatable, Sendable {
     public var askedForRaise: Int?
     /// They quit because their raise request went unanswered.
     public var quit = false
+    /// Their truck broke down near this town.
+    public var brokeDownIn: String?
 
-    public init(name: String, jobs: Int, earned: Int, askedForRaise: Int? = nil, quit: Bool = false) {
+    public init(name: String, jobs: Int, earned: Int, askedForRaise: Int? = nil, quit: Bool = false, brokeDownIn: String? = nil) {
         self.name = name
         self.jobs = jobs
         self.earned = earned
         self.askedForRaise = askedForRaise
         self.quit = quit
+        self.brokeDownIn = brokeDownIn
     }
 }
 
@@ -175,17 +182,45 @@ public extension CareerState {
             let elapsed = min(Company.maxAwaySeconds, max(0, now.timeIntervalSince(drivers[i].lastUpdate)))
             drivers[i].lastUpdate = now
             guard drivers[i].truckID != nil, elapsed > 0 else { continue }
+            // Broken down: no work until a tow comes, or the wait is over.
+            if drivers[i].brokeDownIn != nil {
+                guard let until = drivers[i].stuckUntil, now >= until else { continue }
+                drivers[i].brokeDownIn = nil
+                drivers[i].stuckUntil = nil
+                continue
+            }
             let jobSeconds = drivers[i].minutesPerJob * 60
             let total = drivers[i].progress + elapsed
-            let jobs = Int(total / jobSeconds)
-            drivers[i].progress = total - Double(jobs) * jobSeconds
+            var jobs = Int(total / jobSeconds)
+            // Now and then a truck breaks down on the road: they call you on the radio.
+            var breakdownTown: String?
+            for n in 0..<jobs where driverBreakdowns {
+                let idSeed = drivers[i].id.uuidString.utf8.reduce(UInt64(1_469_598_103)) { $0 &* 31 &+ UInt64($1) }
+                // The time in the mix: the same delivery number after a tow rolls fresh.
+                let when = UInt64(max(0, now.timeIntervalSince1970))
+                var rng = SeededRandom(seed: idSeed &+ UInt64(drivers[i].jobsDone + n) &* 2_654_435_761 &+ when)
+                if Double.random(in: 0...1, using: &rng) < Driver.breakdownChance {
+                    jobs = n
+                    let towns = WorldMap.standard.towns
+                    breakdownTown = towns.randomElement(using: &rng)?.name ?? "Millbrook"
+                    break
+                }
+            }
+            drivers[i].progress = breakdownTown == nil ? total - Double(jobs) * jobSeconds : 0
+            if let town = breakdownTown {
+                drivers[i].brokeDownIn = town
+                if jobs == 0 {
+                    reports.append(DriverReport(name: drivers[i].name, jobs: 0, earned: 0, brokeDownIn: town))
+                    continue
+                }
+            }
             guard jobs > 0 else { continue }
             let pay = jobs * drivers[i].payPerJob
             drivers[i].jobsDone += jobs
             drivers[i].earned += pay
             money += pay
             totalEarned += pay
-            var report = DriverReport(name: drivers[i].name, jobs: jobs, earned: pay)
+            var report = DriverReport(name: drivers[i].name, jobs: jobs, earned: pay, brokeDownIn: breakdownTown)
             if drivers[i].raiseRequest != nil {
                 // Still waiting for an answer: their patience runs out.
                 let left = (drivers[i].deliveriesUntilQuit ?? Driver.patience) - jobs

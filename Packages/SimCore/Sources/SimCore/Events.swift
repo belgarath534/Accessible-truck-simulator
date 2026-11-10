@@ -141,6 +141,8 @@ public enum SimEvent: Equatable, Sendable {
     case weighedIn(cargoKg: Double, fine: Int)
     /// Drove past a weigh station without pulling in (`tooFast`: signalled, but too fast to take the exit).
     case skippedWeighStation(fine: Int, tooFast: Bool)
+    /// Another trucker on the CB radio (just for atmosphere).
+    case cbChatter
     // Docking
     /// Stopped at the drop-off: now back into the dock, this many metres behind.
     case dockingStarted(distance: Double)

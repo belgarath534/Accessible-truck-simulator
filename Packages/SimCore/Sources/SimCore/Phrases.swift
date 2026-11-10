@@ -327,7 +327,10 @@ public struct Phrases {
     public static func driverReports(_ reports: [DriverReport]) -> String? {
         guard !reports.isEmpty else { return nil }
         let parts = reports.map { r -> String in
-            var text = "\(r.name) delivered \(r.jobs) job\(r.jobs == 1 ? "" : "s") and earned \(Phrases.money(r.earned))"
+            var text = r.jobs > 0 ? "\(r.name) delivered \(r.jobs) job\(r.jobs == 1 ? "" : "s") and earned \(Phrases.money(r.earned))" : ""
+            if let town = r.brokeDownIn {
+                text += (text.isEmpty ? "" : ". ") + "\(r.name) called on the radio: their truck broke down near \(town). Send a tow for \(Phrases.money(Driver.towCost)), or let them wait two hours for a repair: answer in the Company screen"
+            }
             if let raise = r.askedForRaise {
                 text += ". \(r.name) has the experience to move up a star and asks for a raise of \(Phrases.money(raise)): answer in the Company screen"
             }
@@ -335,6 +338,7 @@ public struct Phrases {
             return text
         }
         let total = reports.reduce(0) { $0 + $1.earned }
+        if reports.count == 1 && reports[0].jobs == 0 { return "Your drivers: " + parts[0] + "." }
         return "Your drivers: " + parts.joined(separator: ". ") + (reports.count > 1 ? ". Total \(Phrases.money(total))." : ".")
     }
 
