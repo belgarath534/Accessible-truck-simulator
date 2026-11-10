@@ -8,6 +8,10 @@ name: Release to the App Store
 on:
   workflow_dispatch:
     inputs:
+      version:
+        description: Version to release (empty = the one in project.yml)
+        type: string
+        default: ""
       release_now:
         description: Only release the approved version that is waiting (skips everything else)?
         type: choice
@@ -89,7 +93,7 @@ jobs:
 
       - name: Create the version and add Game Center
         if: inputs.release_now != 'yes'
-        run: RELEASE=${{ inputs.release }} python3 store/prepare_version.py
+        run: APP_VERSION="${{ inputs.version }}" RELEASE=${{ inputs.release }} python3 store/prepare_version.py
 
       - name: Store text and What's New
         if: inputs.release_now != 'yes'

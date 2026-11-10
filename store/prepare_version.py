@@ -67,7 +67,9 @@ def all_pages(path, **params):
     return out
 
 
-VERSION = re.search(r'MARKETING_VERSION: "([^"]+)"', (Path(__file__).parent.parent / "project.yml").read_text()).group(1)
+# APP_VERSION overrides project.yml (to finish releasing a version after the project moved on to the next one).
+VERSION = os.environ.get("APP_VERSION", "").strip() or re.search(
+    r'MARKETING_VERSION: "([^"]+)"', (Path(__file__).parent.parent / "project.yml").read_text()).group(1)
 app = call("GET", "/apps", params={"filter[bundleId]": BUNDLE})["data"][0]["id"]
 problems = []
 
