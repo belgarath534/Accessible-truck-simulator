@@ -1,7 +1,8 @@
 # Accessible Truck Simulator roadmap
 
-Every idea is planned. **1.2: The Big Road Update** ships Parts 1 and 2, weigh stations and Turbo Mode
-(November 2026). The rest of the plan (Parts 3 to 5) moves to 1.3 and later, shaped by player feedback.
+Every idea is planned. Decision (November 2026): Parts 1 to 5 below all ship together as one update,
+**1.2: The Big Road Update**, built piece by piece and tested on TestFlight along the way. 1.3 stays free
+for something new, shaped by player feedback.
 
 ## 1.1: Big Update (released)
 11 trucks with recorded engines, weather with recorded rain and thunder, 23 achievements and Game Center,
@@ -28,22 +29,22 @@ captions, driving buttons, Larger Text / Increase Contrast / Reduce Motion, iPad
 
 ## 1.2 extras (done)
 - Turbo Mode: no speed limit, a top speed bonus, Speed Demon and a Top Speed leaderboard (idea from a player, Reece)
-- Weigh stations
 
-## 1.3 and later, Part 3: On the Job
+## 1.2, Part 3: On the Job (in progress)
+- Weigh stations (done)
 - Docking by ear: back the trailer into the loading dock with reverse beeps
 - Special cargo: livestock (they moo and hate hard braking), refrigerated (spoils if you're slow), oversize (escort car, narrow roads), hazmat (big pay, one crash ends the job)
 - Company contracts: several deliveries for one client for a big bonus
 - Reputation: unlocks better jobs and clients
 
-## Part 4: Voices on the Radio
+## 1.2, Part 4: Voices on the Radio
 - A dispatcher with a real voice: jobs, jokes and storm warnings, using your company name
 - CB radio chatter from other truckers
 - Radio DJ between songs, and a weather report
 - Story missions ("Get this medicine to Bayview before the bridge closes")
 - Radio events from your drivers ("Nadia broke down near Bayview: send a tow or wait")
 
-## Part 5: Wild Roads
+## 1.2, Part 5: Wild Roads
 - Real hills: the engine strains uphill, brakes overheat downhill, runaway truck ramps
 - Snow and ice in winter, with chains
 - Tire blowouts
