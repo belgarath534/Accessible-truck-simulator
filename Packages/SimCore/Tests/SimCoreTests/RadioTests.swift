@@ -107,6 +107,7 @@ final class BreakdownTests: XCTestCase {
         XCTAssertTrue(c.sendTow(c.drivers[0], now: when))
         XCTAssertEqual(c.money, money - Driver.towCost)
         XCTAssertNil(c.drivers[0].brokeDownIn)
+        c.driverBreakdowns = false // a second breakdown right away is possible; not what this test is about
         let done = c.drivers[0].jobsDone
         _ = c.updateDrivers(now: when.addingTimeInterval(3_600))
         XCTAssertGreaterThan(c.drivers[0].jobsDone, done)
@@ -138,5 +139,16 @@ final class CBRadioTests: XCTestCase {
         }
         XCTAssertGreaterThanOrEqual(chatter(true), 2)
         XCTAssertEqual(chatter(false), 0)
+    }
+}
+
+final class RadioLineTests: XCTestCase {
+    func testEveryLineHasAUniqueFileAndACaption() {
+        let all = RadioLines.all
+        XCTAssertEqual(Set(all.map(\.id)).count, all.count)
+        XCTAssertEqual(all.count, 7 + 10 + 4 + 3 + 8)
+        XCTAssertTrue(RadioLines.cb[0].caption.hasPrefix("Big Mike on the CB: "))
+        XCTAssertFalse(RadioLines.dj[0].overCB)
+        XCTAssertEqual(RadioLines.storyBriefing(StoryMission.all[0]).fileName, "voice_story_1_brief")
     }
 }
