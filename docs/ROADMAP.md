@@ -1,14 +1,13 @@
 # Accessible Truck Simulator roadmap
 
-Every idea is planned. Decision (November 2026): everything below from 1.2 to 1.6 ships together as one
-update, **1.2: The Big Road Update**, built piece by piece and tested on TestFlight along the way. After it,
-1.3 is something new, shaped by player feedback. The sections below are the parts of the big update.
+Every idea is planned. **1.2: The Big Road Update** ships Parts 1 and 2, weigh stations and Turbo Mode
+(November 2026). The rest of the plan (Parts 3 to 5) moves to 1.3 and later, shaped by player feedback.
 
-## 1.1: Big Update (in App Store review)
+## 1.1: Big Update (released)
 11 trucks with recorded engines, weather with recorded rain and thunder, 23 achievements and Game Center,
 captions, driving buttons, Larger Text / Increase Contrast / Reduce Motion, iPad, steadier steering.
 
-## Part 1: Your Company (done, on TestFlight)
+## 1.2, Part 1: Your Company (done)
 - Welcome setup on first launch (done)
 - Upright menus; driving stays sideways (done)
 - Fixes: vibration after leaving the game, junction signal warning, VoiceOver focus on the driving screen (done)
@@ -18,7 +17,7 @@ captions, driving buttons, Larger Text / Increase Contrast / Reduce Motion, iPad
 - Rate-this-game prompt after a great delivery
 - What's New page in the game (every version, plus coming soon), shown once after each update
 
-## Part 2: Living World (done, on TestFlight)
+## 1.2, Part 2: Living World (done)
 - Town sounds: seagulls and ship horns in Ridgeport, the steel mill in Ironton, farm animals in Bayview, the sawmill in Cedar Falls (done)
 - Day and night: crickets and quiet roads at night, birds at dawn, rush hour traffic (done)
 - Deer on the road: hear them, honk and brake (done)
@@ -27,12 +26,15 @@ captions, driving buttons, Larger Text / Increase Contrast / Reduce Motion, iPad
 - Horn shop: train horn, musical horn, ship horn (done)
 - Name your truck and your company (done)
 
-## Part 3: On the Job
+## 1.2 extras (done)
+- Turbo Mode: no speed limit, a top speed bonus, Speed Demon and a Top Speed leaderboard (idea from a player, Reece)
+- Weigh stations
+
+## 1.3 and later, Part 3: On the Job
 - Docking by ear: back the trailer into the loading dock with reverse beeps
 - Special cargo: livestock (they moo and hate hard braking), refrigerated (spoils if you're slow), oversize (escort car, narrow roads), hazmat (big pay, one crash ends the job)
 - Company contracts: several deliveries for one client for a big bonus
 - Reputation: unlocks better jobs and clients
-- Weigh stations (done)
 
 ## Part 4: Voices on the Radio
 - A dispatcher with a real voice: jobs, jokes and storm warnings, using your company name

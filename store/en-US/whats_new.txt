@@ -1,8 +1,13 @@
-A big update!
+The Big Road Update!
 
-• Eight new trucks: 11 in all, each with its own recorded engine sound and its own feel. From the little Farm Runner to the electric Volt and the V12 Titan.
-• Weather: rain and storms you can hear on the cab, with wipers and thunder. Wet roads are slippery, and deliveries pay extra.
-• Achievements and Game Center: 23 achievements and two leaderboards.
-• Accessibility: captions, on-screen driving buttons for Voice Control and Switch Control, and support for Larger Text, Increase Contrast and Reduce Motion.
-• Now on iPad.
-• Steadier steering: the truck eases back to the middle of your lane when you're not steering, and tilt steering no longer creeps.
+• Turbo Mode: flip the switch and go toward 200 mph, with your speed called out as you climb. Earn a bonus for your top speed on top of your normal pay. No police, but it burns fuel fast. Thanks to Reece for the idea!
+• A living world: day and night from your phone's clock, crickets at night and birds at dawn. Every town sounds different: seagulls in Ridgeport, the steel mill in Ironton, the farm in Bayview, the sawmill in Cedar Falls.
+• Deer on country roads: honk to scare them off, or slow right down.
+• Construction zones, toll booths on the interstate and weigh stations on country roads.
+• Horn Shop: train, ship, musical and twin trumpet horns.
+• Name your trucks and your company.
+• Save a long drive and continue it later from the main menu.
+• Your hired drivers grow: they ask for raises to move up a star, or quit if you ignore them.
+• A welcome setup, upright menus, and a What's New page with the game's whole story.
+• 26 achievements and a new Top Speed leaderboard.
+• Fixes: vibration returns after leaving the game, a warning before a junction when your signal doesn't match the GPS, and VoiceOver stays on the driving screen.
