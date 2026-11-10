@@ -251,6 +251,16 @@ public struct Phrases {
             : "You skipped the weigh station! Fine: \(Phrases.money(fine)). Signal right to pull in next time."
     }
 
+    // MARK: Blowouts and wear
+
+    public func blowout(_ side: Side) -> String {
+        "Blowout! Your \(side.rawValue) front tire burst. The truck is pulling \(side.rawValue): steer \(side == .left ? "right" : "left") to hold your lane, ease off the gas and slow down gently. Stop to change the tire."
+    }
+
+    public func tireChanged(cost: Int) -> String {
+        "Tire changed on the roadside: \(Phrases.money(cost)). You're good to go."
+    }
+
     // MARK: Hills
 
     public func hillAhead(grade: Double, length: Double) -> String {

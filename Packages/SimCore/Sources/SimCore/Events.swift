@@ -141,6 +141,9 @@ public enum SimEvent: Equatable, Sendable {
     case weighedIn(cargoKg: Double, fine: Int)
     /// Drove past a weigh station without pulling in (`tooFast`: signalled, but too fast to take the exit).
     case skippedWeighStation(fine: Int, tooFast: Bool)
+    /// A tire blew out on this side: the truck pulls that way until you stop.
+    case blowout(Side)
+    case tireChanged(cost: Int)
     // Hills
     /// A steep climb (positive grade) or descent ahead, and how long it is (metres).
     case hillAhead(grade: Double, length: Double)

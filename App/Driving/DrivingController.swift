@@ -54,10 +54,11 @@ final class DrivingController: NSObject, ObservableObject {
         self.career = career
         self.drive = drive
         let resume = career.takePendingResume()
-        let newSession = DrivingController.makeSession(drive, settings, career.truck, fuel: career.fuelLiters,
+        let newSession = DrivingController.makeSession(drive, settings, career.truck.worn(career.condition), fuel: career.fuelLiters,
                                                        town: resume?.origin ?? career.state.currentTown)
         if let resume { newSession.restore(resume.snapshot) }
         newSession.chainsOn = career.state.hasChains
+        newSession.condition = career.condition
         session = newSession
         resumed = resume != nil
         touch = TouchInterpreter(mode: settings.steeringMode, areaWidth: 800)
@@ -102,6 +103,7 @@ final class DrivingController: NSObject, ObservableObject {
         session.cargoKind = drive.job?.cargo.kind ?? .standard
         session.dockingEnabled = settings.docking && drive.job != nil && !ScreenshotMode.isOn
         session.cbRadioEnabled = settings.radioVoices && navigator != nil && !ScreenshotMode.isOn
+        session.blowoutsEnabled = navigator != nil && !ScreenshotMode.isOn
         // Weather for every drive except the tutorial (and screenshots).
         if settings.weather && drive != .tutorial && !ScreenshotMode.isOn {
             var rng = SystemRandomNumberGenerator()
@@ -293,9 +295,10 @@ final class DrivingController: NSObject, ObservableObject {
 
     func restart() {
         if finished == nil { closeOutUnfinished() }
-        session = DrivingController.makeSession(drive, settings, career.truck, fuel: career.fuelLiters,
+        session = DrivingController.makeSession(drive, settings, career.truck.worn(career.condition), fuel: career.fuelLiters,
                                                 town: career.state.currentTown)
         session.chainsOn = career.state.hasChains
+        session.condition = career.condition
         payout = nil
         cruiseTarget = nil
         steerPulse = nil

@@ -387,6 +387,12 @@ public final class DrivingSession {
     var tollsAnnounced: Set<Int> = []
     var weighStationsHandled: Set<Int> = []
     var lastBrakeDecel = 0.0
+    /// The truck's condition, percent (blowouts are likelier on a worn truck). Set before driving.
+    public var condition = 100.0
+    /// Tires can blow out (map drives). Set before driving.
+    public var blowoutsEnabled = false
+    /// A blown tire on this side, until the truck stops for a tire change.
+    public internal(set) var blowout: Side?
     var warnedBrakeHot = false
     var warnedBrakeFade = false
     var announcedHills: Set<Int> = []
@@ -479,6 +485,7 @@ public final class DrivingSession {
         checkTurboSpeed(events: &events)
         checkSpecialCargo(input: input, events: &events)
         stepBrakes(dt: dt, input: input, events: &events)
+        checkBlowout(dt: dt, events: &events)
         checkHills(events: &events)
         if cbRadioEnabled && time >= nextCB {
             nextCB = time + Double.random(in: DrivingSession.cbInterval, using: &rng)

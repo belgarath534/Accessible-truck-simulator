@@ -511,6 +511,16 @@ struct GarageView: View {
                         NameField(label: "Name this truck", current: career.state.nickname(for: truck)) { name in
                             career.setNickname(name, for: truck)
                         }
+                        let condition = Int(career.state.condition(of: truck).rounded())
+                        Text("Condition: \(condition) percent." + (condition < 50 ? " Worn: it's lost some power, and tires blow out more often." : ""))
+                        if career.state.serviceCost(truck) > 0 {
+                            Button("Service It for \(Phrases.money(career.state.serviceCost(truck)))") {
+                                announce(career.service(truck)
+                                    ? "Serviced: the \(truck.name) is like new. \(Phrases.money(career.money)) left in the bank."
+                                    : "Not enough money for a service.")
+                            }
+                            .accessibilityHint("Back to 100 percent: full power and fewer blowouts. Miles and crashes wear trucks down.")
+                        }
                         NavigationLink("Upgrades") { UpgradesView(truck: truck) }
                             .accessibilityHint("Engine, brakes, tires and fuel tank for the \(truck.name).")
                     }

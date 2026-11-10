@@ -214,6 +214,14 @@ final class FeedbackCoordinator {
             audio.airBrake()
             speech.speak(phrases.skippedWeighStation(fine: fine, tooFast: tooFast), priority: .high)
             haptics.tap(intensity: 1, sharpness: 0.8)
+        case let .blowout(side):
+            audio.crash()
+            audio.airBrake()
+            speech.speak(phrases.blowout(side), priority: .high)
+            haptics.tap(intensity: 1, sharpness: 1)
+        case let .tireChanged(cost):
+            audio.airBrake()
+            speech.speak(phrases.tireChanged(cost: cost), priority: .high)
         case let .hillAhead(grade, length):
             speech.speak(phrases.hillAhead(grade: grade, length: length), priority: .normal)
         case .brakesHot:

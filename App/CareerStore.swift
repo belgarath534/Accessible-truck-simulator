@@ -72,6 +72,7 @@ final class CareerStore: ObservableObject {
     @discardableResult
     func record(_ payout: Payout, distance: Double, completing job: DeliveryJob?, trip: TripResult? = nil) -> [String] {
         state.record(payout, distance: distance)
+        wear(trip)
         var news: [String] = []
         if let job {
             if let summary = trip?.summary {
@@ -149,7 +150,23 @@ final class CareerStore: ObservableObject {
     }
 
     /// Charges a drive's costs without pay (abandoned job, restarted drive, practice).
+    /// The truck being driven: its condition, percent.
+    var condition: Double { state.condition(of: baseTruck) }
+
+    func service(_ truck: TruckSpec) -> Bool {
+        let ok = state.service(truck)
+        save()
+        return ok
+    }
+
+    /// Miles and crashes wear the truck that was driven.
+    private func wear(_ trip: TripResult?) {
+        guard let trip else { return }
+        state.wear(baseTruck, kilometers: trip.stats.distance / 1_000, crashes: trip.stats.crashes)
+    }
+
     func charge(_ payout: Payout, trip: TripResult? = nil) {
+        wear(trip)
         state.record(payout, distance: 0)
         save(trip: trip)
     }
