@@ -45,12 +45,14 @@ public struct TripStats: Codable, Equatable, Sendable {
     public var deerScared: Int = 0
     /// Unsafe load fines paid at weigh stations, dollars. (Skipping a station is a ticket, in `ticketCost`.)
     public var weighStationFines: Int = 0
+    /// The drive was in Turbo Mode.
+    public var turbo = false
 
     public init() {}
 
     enum CodingKeys: String, CodingKey {
         case drivingTime, distance, crashes, topSpeed, tooFastWarnings, fuelUsedLiters, fuelBoughtLiters, fuelCost
-        case tows, towCost, tickets, ticketCost, tollCost, deerScared, weighStationFines
+        case tows, towCost, tickets, ticketCost, tollCost, deerScared, weighStationFines, turbo
     }
 
     /// Saved drives from before tolls existed load fine.
@@ -71,6 +73,7 @@ public struct TripStats: Codable, Equatable, Sendable {
         tollCost = try c.decodeIfPresent(Int.self, forKey: .tollCost) ?? 0
         deerScared = try c.decodeIfPresent(Int.self, forKey: .deerScared) ?? 0
         weighStationFines = try c.decodeIfPresent(Int.self, forKey: .weighStationFines) ?? 0
+        turbo = try c.decodeIfPresent(Bool.self, forKey: .turbo) ?? false
     }
 
     public var averageSpeed: Double { drivingTime > 0 ? distance / drivingTime : 0 }

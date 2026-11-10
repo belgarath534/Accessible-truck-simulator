@@ -25,6 +25,7 @@ final class AppSettings: ObservableObject {
     @Published var radioOnStart: Bool { didSet { defaults.set(radioOnStart, forKey: "radioOnStart") } }
     @Published var traffic: Bool { didSet { defaults.set(traffic, forKey: "traffic") } }
     @Published var wildlife: Bool { didSet { defaults.set(wildlife, forKey: "wildlife") } }
+    @Published var turbo: Bool { didSet { defaults.set(turbo, forKey: "turbo") } }
     /// Show what the game says as text while driving (for deaf and hard-of-hearing players).
     @Published var captions: Bool { didSet { defaults.set(captions, forKey: "captions") } }
     /// On-screen buttons for every driving action (Voice Control, Switch Control, or anyone who prefers buttons).
@@ -61,6 +62,7 @@ final class AppSettings: ObservableObject {
         radioOnStart = d.object(forKey: "radioOnStart") as? Bool ?? true
         traffic = d.object(forKey: "traffic") as? Bool ?? false
         wildlife = d.object(forKey: "wildlife") as? Bool ?? true
+        turbo = d.object(forKey: "turbo") as? Bool ?? false
         tutorialDone = d.object(forKey: "tutorialDone") as? Bool ?? false
         weather = d.object(forKey: "weather") as? Bool ?? true
         menuOrientation = MenuOrientation(rawValue: d.string(forKey: "menuOrientation") ?? "") ?? .portrait

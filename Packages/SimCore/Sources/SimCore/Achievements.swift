@@ -30,6 +30,7 @@ public enum Achievement: String, CaseIterable, Codable, Sendable {
     case collector
     case ohDeer = "oh_deer"
     case newHorn = "new_horn"
+    case speedDemon = "speed_demon"
 
     public var gameCenterID: String { "trucksim." + rawValue }
 
@@ -60,6 +61,7 @@ public enum Achievement: String, CaseIterable, Codable, Sendable {
         case .collector: return "Collector"
         case .ohDeer: return "Oh Deer"
         case .newHorn: return "Make Some Noise"
+        case .speedDemon: return "Speed Demon"
         }
     }
 
@@ -91,13 +93,14 @@ public enum Achievement: String, CaseIterable, Codable, Sendable {
         case .collector: return "Own every truck in the garage."
         case .ohDeer: return "Scare a deer off the road with your horn."
         case .newHorn: return "Buy a horn at the horn shop."
+        case .speedDemon: return "Reach 150 miles per hour, about 240 kilometers per hour, in Turbo Mode."
         }
     }
 
     /// Game Center points (all together at most 1,000).
     public var points: Int {
         switch self {
-        case .tutorial, .fillUp, .busted, .onTime, .newHorn: return 10
+        case .tutorial, .fillUp, .busted, .onTime, .newHorn, .speedDemon: return 10
         case .firstDelivery, .cleanRun, .firstUpgrade, .ohDeer: return 20
         case .perfectStop, .heavyHauler, .handleWithCare, .deliveries10, .workhorse, .firstDriver: return 30
         case .earned10k: return 40
@@ -116,11 +119,13 @@ public enum Achievement: String, CaseIterable, Codable, Sendable {
 public enum Leaderboard: String, CaseIterable, Sendable {
     case totalEarned = "trucksim.total_earned"
     case deliveries = "trucksim.deliveries"
+    case topSpeed = "trucksim.top_speed"
 
     public var title: String {
         switch self {
         case .totalEarned: return "Money Earned"
         case .deliveries: return "Deliveries"
+        case .topSpeed: return "Top Speed"
         }
     }
 
@@ -128,6 +133,7 @@ public enum Leaderboard: String, CaseIterable, Sendable {
         switch self {
         case .totalEarned: return max(0, career.totalEarned)
         case .deliveries: return career.jobsCompleted
+        case .topSpeed: return Int((career.bestTurboSpeed * 2.236_94).rounded())
         }
     }
 }
@@ -169,6 +175,8 @@ public extension CareerState {
             check(.fillUp, s.fuelCost > 0 && s.tows == 0) // a tow's fuel doesn't count
             check(.busted, s.tickets > 0)
             check(.ohDeer, s.deerScared > 0)
+            check(.speedDemon, s.turbo && s.topSpeed * 2.236_94 >= 150)
+            if s.turbo { bestTurboSpeed = max(bestTurboSpeed, s.topSpeed) }
             if let job = trip.job, let summary = trip.summary {
                 check(.perfectStop, summary.stopRating == .perfect)
                 check(.cleanRun, s.crashes == 0)

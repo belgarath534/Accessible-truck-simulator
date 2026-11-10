@@ -80,6 +80,9 @@ struct MainMenuView: View {
                     }
                 }
                 Section {
+                    Toggle("Turbo Mode", isOn: $settings.turbo)
+                        .font(.title3.bold())
+                        .accessibilityHint("No speed limit, no police, and a bonus for your top speed on jobs and Free Drive. Burns fuel fast. Crashes cut the bonus.")
                     NavigationLink {
                         JobBoardView { job in start(.job(job)) }
                     } label: {

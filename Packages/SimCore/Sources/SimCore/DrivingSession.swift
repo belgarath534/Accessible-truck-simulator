@@ -371,6 +371,11 @@ public final class DrivingSession {
     var tollsHandled: Set<Int> = []
     var tollsAnnounced: Set<Int> = []
     var weighStationsHandled: Set<Int> = []
+    /// Turbo Mode: no governor, a big power boost, no police. Set before driving.
+    public var turbo = false {
+        didSet { stats.turbo = turbo }
+    }
+    var turboMilestone = 0
     var weighStationsAnnounced: Set<Int> = []
     /// Inside a construction zone (for its sounds).
     public var inConstructionZone: Bool { road.speedZone(at: truck.position)?.kind == .construction }
@@ -429,6 +434,7 @@ public final class DrivingSession {
         checkMap(events: &events)
         checkTolls(events: &events)
         checkWeighStations(events: &events)
+        checkTurboSpeed(events: &events)
         stepDeer(dt: dt, events: &events)
         stepTraffic(dt: dt, events: &events)
         checkPolice(dt: dt, events: &events)
@@ -565,10 +571,11 @@ public final class DrivingSession {
         // Drive force.
         var driveForce = 0.0
         if running && !shifting {
-            let governed = truck.speed >= spec.speedLimiter
+            let governed = !turbo && truck.speed >= spec.speedLimiter
             let throttle = governed ? 0 : input.throttle
             let torque = spec.torque(atRPM: max(truck.rpm, spec.idleRPM)) * throttle
             driveForce = torque * ratio * spec.drivetrainEfficiency / spec.wheelRadius
+            if turbo { driveForce = max(driveForce, DrivingSession.turboPowerW * throttle / max(truck.speed, 4)) }
             driveForce = min(driveForce, mass * spec.tractionLimitAccel)
             if throttle < 0.05 && truck.speed > 1 {
                 let engineBrake = spec.peakTorque * spec.engineBrakeFraction * (truck.rpm / spec.maxRPM)
@@ -657,6 +664,7 @@ public final class DrivingSession {
         guard running else { return }
         let powerKW = spec.torque(atRPM: truck.rpm) * truck.engineLoad * truck.rpm * 2 * .pi / 60 / 1000
         let litersPerSecond = (0.0005 + powerKW * 0.252 / 3600) * DrivingSession.fuelGameScale * spec.fuelEfficiency
+            * (turbo ? DrivingSession.turboFuelMultiplier : 1)
         let burned = min(truck.fuelLiters, litersPerSecond * dt)
         truck.fuelLiters -= burned
         stats.fuelUsedLiters += burned
@@ -781,6 +789,19 @@ public final class DrivingSession {
         }
     }
 
+    // MARK: - Turbo Mode
+
+    private func checkTurboSpeed(events: inout [SimEvent]) {
+        guard turbo else { return }
+        let step = DrivingSession.turboCalloutStep, start = DrivingSession.turboCalloutStart
+        guard truck.speed >= start else { return }
+        let milestone = Int(((truck.speed - start) / step).rounded(.down)) + 1
+        if milestone > turboMilestone {
+            turboMilestone = milestone
+            events.append(.turboSpeed(start + Double(milestone - 1) * step))
+        }
+    }
+
     // MARK: - Weigh stations
 
     /// Announced about half a mile ahead. Pull in like a truck stop: right signal on and slow enough as you reach it.
@@ -846,6 +867,8 @@ public final class DrivingSession {
     // MARK: - Police
 
     private func checkPolice(dt: Double, events: inout [SimEvent]) {
+        // Turbo Mode: the police leave you alone.
+        guard !turbo else { return }
         if var c = chase {
             c.timer += dt
             if truck.speed < 0.3 {
@@ -1013,7 +1036,7 @@ public final class DrivingSession {
     }
 
     private func checkCurves(events: inout [SimEvent]) {
-        let lookahead = max(200, truck.speed * 10)
+        let lookahead = max(200, truck.speed * (turbo ? 15 : 10)) // more warning when braking from Turbo speeds
         if let curve = forWeather(road.nextCurve(after: truck.position, within: lookahead)),
            curve.segmentIndex != announcedCurveIndex, truck.speed > 2 {
             announcedCurveIndex = curve.segmentIndex

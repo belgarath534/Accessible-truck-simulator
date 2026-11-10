@@ -23,5 +23,6 @@
   {"id": "fleet_owner", "title": "Fleet Owner", "detail": "Have two drivers working for you at once.", "points": 60, "group": "business"},
   {"id": "collector", "title": "Collector", "detail": "Own every truck in the garage.", "points": 100, "group": "business"},
   {"id": "oh_deer", "title": "Oh Deer", "detail": "Scare a deer off the road with your horn.", "points": 20, "group": "skill"},
-  {"id": "new_horn", "title": "Make Some Noise", "detail": "Buy a horn at the horn shop.", "points": 10, "group": "business"}
+  {"id": "new_horn", "title": "Make Some Noise", "detail": "Buy a horn at the horn shop.", "points": 10, "group": "business"},
+  {"id": "speed_demon", "title": "Speed Demon", "detail": "Reach 150 miles per hour, about 240 kilometers per hour, in Turbo Mode.", "points": 10, "group": "skill"}
 ]

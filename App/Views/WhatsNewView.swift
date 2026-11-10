@@ -29,7 +29,9 @@ enum Changelog {
             "Every town sounds different: seagulls in Ridgeport, the steel mill in Ironton, the farm in Bayview, the sawmill in Cedar Falls.",
             "The Horn Shop in the Garage: train, ship, musical and twin trumpet horns. Try each one before you buy.",
             "Name your trucks and your company. Your truck's name is called out when you start a drive.",
-            "Two new achievements: Oh Deer and Make Some Noise.",
+            "Turbo Mode, a switch on the main menu: no speed limit, toward 200 mph, with your speed called out every 25 mph. Earn a bonus for your top speed on top of the normal pay. No police, but it burns fuel fast and crashes cut the bonus. Thanks to Reece for the idea!",
+            "Weigh stations on the longer country roads: signal right and slow down to pull in, or get a $200 fine.",
+            "Three new achievements: Oh Deer, Make Some Noise and Speed Demon. And a new Top Speed leaderboard.",
         ]),
         Version(number: "1.1", title: "Big Update", items: [
             "Eight new trucks: 11 in all, each with its own recorded engine sound and its own feel, including the electric Volt and the V12 Titan.",
@@ -117,7 +119,7 @@ enum Changelog {
     static let comingSoon: [String] = [
         "Backing into the loading dock by ear.",
         "Special cargo: livestock, refrigerated loads, oversize loads and hazmat.",
-        "Company contracts, reputation and weigh stations.",
+        "Company contracts and reputation.",
         "A dispatcher with a real voice, CB radio chatter and a radio DJ.",
         "Hills, snow and ice, tire blowouts and detours.",
         "Truck wear, depots in other towns and bank loans.",

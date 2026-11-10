@@ -139,6 +139,8 @@ public enum SimEvent: Equatable, Sendable {
     case weighedIn(cargoKg: Double, fine: Int)
     /// Drove past a weigh station without pulling in (`tooFast`: signalled, but too fast to take the exit).
     case skippedWeighStation(fine: Int, tooFast: Bool)
+    /// Turbo Mode: a new speed milestone (every 25 mph from 75 mph), m/s.
+    case turboSpeed(Double)
     case dashboard(DashboardReading)
     case roadAhead(UpcomingCurve?, remaining: Double?, timeLeft: Double?, truckStop: Double?)
     /// Delivery deadline reminders (5 minutes and 1 minute left).

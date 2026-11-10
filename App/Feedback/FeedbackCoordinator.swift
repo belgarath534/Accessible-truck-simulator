@@ -30,6 +30,8 @@ final class FeedbackCoordinator {
     var hornFile = "horn"
     /// The name the player gave this truck, if any; set before start().
     var truckNickname: String?
+    /// Turbo Mode is on; set before start().
+    var turbo = false
     /// Day or night; set before start().
     var timeOfDay: TimeOfDay = .day
 
@@ -121,6 +123,7 @@ final class FeedbackCoordinator {
         }
         if let name = truckNickname, drive != .tutorial { trip = "\(name) is ready to roll. " + trip }
         if let forecast = weather.announcement { trip += " " + forecast }
+        if turbo { trip += " " + phrases.turboIntro }
         if drive != .tutorial && drive != .practice, let time = timeOfDay.announcement { trip += " " + time }
         speech.speak(
             "\(trip) Engine off. \(controls) Three-finger double tap starts the engine. Two-finger double tap reads the dashboard. Two-finger swipe down pauses.",
@@ -182,6 +185,9 @@ final class FeedbackCoordinator {
             audio.airBrake()
             speech.speak(phrases.skippedWeighStation(fine: fine, tooFast: tooFast), priority: .high)
             haptics.tap(intensity: 1, sharpness: 0.8)
+        case let .turboSpeed(speed):
+            speech.speak(phrases.turboSpeed(speed), priority: .high)
+            haptics.tap(intensity: 0.8, sharpness: 1)
         case .thunder:
             audio.thunder()
             haptics.tap(intensity: 0.5, sharpness: 0.1)

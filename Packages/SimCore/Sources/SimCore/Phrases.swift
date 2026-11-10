@@ -251,6 +251,16 @@ public struct Phrases {
             : "You skipped the weigh station! Fine: \(Phrases.money(fine)). Signal right to pull in next time."
     }
 
+    // MARK: Turbo Mode
+
+    public func turboSpeed(_ speed: Double) -> String {
+        let n = units.speed(speed)
+        let rounded = units == .metric ? (n + 5) / 10 * 10 : (n + 2) / 5 * 5
+        return "\(rounded) \(units.speedUnitSpoken)!"
+    }
+
+    public let turboIntro = "Turbo Mode is on: no speed limit and no police. Hold on tight, and slow down for curves."
+
     // MARK: Company
 
     public func driver(_ d: Driver) -> String {

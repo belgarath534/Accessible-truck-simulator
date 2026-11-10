@@ -170,6 +170,7 @@ public struct Payout: Equatable, Sendable {
     public static func freeDrive(_ stats: TripStats) -> Payout {
         let pay = Int((stats.distance / 1_000 * freeDriveRatePerKm).rounded())
         var lines = [Line(label: "Driving pay", amount: pay)]
+        if let turbo = turboBonus(stats) { lines.append(turbo) }
         if stats.crashes > 0 {
             // Repairs never cost more than the drive earned.
             lines.append(Line(label: "Repairs for \(stats.crashes) crash\(stats.crashes == 1 ? "" : "es")",
@@ -209,6 +210,7 @@ public struct Payout: Equatable, Sendable {
         if summary.stopRating == .perfect {
             lines.append(Line(label: "Perfect stop bonus", amount: Int((Double(base) * 0.05).rounded())))
         }
+        if let turbo = turboBonus(stats) { lines.append(turbo) }
         return Payout(lines: lines + expenses(stats))
     }
 }
@@ -248,6 +250,8 @@ public struct CareerState: Codable, Equatable, Sendable {
     /// Horns bought at the horn shop (the air horn is free and not listed).
     public var ownedHorns: [String] = []
     public var selectedHorn: String = Horn.air.rawValue
+    /// Fastest speed reached in Turbo Mode, m/s (for the Top Speed leaderboard).
+    public var bestTurboSpeed: Double = 0
     public static let homeTown = "millbrook"
 
     /// Dollars per litre to fill up at your own yard (truck stops are cheaper).
@@ -277,7 +281,7 @@ public struct CareerState: Codable, Equatable, Sendable {
     // Saves from before the garage existed have no truck fields: give them the starter truck.
     enum CodingKeys: String, CodingKey {
         case money, jobsCompleted, kilometersDriven, totalEarned, jobBoard, seed, ownedTrucks, selectedTruck, upgrades, fuel, currentTown, drivers, candidates, achievements, visitedTowns, savedDrive
-        case companyName, truckNames, ownedHorns, selectedHorn
+        case companyName, truckNames, ownedHorns, selectedHorn, bestTurboSpeed
     }
 
     public init(from decoder: Decoder) throws {
@@ -306,6 +310,7 @@ public struct CareerState: Codable, Equatable, Sendable {
         truckNames = try c.decodeIfPresent([String: String].self, forKey: .truckNames) ?? [:]
         ownedHorns = try c.decodeIfPresent([String].self, forKey: .ownedHorns) ?? []
         selectedHorn = try c.decodeIfPresent(String.self, forKey: .selectedHorn) ?? Horn.air.rawValue
+        bestTurboSpeed = try c.decodeIfPresent(Double.self, forKey: .bestTurboSpeed) ?? 0
         visitedTowns = try c.decodeIfPresent([String].self, forKey: .visitedTowns)
             ?? Array(Set([CareerState.homeTown, currentTown])).sorted()
         // Jobs saved before the map (or from another town) are replaced with jobs from here.
