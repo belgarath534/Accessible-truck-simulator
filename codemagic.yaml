@@ -138,9 +138,9 @@ workflows:
 
   truck-sim-team-id:
     name: Truck Sim show Team ID
-    # Prints the Team ID, Key ID and Issuer ID for the GitHub TestFlight backup (no app build, Linux, about a minute).
+    # Prints the Team ID, Key ID and Issuer ID for the GitHub TestFlight backup (no app build, about a minute).
     max_build_duration: 5
-    instance_type: linux_x2
+    instance_type: mac_mini_m2
     integrations:
       app_store_connect: Accessible Backrooms
     scripts:
