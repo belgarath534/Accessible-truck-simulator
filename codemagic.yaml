@@ -136,6 +136,19 @@ workflows:
           python3 -m pip install --quiet --user pyjwt cryptography requests
           python3 store/fill_store_info.py
 
+  truck-sim-team-id:
+    name: Truck Sim show Team ID
+    # Prints the Team ID, Key ID and Issuer ID for the GitHub TestFlight backup (no app build, Linux, about a minute).
+    max_build_duration: 5
+    instance_type: linux_x2
+    integrations:
+      app_store_connect: Accessible Backrooms
+    scripts:
+      - name: Show the IDs
+        script: |
+          python3 -m pip install --quiet --user pyjwt cryptography requests
+          python3 store/show_team_id.py
+
   truck-sim-game-center:
     name: Truck Sim Game Center setup
     # Creates the achievements and leaderboards in App Store Connect. See store/setup_game_center.py.
