@@ -251,6 +251,27 @@ public struct Phrases {
             : "You skipped the weigh station! Fine: \(Phrases.money(fine)). Signal right to pull in next time."
     }
 
+    // MARK: Hills
+
+    public func hillAhead(grade: Double, length: Double) -> String {
+        let percent = Int((abs(grade) * 100).rounded())
+        if grade < 0 {
+            return "Steep grade ahead: \(percent) percent downhill for \(units.distance(length)). Slow down before it, and let the engine hold you back. Use the brakes in short pushes so they don't overheat."
+        }
+        return "Climb ahead: \(percent) percent uphill for \(units.distance(length)). Keep your foot down."
+    }
+
+    public let brakesHot = "Your brakes are getting hot. Ease off and brake in short pushes."
+    public let brakesFading = "Brakes are fading! They're too hot to stop you well. Slow down any way you can."
+
+    public func runawayRampAhead(_ distance: Double) -> String {
+        "Runaway truck ramp in \(units.distance(distance)), on the right. If you can't slow down, signal right to take it."
+    }
+
+    public func tookRunawayRamp(cost: Int) -> String {
+        "You took the runaway truck ramp. The gravel stopped you safely, and your brakes are cooling. Tow out of the gravel: \(Phrases.money(cost))."
+    }
+
     // MARK: Docking
 
     /// Short distances said exactly (docking): "5 meters", "16 feet".

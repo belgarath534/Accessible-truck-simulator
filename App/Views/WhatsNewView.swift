@@ -38,6 +38,7 @@ enum Changelog {
             "Voices on the radio: a dispatcher who calls in at the start of jobs and warns you about storms, other truckers chatting on the CB, and a DJ with a weather report between songs on Big Rig Radio. Everything they say shows as captions.",
             "Five story missions, from The Medicine Run to The Legend's Load: each waits in its own town, opens with your reputation, and pays a big bonus when it's on time.",
             "Calls from your drivers: when a truck breaks down, send a tow or let them wait it out.",
+            "Real hills: the engine strains on the climbs and gravity pulls you down the descents. Steep grades are called out ahead, the engine brake rumbles on the way down, and brakes ridden too hard get hot and fade. Runaway truck ramps on the mountain highway can save you.",
             "Three new achievements: Oh Deer, Make Some Noise and Speed Demon. And a new Top Speed leaderboard.",
         ]),
         Version(number: "1.1", title: "Big Update", items: [
@@ -124,7 +125,7 @@ enum Changelog {
     ]
 
     static let comingSoon: [String] = [
-        "Hills, snow and ice, tire blowouts and detours.",
+        "Snow and ice, tire blowouts and detours.",
         "Truck wear, depots in other towns and bank loans.",
     ]
 

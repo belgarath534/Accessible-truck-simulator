@@ -207,6 +207,19 @@ final class FeedbackCoordinator {
             audio.airBrake()
             speech.speak(phrases.skippedWeighStation(fine: fine, tooFast: tooFast), priority: .high)
             haptics.tap(intensity: 1, sharpness: 0.8)
+        case let .hillAhead(grade, length):
+            speech.speak(phrases.hillAhead(grade: grade, length: length), priority: .normal)
+        case .brakesHot:
+            speech.speak(phrases.brakesHot, priority: .high)
+            haptics.tap(intensity: 0.7, sharpness: 0.4)
+        case .brakesFading:
+            speech.speak(phrases.brakesFading, priority: .high)
+            haptics.tap(intensity: 1, sharpness: 0.9)
+        case let .runawayRampAhead(distance):
+            speech.speak(phrases.runawayRampAhead(distance), priority: .high)
+        case let .tookRunawayRamp(cost):
+            audio.crash()
+            speech.speak(phrases.tookRunawayRamp(cost: cost), priority: .high)
         case let .dockingStarted(distance):
             audio.airBrake()
             speech.speak(phrases.dockingStarted(distance), priority: .high)
@@ -413,6 +426,7 @@ final class FeedbackCoordinator {
         audio.state.siren = session.sirenOn
         // Docking: the beacon counts down to the dock (steady in the last metre or two), with the backup alarm.
         audio.state.backupAlarm = (session.docking?.speed ?? 0) > 0.05
+        audio.state.engineBrake = truck.engineBraking && !engineSound.electric // electric trucks brake with the motor, silently
         if let dock = session.docking {
             audio.state.beaconDistance = Float(max(0, dock.distance) * 7)
         // Drop-off beacon: beeps speed up over the last 150 m, a steady tone right at the drop-off.

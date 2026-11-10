@@ -23,6 +23,8 @@ final class SynthState {
     var siren = false
     /// Reversing into the dock: the truck's beep-beep backup alarm.
     var backupAlarm = false
+    /// The engine brake holding the truck back on a descent: a deep, rapid exhaust rattle.
+    var engineBrake = false
     /// Metres to the drop-off for the beacon (negative = past it); -1000 = off.
     var beaconDistance: Float = -1_000
     /// Seconds left of a police radio crackle (passing a parked police car).
@@ -349,6 +351,7 @@ private final class FXVoice: Voice {
     var pumpPhase: Float = 0, pumpLP: Float = 0
     var sirenTime: Float = 0, sirenPhase: Float = 0, sirenAmp: Float = 0
     var backupClock: Float = 0, backupPhase: Float = 0
+    var jakeAmp: Float = 0, jakePhase: Float = 0
     var beaconClock: Float = 0, beaconOsc: Float = 0
     var carHornA: Float = 0, carHornB: Float = 0, carHornLP: Float = 0
     var crackleHP: Float = 0, crackleLP: Float = 0, crackleTone: Float = 0
@@ -429,6 +432,14 @@ private final class FXVoice: Voice {
                 if backupClock < 0.5 { s += (backupPhase < 0.5 ? 1 : -1) * 0.05 }
             } else {
                 backupClock = 0
+            }
+            // Engine brake ("jake brake"): pulses at the engine's firing rate, fading in and out.
+            jakeAmp += ((state.engineBrake && !state.muted ? 1 : 0) - jakeAmp) * 0.0004
+            if jakeAmp > 0.001 {
+                let firing = max(20, state.rpm / 60 * state.cylinders / 2)
+                jakePhase += firing / sr; if jakePhase >= 1 { jakePhase -= 1 }
+                let pulse: Float = jakePhase < 0.3 ? 1 : 0
+                s += (pulse * 2 - 0.6) * (0.5 + 0.5 * noise.next()) * 0.07 * jakeAmp
             }
             // Police siren: a wail sweeping up and down, fading in and out.
             sirenAmp += ((state.siren ? 1 : 0) - sirenAmp) * 0.0005

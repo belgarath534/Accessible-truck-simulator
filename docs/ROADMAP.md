@@ -44,8 +44,8 @@ captions, driving buttons, Larger Text / Increase Contrast / Reduce Motion, iPad
 - Story missions ("Get this medicine to Bayview before the bridge closes") (done)
 - Radio events from your drivers ("Nadia broke down near Bayview: send a tow or wait") (done)
 
-## 1.2, Part 5: Wild Roads
-- Real hills: the engine strains uphill, brakes overheat downhill, runaway truck ramps
+## 1.2, Part 5: Wild Roads (in progress)
+- Real hills: the engine strains uphill, brakes overheat downhill, runaway truck ramps (done)
 - Snow and ice in winter, with chains
 - Tire blowouts
 - Detours and road closures

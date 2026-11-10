@@ -141,6 +141,14 @@ public enum SimEvent: Equatable, Sendable {
     case weighedIn(cargoKg: Double, fine: Int)
     /// Drove past a weigh station without pulling in (`tooFast`: signalled, but too fast to take the exit).
     case skippedWeighStation(fine: Int, tooFast: Bool)
+    // Hills
+    /// A steep climb (positive grade) or descent ahead, and how long it is (metres).
+    case hillAhead(grade: Double, length: Double)
+    case brakesHot
+    case brakesFading
+    /// A runaway truck ramp ahead (when the brakes are hot): signal right to take it.
+    case runawayRampAhead(distance: Double)
+    case tookRunawayRamp(cost: Int)
     /// Another trucker on the CB radio (just for atmosphere).
     case cbChatter
     // Docking

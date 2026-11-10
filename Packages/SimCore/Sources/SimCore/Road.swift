@@ -83,6 +83,8 @@ public struct Road: Sendable {
     public var weighStations: [Double] = []
     /// Deer may cross this road.
     public var hasWildlife = false
+    /// Climbs and descents.
+    public var hills: [Hill] = []
     /// True on divided highways (interstates): the left lane goes your way, as a passing lane.
     /// Otherwise the left lane is oncoming traffic.
     public var leftLaneSameDirection = false

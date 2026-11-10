@@ -75,6 +75,10 @@ public struct TruckState: Equatable, Sendable {
     public var engineLoad: Double = 0
     public var fuelLiters: Double
     public var engineTempC: Double = 20
+    /// Brake temperature, °C: rises with braking, falls in the air.
+    public var brakeTempC: Double = 40
+    /// The engine brake is holding the truck back on a descent (for its sound).
+    public var engineBraking = false
     public var signal: SignalState = .off
     public var odometer: Double = 0
 
@@ -99,7 +103,7 @@ public final class DrivingSession {
     public var weather: Weather = .clear
     public internal(set) var truck: TruckState
     public private(set) var time: Double = 0
-    public private(set) var stats = TripStats()
+    public internal(set) var stats = TripStats()
     /// Set when the trip is finished; the simulation stops changing after that.
     public internal(set) var summary: TripSummary?
 
@@ -376,6 +380,12 @@ public final class DrivingSession {
     var tollsHandled: Set<Int> = []
     var tollsAnnounced: Set<Int> = []
     var weighStationsHandled: Set<Int> = []
+    var lastBrakeDecel = 0.0
+    var warnedBrakeHot = false
+    var warnedBrakeFade = false
+    var announcedHills: Set<Int> = []
+    var announcedRamps: Set<Int> = []
+    var usedRamps: Set<Int> = []
     /// Other truckers talk on the CB now and then (map drives). Set before driving.
     public var cbRadioEnabled = false
     var nextCB = 90.0
@@ -462,6 +472,8 @@ public final class DrivingSession {
         checkWeighStations(events: &events)
         checkTurboSpeed(events: &events)
         checkSpecialCargo(input: input, events: &events)
+        stepBrakes(dt: dt, input: input, events: &events)
+        checkHills(events: &events)
         if cbRadioEnabled && time >= nextCB {
             nextCB = time + Double.random(in: DrivingSession.cbInterval, using: &rng)
             if truck.speed > 5 && chase == nil { events.append(.cbChatter) }
@@ -622,11 +634,18 @@ public final class DrivingSession {
         let aero = 0.5 * 1.2 * spec.dragArea * truck.speed * truck.speed
         let rolling = truck.speed > 0.01 ? spec.rollingResistance * mass * g : 0
         // Brake force is sized for the truck with a light load, so heavy cargo takes longer to stop.
-        let brakeDecel = min(spec.maxBrakeDecel, spec.maxBrakeDecel * spec.massKg * 1.5 / mass) * weather.braking
+        let brakeDecel = min(spec.maxBrakeDecel, spec.maxBrakeDecel * spec.massKg * 1.5 / mass) * weather.braking * brakeFade
         let brake = input.brake * brakeDecel * mass
 
-        var accel = (driveForce - aero - rolling) / mass
+        // Hills: gravity along the road (sin of the slope is close enough to the grade).
+        let grade = road.grade(at: truck.position)
+        // Off the gas going downhill, the engine brake holds the truck back on grades up to about 4.5%.
+        let engineBrakeHold = running && input.throttle < 0.05 && grade < 0 && truck.speed > 3
+            ? g * min(-grade, DrivingSession.engineBrakeGrade) : 0
+        truck.engineBraking = engineBrakeHold > 0.05
+        var accel = (driveForce - aero - rolling) / mass - g * grade - engineBrakeHold
         let decelFromBrakes = brake / mass
+        lastBrakeDecel = truck.speed > 0.1 ? decelFromBrakes : 0
         accel -= truck.speed > 0 ? decelFromBrakes : 0
 
         truck.speed = max(0, truck.speed + accel * dt)
@@ -786,6 +805,9 @@ public final class DrivingSession {
         policeDecided = [:]
         tollsHandled = []
         tollsAnnounced = []
+        announcedHills = []
+        announcedRamps = []
+        usedRamps = []
         weighStationsHandled = []
         weighStationsAnnounced = []
         deer = nil

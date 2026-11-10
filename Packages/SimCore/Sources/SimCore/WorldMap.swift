@@ -227,6 +227,14 @@ public extension Road {
         r.tollBooths = tollBooths.map { totalLength - $0 }.sorted()
         r.weighStations = weighStations.map { totalLength - $0 }.sorted()
         r.hasWildlife = hasWildlife
+        r.hills = hills.map { h in
+            Hill(start: totalLength - h.end, end: totalLength - h.start, grade: -h.grade,
+                 runawayRamp: nil)
+        }.sorted { $0.start < $1.start }
+        // A climb one way is a descent the other: put the ramps on the steep descents of this direction.
+        for i in r.hills.indices where r.hills[i].grade <= -0.055 && r.hills[i].length >= 1_000 {
+            r.hills[i].runawayRamp = r.hills[i].start + r.hills[i].length * 0.65
+        }
         return r
     }
 
@@ -265,6 +273,7 @@ public extension Road {
         segs.append(.straight(length - used))
         var road = Road(segments: segs, loops: false, speedLimit: style.speedLimit)
         road.leftLaneSameDirection = style == .interstate
+        road.hills = Road.makeHills(length: length, style: style, seed: seed)
         // A truck stop on longer non-mountain roads, in the middle of a straight near the halfway point.
         if style != .mountain && length >= 5_000 {
             var best: Double?
