@@ -310,7 +310,7 @@ final class CareerTests: XCTestCase {
                 for job in board {
                     XCTAssertEqual(job.origin, town.id)
                     XCTAssertNotEqual(job.destination, town.id)
-                    XCTAssertTrue((4_000...25_000).contains(job.distance), "\(job.distance)")
+                    XCTAssertTrue((4_000...(job.closedRoad == nil ? 25_000 : 32_000)).contains(job.distance), "\(job.distance)")
                     XCTAssertGreaterThan(job.pay, 0)
                     // A fair driver at 50 km/h always makes it in time.
                     XCTAssertGreaterThan(job.timeLimit, job.distance / (50 / 3.6))

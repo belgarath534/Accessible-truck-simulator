@@ -447,6 +447,7 @@ public struct Phrases {
                      "time limit \(duration(job.timeLimit, roundToMinutes: true))",
                      weight(job.cargo.massKg)]
         if job.contractID != nil { parts.insert("Contract job", at: 0) }
+        if let closed = job.closedRoad { parts.append("detour: \(WorldMap.standard.edges[closed].name) is closed") }
         if let kind = job.cargo.kind.label { parts.append(kind) }
         if job.cargo.urgent { parts.append("urgent") }
         if job.cargo.fragile { parts.append("fragile") }
@@ -458,6 +459,9 @@ public struct Phrases {
         var text = "Job: deliver \(job.cargo.name.lowercased()), \(weight(job.cargo.massKg)), \(towns)"
             + "\(units.distance(job.distance)) to the drop-off. "
             + "Time limit \(duration(job.timeLimit, roundToMinutes: true)). Pays \(Phrases.money(job.pay))."
+        if let closed = job.closedRoad {
+            text += " \(WorldMap.standard.edges[closed].name) is closed for repairs, so your GPS has a detour around it."
+        }
         if let rules = cargoRules(job.cargo.kind) { text += " " + rules }
         if job.cargo.fragile { text += " Fragile: crashes damage this load badly." }
         if job.cargo.massKg >= 18_000 { text += " Heavy load: give yourself extra room to brake." }

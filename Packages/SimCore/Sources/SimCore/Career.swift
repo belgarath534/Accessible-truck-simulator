@@ -76,6 +76,8 @@ public struct DeliveryJob: Codable, Equatable, Hashable, Identifiable, Sendable 
     public var contractID: UUID?
     /// The story mission this job is, if any.
     public var storyID: Int?
+    /// A road on the way closed for repairs (map edge index): the job's distance includes the detour.
+    public var closedRoad: Int?
     /// Map town ids (nil for jobs from before the map).
     public var origin: String?
     public var destination: String?
@@ -129,13 +131,30 @@ public enum JobBoard {
         let local = allowed.filter { exports.contains($0.name) }
         let cargo = forced ?? (!local.isEmpty && Double.random(in: 0...1, using: &rng) < 0.7 ? local : allowed)
             .randomElement(using: &rng)!
-        let distance = map.route(from: origin, to: destination.id).map(map.length(of:)) ?? 10_000
+        var distance = map.route(from: origin, to: destination.id).map(map.length(of:)) ?? 10_000
+        // Now and then a road on the way is closed for repairs: the job goes around it.
+        var closedRoad: Int?
+        if Double.random(in: 0...1, using: &rng) < detourChance, let r = map.route(from: origin, to: destination.id), r.count > 2 {
+            for candidate in r.dropFirst().dropLast().shuffled(using: &rng) {
+                if let detour = map.route(from: origin, to: destination.id, avoiding: [candidate.index]),
+                   map.length(of: detour) <= min(distance * 2, 32_000) {
+                    closedRoad = candidate.index
+                    distance = map.length(of: detour)
+                    break
+                }
+            }
+        }
         let pay = Int((distance / 1_000 * cargo.ratePerKm / 10).rounded()) * 10
         let slack = cargo.urgent ? 1.35 : 1.7
         let timeLimit = ((distance / fairSpeed * slack + 120) / 60).rounded(.up) * 60
-        return DeliveryJob(cargo: cargo, distance: distance, pay: pay, timeLimit: timeLimit,
-                           origin: origin, destination: destination.id)
+        var job = DeliveryJob(cargo: cargo, distance: distance, pay: pay, timeLimit: timeLimit,
+                              origin: origin, destination: destination.id)
+        job.closedRoad = closedRoad
+        return job
     }
+
+    /// Share of jobs with a road closed on the way.
+    public static let detourChance = 0.2
 
     public static func makeBoard<R: RandomNumberGenerator>(using rng: inout R, map: WorldMap = .standard,
                                                           from origin: String, level: ReputationLevel = .legend,

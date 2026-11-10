@@ -44,11 +44,11 @@ captions, driving buttons, Larger Text / Increase Contrast / Reduce Motion, iPad
 - Story missions ("Get this medicine to Bayview before the bridge closes") (done)
 - Radio events from your drivers ("Nadia broke down near Bayview: send a tow or wait") (done)
 
-## 1.2, Part 5: Wild Roads (in progress)
+## 1.2, Part 5: Wild Roads (done)
 - Real hills: the engine strains uphill, brakes overheat downhill, runaway truck ramps (done)
 - Snow and ice in winter, with chains (done)
 - Tire blowouts (done)
-- Detours and road closures
+- Detours and road closures (done)
 - Truck wear and servicing (done)
 - Depots in other towns (done)
 - Bank loans (done)

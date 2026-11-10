@@ -134,7 +134,7 @@ public struct WorldMap: Sendable {
 
     /// Shortest route (directed edges, in order) from the end of `edge` to `destination`, obeying no-U-turn rules.
     /// Empty if `edge` already ends at the destination.
-    public func route(after edge: DirectedEdge, to destination: String) -> [DirectedEdge]? {
+    public func route(after edge: DirectedEdge, to destination: String, avoiding closed: Set<Int> = []) -> [DirectedEdge]? {
         if to(edge) == destination { return [] }
         var best: [DirectedEdge: Double] = [edge: 0]
         var previous: [DirectedEdge: DirectedEdge] = [:]
@@ -147,7 +147,7 @@ public struct WorldMap: Sendable {
                 while let p = previous[step], p != edge { path.insert(p, at: 0); step = p }
                 return path
             }
-            for choice in choices(after: current) {
+            for choice in choices(after: current) where !closed.contains(choice.edge.index) {
                 let cost = best[current]! + length(choice.edge)
                 if cost < best[choice.edge] ?? .infinity {
                     best[choice.edge] = cost
@@ -160,11 +160,11 @@ public struct WorldMap: Sendable {
     }
 
     /// Shortest route that starts by leaving `origin` (any road out) and ends at `destination`.
-    public func route(from origin: String, to destination: String) -> [DirectedEdge]? {
+    public func route(from origin: String, to destination: String, avoiding closed: Set<Int> = []) -> [DirectedEdge]? {
         var bestRoute: [DirectedEdge]?
         var bestLength = Double.infinity
-        for first in outgoing(from: origin) {
-            guard let rest = route(after: first, to: destination) else { continue }
+        for first in outgoing(from: origin) where !closed.contains(first.index) {
+            guard let rest = route(after: first, to: destination, avoiding: closed) else { continue }
             let r = [first] + rest
             let len = r.reduce(0) { $0 + length($1) }
             if len < bestLength { bestLength = len; bestRoute = r }
@@ -351,12 +351,16 @@ public final class Navigator {
     /// The last town the truck was in or left from.
     public private(set) var lastTown: String
 
-    public init?(map: WorldMap, origin: String, destination: String?) {
+    /// Roads closed for repairs (edge indexes): the route goes around them, and junctions don't offer them.
+    public let closedRoads: Set<Int>
+
+    public init?(map: WorldMap, origin: String, destination: String?, closed: Set<Int> = []) {
         self.map = map
         self.destination = destination
+        self.closedRoads = closed
         let start: DirectedEdge
         if let destination {
-            guard let r = map.route(from: origin, to: destination), let first = r.first else { return nil }
+            guard let r = map.route(from: origin, to: destination, avoiding: closed), let first = r.first else { return nil }
             start = first
             route = Array(r.dropFirst())
         } else {
@@ -389,20 +393,27 @@ public final class Navigator {
     /// The next junction instruction (nil on the final road).
     public func nextInstruction(at position: Double) -> NavInstruction? {
         guard !onFinalRoad else { return nil }
-        let options = map.choices(after: edge)
+        let options = openChoices
         let planned = route.first ?? options.first(where: { $0.turn == .straight })?.edge ?? options.first?.edge
         guard let choice = options.first(where: { $0.edge == planned }) else { return nil }
         return NavInstruction(distance: road.totalLength - position, turn: choice.turn,
                               roadName: choice.roadName, toward: choice.toward)
     }
 
-    public var junctionChoices: [JunctionChoice] { map.choices(after: edge) }
+    public var junctionChoices: [JunctionChoice] { openChoices }
+
+    /// The roads you can take at the next junction (closed ones are blocked off).
+    var openChoices: [JunctionChoice] {
+        let all = map.choices(after: edge)
+        let open = all.filter { !closedRoads.contains($0.edge.index) }
+        return open.isEmpty ? all : open
+    }
 
     /// Takes the junction at the end of the current road, using the turn signal. Returns the choice taken and
     /// whether it was the planned route.
     @discardableResult
     public func takeJunction(signal: SignalState) -> (choice: JunctionChoice, onRoute: Bool) {
-        let options = map.choices(after: edge)
+        let options = openChoices
         let planned = route.first
         let pick: JunctionChoice
         switch signal {
@@ -421,7 +432,7 @@ public final class Navigator {
         edge = pick.edge
         road = map.road(edge)
         if let destination {
-            if onRoute { route.removeFirst() } else { route = map.route(after: edge, to: destination) ?? [] }
+            if onRoute { route.removeFirst() } else { route = map.route(after: edge, to: destination, avoiding: closedRoads) ?? [] }
         }
         return (pick, onRoute)
     }

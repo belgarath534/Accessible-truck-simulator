@@ -86,7 +86,9 @@ final class DrivingController: NSObject, ObservableObject {
         case .practice, .tutorial: navigator = nil
         case .freeDrive: navigator = Navigator(map: .standard, origin: town, destination: nil)
         case let .job(job):
-            navigator = job.destination.flatMap { Navigator(map: .standard, origin: job.origin ?? town, destination: $0) }
+            navigator = job.destination.flatMap {
+                Navigator(map: .standard, origin: job.origin ?? town, destination: $0, closed: job.closedRoad.map { [$0] } ?? [])
+            }
         }
         let session = DrivingSession(spec: truck, goal: drive.goal, cargoMassKg: drive.job?.cargo.massKg ?? 0,
                                      timeLimit: drive.job?.timeLimit,

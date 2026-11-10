@@ -44,6 +44,7 @@ enum Changelog {
             "Truck wear: miles and crashes wear your trucks down. Worn trucks lose power and blow tires more often. Service them in the Garage.",
             "Depots: buy one in another town for half-price fuel there and 10 percent more pay on jobs leaving it.",
             "Bank loans: borrow up to $30,000 to grow faster, paid back a little from every delivery.",
+            "Detours: now and then a road is closed for repairs. The job says so, your GPS goes around it, and the pay and time limit include the extra miles.",
             "Three new achievements: Oh Deer, Make Some Noise and Speed Demon. And a new Top Speed leaderboard.",
         ]),
         Version(number: "1.1", title: "Big Update", items: [
@@ -130,7 +131,7 @@ enum Changelog {
     ]
 
     static let comingSoon: [String] = [
-        "Detours around closed roads.",
+        "Version 1.3 is yours to shape: tell us what you'd like next. Player ideas, like Turbo Mode, go straight into the game.",
     ]
 
     static var current: String { Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? versions[0].number }
