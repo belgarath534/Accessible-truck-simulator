@@ -95,7 +95,7 @@ public final class DrivingSession {
     public let navigator: Navigator?
     public let goal: TripGoal
     /// Cargo weight on the trailer; heavier loads accelerate and stop more slowly.
-    public let cargoMassKg: Double
+    public internal(set) var cargoMassKg: Double
     /// Seconds allowed for a delivery job, if it has a deadline.
     public let timeLimit: Double?
     public var assist: SteeringAssist
@@ -410,6 +410,12 @@ public final class DrivingSession {
     public internal(set) var docking: DockingState?
     public internal(set) var dockRating: DockRating?
     var pendingStopError = 0.0
+    /// A tow call: metres along the route to the stranded car (nil for other drives). Set before driving.
+    public var towPickupAt: Double?
+    public internal(set) var towHooked = false
+    public internal(set) var towFailed = false
+    var towAnnounced = false
+    var towHookTimer = 0.0
     /// The load's kind (special cargo rules). Set before driving.
     public var cargoKind: CargoKind = .standard
     var lastLivestockScare = -100.0
@@ -487,6 +493,7 @@ public final class DrivingSession {
         checkWeighStations(events: &events)
         checkTurboSpeed(events: &events)
         checkSpecialCargo(input: input, events: &events)
+        checkTowCall(dt: dt, events: &events)
         stepBrakes(dt: dt, input: input, events: &events)
         checkBlowout(dt: dt, events: &events)
         checkHills(events: &events)

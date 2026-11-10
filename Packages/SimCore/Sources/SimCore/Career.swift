@@ -78,6 +78,8 @@ public struct DeliveryJob: Codable, Equatable, Hashable, Identifiable, Sendable 
     public var storyID: Int?
     /// A road on the way closed for repairs (map edge index): the job's distance includes the detour.
     public var closedRoad: Int?
+    /// A tow call (tow truck only): where the stranded car is.
+    public var tow: TowCall?
     /// Map town ids (nil for jobs from before the map).
     public var origin: String?
     public var destination: String?
@@ -491,7 +493,9 @@ public struct CareerState: Codable, Equatable, Sendable {
         guard money >= truck.price else { return .notEnoughMoney(short: truck.price - money) }
         money -= truck.price
         ownedTrucks.append(truck.id)
+        let wasTow = TruckSpec.withID(selectedTruck).isTowTruck
         selectedTruck = truck.id
+        if wasTow != truck.isTowTruck { refreshBoard() }
         return .bought
     }
 
@@ -505,7 +509,10 @@ public struct CareerState: Codable, Equatable, Sendable {
             drivers[i].truckID = selectedTruck
             drivers[i].progress = 0
         }
+        let wasTow = TruckSpec.withID(selectedTruck).isTowTruck
         selectedTruck = truck.id
+        // Tow calls or freight: the board follows the truck.
+        if wasTow != truck.isTowTruck { refreshBoard() }
         return true
     }
 
@@ -541,6 +548,11 @@ public struct CareerState: Codable, Equatable, Sendable {
     public mutating func refreshBoard() {
         seed = seed &* 6_364_136_223_846_793_005 &+ 1
         var rng = SeededRandom(seed: seed)
+        if TruckSpec.withID(selectedTruck).isTowTruck {
+            // The tow truck takes tow calls instead of freight.
+            jobBoard = (0..<JobBoard.size).map { _ in JobBoard.makeTowJob(using: &rng, from: currentTown) }
+            return
+        }
         jobBoard = JobBoard.makeBoard(using: &rng, from: currentTown, level: reputationLevel, contract: contract)
         // The next story mission goes on the board in its own town.
         if let mission = nextStoryMission, mission.from == currentTown {

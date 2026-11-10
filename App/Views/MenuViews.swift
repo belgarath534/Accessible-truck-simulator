@@ -501,7 +501,7 @@ struct GarageView: View {
                     .accessibilityHint("For snowy winter days: much better grip and braking, but a top speed of \(phrases.units.speed(DrivingSession.chainsSpeed)) \(phrases.units.speedUnitSpoken).")
                 }
             }
-            ForEach(TruckSpec.catalog, id: \.id) { truck in
+            ForEach(TruckSpec.allTrucks, id: \.id) { truck in
                 Section {
                     Text(phrases.truck(career.upgraded(truck)))
                     if career.state.owns(truck) {

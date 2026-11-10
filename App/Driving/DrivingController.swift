@@ -103,7 +103,8 @@ final class DrivingController: NSObject, ObservableObject {
         // Turbo Mode on jobs and Free Drive only: never the tutorial or the practice loop.
         session.turbo = settings.turbo && navigator != nil && !ScreenshotMode.isOn
         session.cargoKind = drive.job?.cargo.kind ?? .standard
-        session.dockingEnabled = settings.docking && drive.job != nil && !ScreenshotMode.isOn
+        session.dockingEnabled = settings.docking && drive.job != nil && drive.job?.tow == nil && !ScreenshotMode.isOn
+        session.towPickupAt = drive.job?.tow?.pickupAt
         session.cbRadioEnabled = settings.radioVoices && navigator != nil && !ScreenshotMode.isOn
         session.blowoutsEnabled = navigator != nil && !ScreenshotMode.isOn
         // Weather for every drive except the tutorial (and screenshots).

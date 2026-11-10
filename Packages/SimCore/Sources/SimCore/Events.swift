@@ -141,6 +141,13 @@ public enum SimEvent: Equatable, Sendable {
     case weighedIn(cargoKg: Double, fine: Int)
     /// Drove past a weigh station without pulling in (`tooFast`: signalled, but too fast to take the exit).
     case skippedWeighStation(fine: Int, tooFast: Bool)
+    // Tow calls
+    /// The stranded car is this many metres ahead.
+    case towCarAhead(distance: Double)
+    case towHookingUp
+    case towHooked
+    /// Drove past the stranded car: the call is canceled.
+    case towMissedCar
     /// Stopped at a truck stop without pulling in: tells the player how.
     case atTruckStop
     /// A tire blew out on this side: the truck pulls that way until you stop.

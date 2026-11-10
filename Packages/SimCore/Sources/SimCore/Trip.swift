@@ -51,6 +51,8 @@ public struct TripStats: Codable, Equatable, Sendable {
     public var livestockScares = 0
     public var oversizeWarnings = 0
     public var hazmatSpilled = false
+    /// A tow call's car was hooked up and brought in.
+    public var towCompleted = false
     /// Roadside repairs (tire changes), dollars.
     public var repairCost = 0
 
@@ -59,7 +61,7 @@ public struct TripStats: Codable, Equatable, Sendable {
     enum CodingKeys: String, CodingKey {
         case drivingTime, distance, crashes, topSpeed, tooFastWarnings, fuelUsedLiters, fuelBoughtLiters, fuelCost
         case tows, towCost, tickets, ticketCost, tollCost, deerScared, weighStationFines, turbo
-        case livestockScares, oversizeWarnings, hazmatSpilled, repairCost
+        case livestockScares, oversizeWarnings, hazmatSpilled, repairCost, towCompleted
     }
 
     /// Saved drives from before tolls existed load fine.
@@ -85,6 +87,7 @@ public struct TripStats: Codable, Equatable, Sendable {
         oversizeWarnings = try c.decodeIfPresent(Int.self, forKey: .oversizeWarnings) ?? 0
         hazmatSpilled = try c.decodeIfPresent(Bool.self, forKey: .hazmatSpilled) ?? false
         repairCost = try c.decodeIfPresent(Int.self, forKey: .repairCost) ?? 0
+        towCompleted = try c.decodeIfPresent(Bool.self, forKey: .towCompleted) ?? false
     }
 
     public var averageSpeed: Double { drivingTime > 0 ? distance / drivingTime : 0 }

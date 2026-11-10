@@ -214,6 +214,16 @@ final class FeedbackCoordinator {
             audio.airBrake()
             speech.speak(phrases.skippedWeighStation(fine: fine, tooFast: tooFast), priority: .high)
             haptics.tap(intensity: 1, sharpness: 0.8)
+        case let .towCarAhead(distance):
+            speech.speak(phrases.towCarAhead(distance), priority: .high)
+        case .towHookingUp:
+            speech.speak(phrases.towHookingUp, priority: .high)
+        case .towHooked:
+            audio.airBrake()
+            speech.speak(phrases.towHooked, priority: .high)
+            haptics.tap(intensity: 0.8, sharpness: 0.4)
+        case .towMissedCar:
+            speech.speak(phrases.towMissedCar, priority: .high)
         case .atTruckStop:
             speech.speak(phrases.atTruckStop, priority: .high)
         case let .blowout(side):
@@ -442,10 +452,14 @@ final class FeedbackCoordinator {
         audio.state.pumping = session.isRefueling
         audio.state.siren = session.sirenOn
         // Docking: the beacon counts down to the dock (steady in the last metre or two), with the backup alarm.
-        audio.state.backupAlarm = (session.docking?.speed ?? 0) > 0.05
+        // The backup alarm: reversing into the dock, or the winch hooking up a towed car.
+        audio.state.backupAlarm = (session.docking?.speed ?? 0) > 0.05 || session.towHooking
         audio.state.engineBrake = truck.engineBraking && !engineSound.electric // electric trucks brake with the motor, silently
         if let dock = session.docking {
             audio.state.beaconDistance = Float(max(0, dock.distance) * 7)
+        // Tow call: the beeps lead to the stranded car.
+        } else if let car = session.towCarDistance, car < 150, car > -60 {
+            audio.state.beaconDistance = Float(car)
         // Drop-off beacon: beeps speed up over the last 150 m, a steady tone right at the drop-off.
         } else if session.summary == nil, let r = session.remaining, r < 150, r > -60 {
             audio.state.beaconDistance = Float(r)

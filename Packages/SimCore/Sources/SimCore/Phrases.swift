@@ -255,6 +255,26 @@ public struct Phrases {
             : "You skipped the weigh station! Fine: \(Phrases.money(fine)). Signal right to pull in next time."
     }
 
+    // MARK: Tow calls
+
+    public func towCall(_ job: DeliveryJob) -> String {
+        guard let t = job.tow else { return "" }
+        return "Tow call: \(t.car) with \(t.trouble), \(units.distance(t.pickupAt)) out on the road. Tow it to \(t.place). \(units.distance(job.distance)) in all, pays \(Phrases.money(job.pay)), time limit \(duration(job.timeLimit, roundToMinutes: true))."
+    }
+
+    public func towIntro(_ job: DeliveryJob) -> String {
+        guard let t = job.tow else { return "" }
+        return "Tow call! \(t.car.prefix(1).uppercased() + t.car.dropFirst()) is stuck with \(t.trouble), \(units.distance(t.pickupAt)) ahead. The beeps lead you to it: stop right next to it to hook it up, then tow it to \(t.place). Drive carefully: crashes damage the customer's car."
+    }
+
+    public func towCarAhead(_ distance: Double) -> String {
+        "The stranded car is \(units.distance(distance)) ahead. Slow down and stop right next to it."
+    }
+
+    public let towHookingUp = "Hooking up the car. Hold still."
+    public let towHooked = "Car hooked up! Now tow it to the drop-off. You're heavier: brake early."
+    public let towMissedCar = "You drove past the stranded car. Another tow truck took the call: no pay for this one. Drive on to finish."
+
     // MARK: Blowouts and wear
 
     public func blowout(_ side: Side) -> String {
@@ -445,6 +465,7 @@ public struct Phrases {
     }
 
     public func job(_ job: DeliveryJob) -> String {
+        if job.tow != nil { return towCall(job) }
         let route = job.destinationName.map { " to \($0)" } ?? ""
         var parts = ["\(job.cargo.name)\(route), \(units.distance(job.distance))",
                      "pays \(Phrases.money(job.pay))",
@@ -459,6 +480,7 @@ public struct Phrases {
     }
 
     public func jobIntro(_ job: DeliveryJob) -> String {
+        if job.tow != nil { return towIntro(job) }
         let towns = job.originName.flatMap { o in job.destinationName.map { "from \(o) to \($0), " } } ?? ""
         var text = "Job: deliver \(job.cargo.name.lowercased()), \(weight(job.cargo.massKg)), \(towns)"
             + "\(units.distance(job.distance)) to the drop-off. "

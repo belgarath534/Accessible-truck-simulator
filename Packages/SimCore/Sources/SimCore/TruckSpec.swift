@@ -424,6 +424,9 @@ public extension TruckSpec {
         return t
     }(), .farmRunner, .workhorse, .cityHauler, .mountainGoat, .roadKing, .highwayStar, .longHauler, .ironBull, .volt, .titan]
 
+    /// Every truck you can own: the freight trucks, plus special vehicles like the tow truck.
+    static var allTrucks: [TruckSpec] { catalog + [.towTruck] }
+
     /// Peak engine power, horsepower.
     var horsepower: Int {
         let watts = torqueCurve.map { $0.torque * $0.rpm * 2 * .pi / 60 }.max() ?? 0
@@ -431,6 +434,6 @@ public extension TruckSpec {
     }
 
     static func withID(_ id: String) -> TruckSpec {
-        catalog.first { $0.id == id } ?? .starter
+        allTrucks.first { $0.id == id } ?? .starter
     }
 }

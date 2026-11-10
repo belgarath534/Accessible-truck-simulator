@@ -99,6 +99,7 @@ public extension CareerState {
     /// The delivery's pay: the usual payout, plus the reputation bonus and, when it finishes a contract, the
     /// contract bonus. Call before `completeDelivery`.
     func deliveryPayout(_ job: DeliveryJob, summary: TripSummary, weather: Weather = .clear) -> Payout {
+        if job.tow != nil && !summary.stats.towCompleted { return Payout.towCanceled(summary.stats) }
         var payout = Payout.delivery(job, summary: summary, weather: weather)
         let spilled = job.cargo.kind == .hazmat && summary.stats.hazmatSpilled
         let level = reputationLevel
