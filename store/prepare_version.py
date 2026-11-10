@@ -74,14 +74,20 @@ problems = []
 # ------------------------------------------------------------------ 1. the version
 versions = call("GET", f"/apps/{app}/appStoreVersions", params={"filter[platform]": "IOS", "limit": 20})["data"]
 version = next((v for v in versions if v["attributes"]["versionString"] == VERSION), None)
+# RELEASE=manual: Apple approves it and it waits for a release-day button press (or store/release_now.py).
+RELEASE_TYPE = "MANUAL" if os.environ.get("RELEASE", "").lower() == "manual" else "AFTER_APPROVAL"
 if version:
     print(f"Version {VERSION} already exists ({version['attributes']['appStoreState']}).")
+    if version["attributes"].get("releaseType") != RELEASE_TYPE:
+        call("PATCH", f"/appStoreVersions/{version['id']}", json={"data": {
+            "type": "appStoreVersions", "id": version["id"], "attributes": {"releaseType": RELEASE_TYPE}}})
 else:
     version = call("POST", "/appStoreVersions", json={"data": {
         "type": "appStoreVersions", "attributes": {"platform": "IOS", "versionString": VERSION,
-                                                   "releaseType": "AFTER_APPROVAL"},
+                                                   "releaseType": RELEASE_TYPE},
         "relationships": {"app": rel("apps", app)}}})["data"]
     print(f"Created version {VERSION}.")
+print(f"Release: {'by hand, after approval' if RELEASE_TYPE == 'MANUAL' else 'automatically when Apple approves it'}.")
 
 # ------------------------------------------------------------------ 2. Game Center with this version
 detail = call("GET", f"/apps/{app}/gameCenterDetail", ok404=True)

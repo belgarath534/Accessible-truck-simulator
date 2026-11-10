@@ -8,11 +8,21 @@ name: Release to the App Store
 on:
   workflow_dispatch:
     inputs:
+      release_now:
+        description: Only release the approved version that is waiting (skips everything else)?
+        type: choice
+        default: "no"
+        options: ["no", "yes"]
       submit:
         description: Send it to App Review at the end?
         type: choice
         default: "no"
         options: ["no", "yes"]
+      release:
+        description: When Apple approves it, release it automatically or wait for release day?
+        type: choice
+        default: automatic
+        options: [automatic, manual]
       screenshots:
         description: Take and upload fresh screenshots?
         type: choice
@@ -68,19 +78,25 @@ jobs:
           python3 -m pip install --quiet --break-system-packages pyjwt cryptography requests 2>/dev/null \
             || python3 -m pip install --quiet pyjwt cryptography requests
 
+      - name: Release the approved version now
+        if: inputs.release_now == 'yes'
+        run: python3 store/release_now.py
+
       - name: Create the version and add Game Center
-        run: python3 store/prepare_version.py
+        if: inputs.release_now != 'yes'
+        run: RELEASE=${{ inputs.release }} python3 store/prepare_version.py
 
       - name: Store text and What's New
+        if: inputs.release_now != 'yes'
         run: python3 store/fill_store_info.py
 
       - uses: maxim-lobanov/setup-xcode@v1
-        if: inputs.screenshots == 'yes'
+        if: inputs.screenshots == 'yes' && inputs.release_now != 'yes'
         with:
           xcode-version: latest-stable
 
       - name: Take and upload screenshots
-        if: inputs.screenshots == 'yes'
+        if: inputs.screenshots == 'yes' && inputs.release_now != 'yes'
         # If the simulators misbehave, the version keeps the screenshots it already has.
         continue-on-error: true
         run: |
@@ -90,6 +106,7 @@ jobs:
           python3 store/upload_screenshots.py shots/ipad APP_IPAD_PRO_3GEN_129
 
       - name: Attach the build and submit
+        if: inputs.release_now != 'yes'
         run: SUBMIT=${{ inputs.submit }} python3 store/submit_for_review.py
 
       - name: Remove keys
