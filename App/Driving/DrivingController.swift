@@ -273,7 +273,8 @@ final class DrivingController: NSObject, ObservableObject {
         let trip = TripResult(job: drive.job, summary: drive.job == nil ? nil : summary, stats: summary.stats)
         if var result {
             // Reputation and contract news are read out after the pay.
-            result.news = career.record(result, distance: summary.stats.distance, completing: drive.job, trip: trip)
+            result.news = career.record(result, distance: summary.stats.distance, completing: drive.job, trip: trip,
+                                        weather: session.weather)
             payout = result
         } else {
             payout = nil

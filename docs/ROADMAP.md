@@ -55,7 +55,7 @@ captions, driving buttons, Larger Text / Increase Contrast / Reduce Motion, iPad
 
 ## 1.3: planned (November 2026)
 Player ideas first; a weekly-update rhythm.
-- Weekly Challenges: a new challenge each week with a prize and a weekly leaderboard
+- Weekly Challenges: a new challenge each week with a prize and a weekly leaderboard (done)
 - Tow truck jobs: answer calls from stranded drivers, hook up the car, bring it to the mechanic
 - New trucks and trailers, including double trailers
 - Rest stops (light and optional): a tiredness warning on long drives, a nap at a truck stop for a small bonus

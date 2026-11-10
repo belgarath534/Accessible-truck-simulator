@@ -13,6 +13,9 @@ enum Changelog {
 
     /// Newest first. Add to the top for each update.
     static let versions: [Version] = [
+        Version(number: "1.3", title: "Weekly Update", items: [
+            "Weekly Challenges: a new challenge every Monday, the same for every player, with a money prize. Find it at the top of the Job Board, and climb the new Weekly Challenges Won leaderboard.",
+        ]),
         Version(number: "1.2", title: "The Big Road Update", items: [
             "Save and Continue Later: pause a long drive and pick it up from the main menu, right where you left off.",
             "Drivers grow: after 20 deliveries they ask for a raise to move up a star. Pay it and they're faster and earn more. Ignore them for too long and they quit.",
@@ -132,7 +135,6 @@ enum Changelog {
     ]
 
     static let comingSoon: [String] = [
-        "Weekly Challenges: a new challenge every week, with a prize and a weekly leaderboard.",
         "Tow truck jobs: answer calls from stranded drivers and bring their cars to the mechanic.",
         "New trucks and double trailers, and a sixth town on a bigger map.",
         "Rest stops, a manual gearbox option, and a \"What's around me\" gesture.",

@@ -70,13 +70,15 @@ final class CareerStore: ObservableObject {
     /// Pays the player for a drive and, for a delivery, updates reputation and contracts and swaps in a new job.
     /// Returns news for the player (reputation, contracts).
     @discardableResult
-    func record(_ payout: Payout, distance: Double, completing job: DeliveryJob?, trip: TripResult? = nil) -> [String] {
+    func record(_ payout: Payout, distance: Double, completing job: DeliveryJob?, trip: TripResult? = nil,
+                weather: Weather = .clear) -> [String] {
         state.record(payout, distance: distance)
         wear(trip)
         var news: [String] = []
         if let job {
             if let summary = trip?.summary {
                 news = state.completeDelivery(job, summary: summary, payout: payout)
+                news += state.recordWeekly(job: job, summary: summary, weather: weather)
             } else {
                 state.completeJob(job)
             }

@@ -200,6 +200,16 @@ struct JobBoardView: View {
                                            : "Hazmat loads open at Respected.")
                 }
             }
+            Section {
+                let challenge = career.state.weeklyChallenge()
+                if career.state.weeklyDone() {
+                    Text("Done! You won \(Phrases.money(challenge.prize)) this week. A new challenge starts on Monday.")
+                } else {
+                    Text("\(challenge.description) \(career.state.weeklyProgress()) of \(challenge.target) so far. Prize: \(Phrases.money(challenge.prize)). A new challenge starts every Monday.")
+                }
+            } header: {
+                Text("This week's challenge")
+            }
             if let mission = career.state.nextStoryMission {
                 Section {
                     if mission.from == career.state.currentTown {

@@ -327,6 +327,11 @@ public struct CareerState: Codable, Equatable, Sendable {
     public var hasChains = false
     /// Towns with a depot of yours (cheap fuel, better-paying jobs).
     public var depots: [String] = []
+    /// The weekly challenge: which week, progress, whether the prize was paid, and how many were won.
+    public var weeklyWeek = 0
+    public var weeklyCount = 0
+    public var weeklyClaimed = false
+    public var weeklyChallengesWon = 0
     /// What you still owe the bank, dollars.
     public var loanOwed = 0
     /// Each truck's condition (percent), by truck id; missing means 100.
@@ -372,6 +377,7 @@ public struct CareerState: Codable, Equatable, Sendable {
     enum CodingKeys: String, CodingKey {
         case money, jobsCompleted, kilometersDriven, totalEarned, jobBoard, seed, ownedTrucks, selectedTruck, upgrades, fuel, currentTown, drivers, candidates, achievements, visitedTowns, savedDrive
         case companyName, truckNames, ownedHorns, selectedHorn, bestTurboSpeed, hasChains, truckCondition, depots, loanOwed
+        case weeklyWeek, weeklyCount, weeklyClaimed, weeklyChallengesWon
         case reputation, contract, contractOffer, storyProgress
     }
 
@@ -406,6 +412,10 @@ public struct CareerState: Codable, Equatable, Sendable {
         truckCondition = try c.decodeIfPresent([String: Double].self, forKey: .truckCondition) ?? [:]
         depots = try c.decodeIfPresent([String].self, forKey: .depots) ?? []
         loanOwed = try c.decodeIfPresent(Int.self, forKey: .loanOwed) ?? 0
+        weeklyWeek = try c.decodeIfPresent(Int.self, forKey: .weeklyWeek) ?? 0
+        weeklyCount = try c.decodeIfPresent(Int.self, forKey: .weeklyCount) ?? 0
+        weeklyClaimed = try c.decodeIfPresent(Bool.self, forKey: .weeklyClaimed) ?? false
+        weeklyChallengesWon = try c.decodeIfPresent(Int.self, forKey: .weeklyChallengesWon) ?? 0
         // Saves from before reputation: credit the deliveries already made.
         reputation = try c.decodeIfPresent(Int.self, forKey: .reputation) ?? jobsCompleted * 15
         contract = try c.decodeIfPresent(Contract.self, forKey: .contract)

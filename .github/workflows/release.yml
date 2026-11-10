@@ -82,6 +82,11 @@ jobs:
         if: inputs.release_now == 'yes'
         run: python3 store/release_now.py
 
+      - name: Game Center achievements and leaderboards
+        if: inputs.release_now != 'yes'
+        continue-on-error: true
+        run: python3 store/setup_game_center.py
+
       - name: Create the version and add Game Center
         if: inputs.release_now != 'yes'
         run: RELEASE=${{ inputs.release }} python3 store/prepare_version.py

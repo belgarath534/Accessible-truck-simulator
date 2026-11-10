@@ -3,7 +3,7 @@ Run by Codemagic (workflow truck-sim-game-center) with the App Store Connect key
 
   - Turns on Game Center for the app
   - Creates each achievement in game_center/achievements.json with its English text and picture
-  - Creates the leaderboards (money earned, deliveries, top speed)
+  - Creates the leaderboards (money earned, deliveries, top speed, weekly challenges)
 Things that already exist are left alone, except missing text or pictures, which are added.
 """
 import hashlib
@@ -138,6 +138,8 @@ LEADERBOARDS = [
      "submission": "MOST_RECENT_SCORE", "suffix": " deliveries", "singular": " delivery"},
     {"vendor": "trucksim.top_speed", "name": "Top Speed", "formatter": "INTEGER",
      "submission": "BEST_SCORE", "suffix": " mph", "singular": " mph"},
+    {"vendor": "trucksim.weekly_challenges", "name": "Weekly Challenges Won", "formatter": "INTEGER",
+     "submission": "MOST_RECENT_SCORE", "suffix": " challenges", "singular": " challenge"},
 ]
 boards = {b["attributes"]["vendorIdentifier"]: b
           for b in all_pages(f"/gameCenterDetails/{detail_id}/gameCenterLeaderboards", limit=200)}

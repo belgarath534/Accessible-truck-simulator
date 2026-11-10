@@ -120,12 +120,14 @@ public enum Leaderboard: String, CaseIterable, Sendable {
     case totalEarned = "trucksim.total_earned"
     case deliveries = "trucksim.deliveries"
     case topSpeed = "trucksim.top_speed"
+    case weeklyChallenges = "trucksim.weekly_challenges"
 
     public var title: String {
         switch self {
         case .totalEarned: return "Money Earned"
         case .deliveries: return "Deliveries"
         case .topSpeed: return "Top Speed"
+        case .weeklyChallenges: return "Weekly Challenges Won"
         }
     }
 
@@ -134,6 +136,7 @@ public enum Leaderboard: String, CaseIterable, Sendable {
         case .totalEarned: return max(0, career.totalEarned)
         case .deliveries: return career.jobsCompleted
         case .topSpeed: return Int((career.bestTurboSpeed * 2.236_94).rounded())
+        case .weeklyChallenges: return career.weeklyChallengesWon
         }
     }
 }
