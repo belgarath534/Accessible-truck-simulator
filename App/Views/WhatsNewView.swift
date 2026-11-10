@@ -132,7 +132,12 @@ enum Changelog {
     ]
 
     static let comingSoon: [String] = [
-        "Version 1.3 is yours to shape: tell us what you'd like next. Player ideas, like Turbo Mode, go straight into the game.",
+        "Weekly Challenges: a new challenge every week, with a prize and a weekly leaderboard.",
+        "Tow truck jobs: answer calls from stranded drivers and bring their cars to the mechanic.",
+        "New trucks and double trailers, and a sixth town on a bigger map.",
+        "Rest stops, a manual gearbox option, and a \"What's around me\" gesture.",
+        "Recorded voices for the dispatcher, the CB truckers and the radio DJ.",
+        "Have an idea? Tell us: player ideas, like Turbo Mode, go straight into the game.",
     ]
 
     static var current: String { Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? versions[0].number }

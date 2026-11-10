@@ -53,5 +53,19 @@ captions, driving buttons, Larger Text / Increase Contrast / Reduce Motion, iPad
 - Depots in other towns (done)
 - Bank loans (done)
 
+## 1.3: planned (November 2026)
+Player ideas first; a weekly-update rhythm.
+- Weekly Challenges: a new challenge each week with a prize and a weekly leaderboard
+- Tow truck jobs: answer calls from stranded drivers, hook up the car, bring it to the mechanic
+- New trucks and trailers, including double trailers
+- Rest stops (light and optional): a tiredness warning on long drives, a nap at a truck stop for a small bonus
+- A bigger map: a sixth town and new roads
+- Manual gearbox option
+- "What's around me": a gesture that describes what's nearby
+- A second tutorial for the 1.2 features
+- Send Feedback button
+- Recorded radio voices (dispatcher, CB, DJ), when ElevenLabs credits are back
+- Later: bus driving (a separate mode; not for now)
+
 ## Windows version
 Stage 1 done (tutorial and practice drive). Next: jobs, money, trucks and the map; then music, settings and the Microsoft Store.
