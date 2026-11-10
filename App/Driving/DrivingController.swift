@@ -95,6 +95,7 @@ final class DrivingController: NSObject, ObservableObject {
         session.wildlifeEnabled = settings.wildlife && navigator != nil && !ScreenshotMode.isOn
         // Turbo Mode on jobs and Free Drive only: never the tutorial or the practice loop.
         session.turbo = settings.turbo && navigator != nil && !ScreenshotMode.isOn
+        session.cargoKind = drive.job?.cargo.kind ?? .standard
         // Weather for every drive except the tutorial (and screenshots).
         if settings.weather && drive != .tutorial && !ScreenshotMode.isOn {
             var rng = SystemRandomNumberGenerator()
@@ -132,6 +133,7 @@ final class DrivingController: NSObject, ObservableObject {
         feedback.weather = session.weather
         feedback.timeOfDay = session.timeOfDay
         feedback.turbo = session.turbo
+        feedback.cargo = drive.job?.cargo
         feedback.hornFile = career.state.horn.soundFile
         feedback.truckNickname = career.state.nickname(for: session.spec)
         feedback.freeDriveTown = career.state.currentTownName

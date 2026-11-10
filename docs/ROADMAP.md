@@ -33,7 +33,7 @@ captions, driving buttons, Larger Text / Increase Contrast / Reduce Motion, iPad
 ## 1.2, Part 3: On the Job (in progress)
 - Weigh stations (done)
 - Docking by ear: back the trailer into the loading dock with reverse beeps
-- Special cargo: livestock (they moo and hate hard braking), refrigerated (spoils if you're slow), oversize (escort car, narrow roads), hazmat (big pay, one crash ends the job)
+- Special cargo: livestock (they moo and hate hard braking), refrigerated (spoils if you're slow), oversize (escort car, narrow roads), hazmat (big pay, one crash ends the job) (done)
 - Company contracts: several deliveries for one client for a big bonus
 - Reputation: unlocks better jobs and clients
 

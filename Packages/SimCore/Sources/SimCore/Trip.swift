@@ -47,12 +47,17 @@ public struct TripStats: Codable, Equatable, Sendable {
     public var weighStationFines: Int = 0
     /// The drive was in Turbo Mode.
     public var turbo = false
+    // Special cargo
+    public var livestockScares = 0
+    public var oversizeWarnings = 0
+    public var hazmatSpilled = false
 
     public init() {}
 
     enum CodingKeys: String, CodingKey {
         case drivingTime, distance, crashes, topSpeed, tooFastWarnings, fuelUsedLiters, fuelBoughtLiters, fuelCost
         case tows, towCost, tickets, ticketCost, tollCost, deerScared, weighStationFines, turbo
+        case livestockScares, oversizeWarnings, hazmatSpilled
     }
 
     /// Saved drives from before tolls existed load fine.
@@ -74,6 +79,9 @@ public struct TripStats: Codable, Equatable, Sendable {
         deerScared = try c.decodeIfPresent(Int.self, forKey: .deerScared) ?? 0
         weighStationFines = try c.decodeIfPresent(Int.self, forKey: .weighStationFines) ?? 0
         turbo = try c.decodeIfPresent(Bool.self, forKey: .turbo) ?? false
+        livestockScares = try c.decodeIfPresent(Int.self, forKey: .livestockScares) ?? 0
+        oversizeWarnings = try c.decodeIfPresent(Int.self, forKey: .oversizeWarnings) ?? 0
+        hazmatSpilled = try c.decodeIfPresent(Bool.self, forKey: .hazmatSpilled) ?? false
     }
 
     public var averageSpeed: Double { drivingTime > 0 ? distance / drivingTime : 0 }

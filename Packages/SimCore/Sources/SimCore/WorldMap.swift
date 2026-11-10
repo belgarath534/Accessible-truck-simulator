@@ -293,15 +293,15 @@ public extension WorldMap {
     static let standard: WorldMap = {
         let nodes = [
             MapNode(id: "millbrook", name: "Millbrook", x: 0, y: 0, isTown: true,
-                    exports: ["Furniture", "Canned goods"]),
+                    exports: ["Furniture", "Canned goods", "Ice cream"]),
             MapNode(id: "millbrook_junction", name: "Millbrook Junction", x: 4, y: 0, isTown: false, exports: []),
-            MapNode(id: "cedar_falls", name: "Cedar Falls", x: 4, y: 8, isTown: true, exports: ["Lumber", "Furniture"]),
+            MapNode(id: "cedar_falls", name: "Cedar Falls", x: 4, y: 8, isTown: true, exports: ["Lumber", "Furniture", "Fishing boat"]),
             MapNode(id: "central_junction", name: "Central Junction", x: 13, y: 0, isTown: false, exports: []),
             MapNode(id: "ridgeport", name: "Ridgeport", x: 13, y: 7, isTown: true,
-                    exports: ["Electronics", "Glassware", "Canned goods"]),
-            MapNode(id: "ironton", name: "Ironton", x: 13, y: -6, isTown: true, exports: ["Steel beams", "Gravel"]),
+                    exports: ["Electronics", "Glassware", "Canned goods", "Gasoline", "Chemicals"]),
+            MapNode(id: "ironton", name: "Ironton", x: 13, y: -6, isTown: true, exports: ["Steel beams", "Gravel", "Wind turbine blade"]),
             MapNode(id: "bayview", name: "Bayview", x: 19, y: 1, isTown: true,
-                    exports: ["Fresh produce", "Frozen food", "Medical supplies"]),
+                    exports: ["Fresh produce", "Frozen food", "Medical supplies", "Cattle", "Chickens"]),
         ]
         func edge(_ name: String, _ a: String, _ b: String, _ style: RoadStyle, _ km: Double, _ seed: UInt64) -> MapEdge {
             MapEdge(name: name, a: a, b: b, style: style, road: Road.generate(length: km * 1_000, style: style, seed: seed))

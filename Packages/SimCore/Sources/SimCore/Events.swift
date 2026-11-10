@@ -139,6 +139,17 @@ public enum SimEvent: Equatable, Sendable {
     case weighedIn(cargoKg: Double, fine: Int)
     /// Drove past a weigh station without pulling in (`tooFast`: signalled, but too fast to take the exit).
     case skippedWeighStation(fine: Int, tooFast: Bool)
+    // Special cargo
+    /// Livestock: hard braking or a fast curve scared the animals.
+    case livestockScared
+    /// The animals make a sound now and then (just for atmosphere).
+    case livestockSound
+    /// Oversize: over the wide-load limit.
+    case oversizeTooFast(limit: Double)
+    /// Refrigerated: past the deadline, the load is starting to spoil.
+    case cargoSpoiling
+    /// Hazmat: a crash spilled the load.
+    case hazmatSpill(cost: Int)
     /// Turbo Mode: a new speed milestone (every 25 mph from 75 mph), m/s.
     case turboSpeed(Double)
     case dashboard(DashboardReading)

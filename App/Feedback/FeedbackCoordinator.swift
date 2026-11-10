@@ -30,6 +30,8 @@ final class FeedbackCoordinator {
     var hornFile = "horn"
     /// The name the player gave this truck, if any; set before start().
     var truckNickname: String?
+    /// The load, for special cargo sounds; set before start().
+    var cargo: Cargo?
     /// Turbo Mode is on; set before start().
     var turbo = false
     /// Day or night; set before start().
@@ -185,6 +187,21 @@ final class FeedbackCoordinator {
             audio.airBrake()
             speech.speak(phrases.skippedWeighStation(fine: fine, tooFast: tooFast), priority: .high)
             haptics.tap(intensity: 1, sharpness: 0.8)
+        case .livestockScared:
+            audio.playEffect(livestockEffect, volume: 1)
+            speech.speak(phrases.livestockScared, priority: .high)
+            haptics.tap(intensity: 0.9, sharpness: 0.5)
+        case .livestockSound:
+            audio.playEffect(livestockEffect, volume: 0.45)
+        case let .oversizeTooFast(limit):
+            speech.speak(phrases.oversizeTooFast(limit: limit), priority: .high)
+            haptics.tap(intensity: 0.8, sharpness: 0.8)
+        case .cargoSpoiling:
+            speech.speak(phrases.cargoSpoiling, priority: .high)
+        case let .hazmatSpill(cost):
+            audio.airBrake()
+            speech.speak(phrases.hazmatSpill(cost: cost), priority: .high)
+            haptics.tap(intensity: 1, sharpness: 1)
         case let .turboSpeed(speed):
             speech.speak(phrases.turboSpeed(speed), priority: .high)
             haptics.tap(intensity: 0.8, sharpness: 1)
@@ -298,9 +315,14 @@ final class FeedbackCoordinator {
         }
     }
 
+    /// Cattle moo, chickens cluck.
+    private var livestockEffect: String { cargo?.name == "Chickens" ? "fx_chickens" : "fx_cattle" }
+
     /// Town sounds near towns, crickets at night, birds at dawn, machines in work zones.
     private func ambience(_ session: DrivingSession) -> [String: Float] {
         var out: [String: Float] = [:]
+        // The refrigerated trailer's cooling unit, behind you the whole drive.
+        if session.cargoKind == .refrigerated && session.truck.engine == .running { out["amb_reefer"] = 0.22 }
         let zone = session.road.speedZone(at: session.truck.position)
         if session.inConstructionZone {
             out["amb_construction"] = 0.55

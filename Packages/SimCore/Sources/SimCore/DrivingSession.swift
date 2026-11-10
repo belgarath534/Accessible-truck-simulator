@@ -371,6 +371,13 @@ public final class DrivingSession {
     var tollsHandled: Set<Int> = []
     var tollsAnnounced: Set<Int> = []
     var weighStationsHandled: Set<Int> = []
+    /// The load's kind (special cargo rules). Set before driving.
+    public var cargoKind: CargoKind = .standard
+    var lastLivestockScare = -100.0
+    var nextLivestockSound = 30.0
+    var oversizeOverSince: Double?
+    var lastOversizeWarning = -100.0
+    var announcedSpoiling = false
     /// Turbo Mode: no governor, a big power boost, no police. Set before driving.
     public var turbo = false {
         didSet { stats.turbo = turbo }
@@ -435,6 +442,7 @@ public final class DrivingSession {
         checkTolls(events: &events)
         checkWeighStations(events: &events)
         checkTurboSpeed(events: &events)
+        checkSpecialCargo(input: input, events: &events)
         stepDeer(dt: dt, events: &events)
         stepTraffic(dt: dt, events: &events)
         checkPolice(dt: dt, events: &events)
@@ -786,6 +794,47 @@ public final class DrivingSession {
                     events.append(.ranToll(fine: DrivingSession.tollFine))
                 }
             }
+        }
+    }
+
+    // MARK: - Special cargo
+
+    private func checkSpecialCargo(input: DrivingInput, events: inout [SimEvent]) {
+        switch cargoKind {
+        case .livestock:
+            let curveScare = events.contains(.tooFastForCurve)
+            let brakeScare = input.brake > DrivingSession.livestockHardBrake && truck.speed > 8
+            if (curveScare || brakeScare) && time - lastLivestockScare > 6 {
+                lastLivestockScare = time
+                stats.livestockScares += 1
+                events.append(.livestockScared)
+            } else if time >= nextLivestockSound {
+                nextLivestockSound = time + Double.random(in: 40...90, using: &rng)
+                if truck.engine == .running { events.append(.livestockSound) }
+            }
+        case .oversize:
+            if truck.speed > DrivingSession.oversizeSpeedLimit + 1.5 {
+                if oversizeOverSince == nil { oversizeOverSince = time }
+                if let since = oversizeOverSince, time - since > 3, time - lastOversizeWarning > 10 {
+                    lastOversizeWarning = time
+                    stats.oversizeWarnings += 1
+                    events.append(.oversizeTooFast(limit: DrivingSession.oversizeSpeedLimit))
+                }
+            } else {
+                oversizeOverSince = nil
+            }
+        case .refrigerated:
+            if !announcedSpoiling, let left = timeLeft, left < 0 {
+                announcedSpoiling = true
+                events.append(.cargoSpoiling)
+            }
+        case .hazmat:
+            if !stats.hazmatSpilled, events.contains(where: { if case .crashed = $0 { return true }; return false }) {
+                stats.hazmatSpilled = true
+                events.append(.hazmatSpill(cost: DrivingSession.hazmatCleanupCost))
+            }
+        case .standard:
+            break
         }
     }
 

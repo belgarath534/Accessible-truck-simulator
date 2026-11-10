@@ -251,6 +251,31 @@ public struct Phrases {
             : "You skipped the weigh station! Fine: \(Phrases.money(fine)). Signal right to pull in next time."
     }
 
+    // MARK: Special cargo
+
+    /// How to drive with this load, said when the job starts.
+    public func cargoRules(_ kind: CargoKind) -> String? {
+        switch kind {
+        case .standard: return nil
+        case .livestock: return "Livestock: brake gently and take curves slowly. Every scare costs you pay."
+        case .refrigerated: return "Refrigerated: you'll hear the cooling unit. Arrive late and the load spoils, which costs a quarter of the pay."
+        case .oversize: return "Oversize load: stay under \(units.speed(DrivingSession.oversizeSpeedLimit)) \(units.speedUnitSpoken). Every warning costs you pay."
+        case .hazmat: return "Hazmat: the best pay, but one crash spills the load. No pay, and a \(Phrases.money(DrivingSession.hazmatCleanupCost)) cleanup bill."
+        }
+    }
+
+    public let livestockScared = "Whoa! The animals are scared. Easy on the brakes and the curves."
+
+    public func oversizeTooFast(limit: Double) -> String {
+        "Wide load! Slow down below \(units.speed(limit)) \(units.speedUnitSpoken)."
+    }
+
+    public let cargoSpoiling = "You're past the deadline. The load is starting to spoil!"
+
+    public func hazmatSpill(cost: Int) -> String {
+        "Hazmat spill! The load is lost. Cleanup bill: \(Phrases.money(cost)). Drive to the drop-off to close out the job."
+    }
+
     // MARK: Turbo Mode
 
     public func turboSpeed(_ speed: Double) -> String {
@@ -355,6 +380,7 @@ public struct Phrases {
                      "pays \(Phrases.money(job.pay))",
                      "time limit \(duration(job.timeLimit, roundToMinutes: true))",
                      weight(job.cargo.massKg)]
+        if let kind = job.cargo.kind.label { parts.append(kind) }
         if job.cargo.urgent { parts.append("urgent") }
         if job.cargo.fragile { parts.append("fragile") }
         return parts.joined(separator: ", ") + "."
@@ -365,6 +391,7 @@ public struct Phrases {
         var text = "Job: deliver \(job.cargo.name.lowercased()), \(weight(job.cargo.massKg)), \(towns)"
             + "\(units.distance(job.distance)) to the drop-off. "
             + "Time limit \(duration(job.timeLimit, roundToMinutes: true)). Pays \(Phrases.money(job.pay))."
+        if let rules = cargoRules(job.cargo.kind) { text += " " + rules }
         if job.cargo.fragile { text += " Fragile: crashes damage this load badly." }
         if job.cargo.massKg >= 18_000 { text += " Heavy load: give yourself extra room to brake." }
         return text

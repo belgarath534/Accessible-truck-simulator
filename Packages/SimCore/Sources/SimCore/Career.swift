@@ -12,18 +12,37 @@ public struct Cargo: Codable, Equatable, Hashable, Sendable {
     public var fragile: Bool
     /// Urgent loads (like frozen food) get tighter deadlines and pay more.
     public var urgent: Bool
+    /// Livestock, refrigerated, oversize, hazmat, or ordinary freight.
+    public var kind: CargoKind
 
-    public init(name: String, massKg: Double, ratePerKm: Double, fragile: Bool = false, urgent: Bool = false) {
+    public init(name: String, massKg: Double, ratePerKm: Double, fragile: Bool = false, urgent: Bool = false,
+                kind: CargoKind = .standard) {
         self.name = name
         self.massKg = massKg
         self.ratePerKm = ratePerKm
         self.fragile = fragile
         self.urgent = urgent
+        self.kind = kind
+    }
+
+    enum CodingKeys: String, CodingKey { case name, massKg, ratePerKm, fragile, urgent, kind }
+
+    /// Jobs saved before special cargo get their kind from the catalog.
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        let name = try c.decode(String.self, forKey: .name)
+        self.name = name
+        massKg = try c.decode(Double.self, forKey: .massKg)
+        ratePerKm = try c.decode(Double.self, forKey: .ratePerKm)
+        fragile = try c.decode(Bool.self, forKey: .fragile)
+        urgent = try c.decode(Bool.self, forKey: .urgent)
+        let saved = try c.decodeIfPresent(CargoKind.self, forKey: .kind)
+        kind = saved ?? Cargo.catalog.first { $0.name == name }?.kind ?? .standard
     }
 
     public static let catalog: [Cargo] = [
         Cargo(name: "Furniture", massKg: 6_000, ratePerKm: 110),
-        Cargo(name: "Frozen food", massKg: 14_000, ratePerKm: 145, urgent: true),
+        Cargo(name: "Frozen food", massKg: 14_000, ratePerKm: 145, urgent: true, kind: .refrigerated),
         Cargo(name: "Steel beams", massKg: 24_000, ratePerKm: 170),
         Cargo(name: "Electronics", massKg: 5_000, ratePerKm: 150, fragile: true),
         Cargo(name: "Lumber", massKg: 18_000, ratePerKm: 130),
@@ -31,7 +50,15 @@ public struct Cargo: Codable, Equatable, Hashable, Sendable {
         Cargo(name: "Gravel", massKg: 25_000, ratePerKm: 120),
         Cargo(name: "Medical supplies", massKg: 3_000, ratePerKm: 165, fragile: true, urgent: true),
         Cargo(name: "Canned goods", massKg: 12_000, ratePerKm: 115),
-        Cargo(name: "Fresh produce", massKg: 10_000, ratePerKm: 140, urgent: true),
+        Cargo(name: "Fresh produce", massKg: 10_000, ratePerKm: 140, urgent: true, kind: .refrigerated),
+        // Special cargo
+        Cargo(name: "Cattle", massKg: 16_000, ratePerKm: 175, kind: .livestock),
+        Cargo(name: "Chickens", massKg: 7_000, ratePerKm: 150, kind: .livestock),
+        Cargo(name: "Ice cream", massKg: 11_000, ratePerKm: 165, urgent: true, kind: .refrigerated),
+        Cargo(name: "Wind turbine blade", massKg: 19_000, ratePerKm: 210, kind: .oversize),
+        Cargo(name: "Fishing boat", massKg: 9_000, ratePerKm: 190, kind: .oversize),
+        Cargo(name: "Gasoline", massKg: 22_000, ratePerKm: 240, kind: .hazmat),
+        Cargo(name: "Chemicals", massKg: 15_000, ratePerKm: 230, fragile: true, kind: .hazmat),
     ]
 }
 
@@ -188,7 +215,14 @@ public struct Payout: Equatable, Sendable {
         }
         let stats = summary.stats
 
+        // A hazmat spill loses the load: no pay or bonuses, and a cleanup bill.
+        if job.cargo.kind == .hazmat && stats.hazmatSpilled {
+            return Payout(lines: [Line(label: "Load lost in a hazmat spill", amount: 0),
+                                  Line(label: "Hazmat cleanup", amount: -DrivingSession.hazmatCleanupCost)] + expenses(stats))
+        }
+
         let late = stats.drivingTime - job.timeLimit
+        lines += specialCargoLines(job, stats: stats, late: late > 0)
         if late > 0 {
             let minutes = Int((late / 60).rounded(.up))
             let fraction = min(0.5, Double(minutes) * 0.03)
