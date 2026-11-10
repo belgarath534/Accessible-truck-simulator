@@ -34,8 +34,8 @@ captions, driving buttons, Larger Text / Increase Contrast / Reduce Motion, iPad
 - Weigh stations (done)
 - Docking by ear: back the trailer into the loading dock with reverse beeps
 - Special cargo: livestock (they moo and hate hard braking), refrigerated (spoils if you're slow), oversize (escort car, narrow roads), hazmat (big pay, one crash ends the job) (done)
-- Company contracts: several deliveries for one client for a big bonus
-- Reputation: unlocks better jobs and clients
+- Company contracts: several deliveries for one client for a big bonus (done)
+- Reputation: unlocks better jobs and clients (done)
 
 ## 1.2, Part 4: Voices on the Radio
 - A dispatcher with a real voice: jobs, jokes and storm warnings, using your company name

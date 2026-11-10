@@ -380,6 +380,7 @@ public struct Phrases {
                      "pays \(Phrases.money(job.pay))",
                      "time limit \(duration(job.timeLimit, roundToMinutes: true))",
                      weight(job.cargo.massKg)]
+        if job.contractID != nil { parts.insert("Contract job", at: 0) }
         if let kind = job.cargo.kind.label { parts.append(kind) }
         if job.cargo.urgent { parts.append("urgent") }
         if job.cargo.fragile { parts.append("fragile") }
@@ -416,7 +417,7 @@ public struct Phrases {
                             : "\(line.label): \(Phrases.money(line.amount))."
         }
         let total = p.total >= 0 ? "You earned \(Phrases.money(p.total))." : "This drive cost you \(Phrases.money(-p.total))."
-        return (lines + [total]).joined(separator: " ")
+        return (lines + [total] + p.news).joined(separator: " ")
     }
 
     /// The trip status shown in the pause menu.

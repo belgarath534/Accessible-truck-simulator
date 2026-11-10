@@ -72,6 +72,8 @@ public struct DeliveryJob: Codable, Equatable, Hashable, Identifiable, Sendable 
     public var pay: Int
     /// Seconds allowed.
     public var timeLimit: Double
+    /// The contract this job is part of, if any.
+    public var contractID: UUID?
     /// Map town ids (nil for jobs from before the map).
     public var origin: String?
     public var destination: String?
@@ -113,14 +115,17 @@ public enum JobBoard {
     /// Average speed a fair deadline assumes, m/s (about 50 km/h including curves).
     static let fairSpeed = 50 / 3.6
 
-    /// A job from `origin` to another town. Cargo is usually something the origin town ships.
+    /// A job from `origin` to another town. Cargo is usually something the origin town ships, and only what the
+    /// player's reputation allows. `cargo` forces the load (contract jobs).
     public static func makeJob<R: RandomNumberGenerator>(using rng: inout R, map: WorldMap = .standard,
-                                                        from origin: String) -> DeliveryJob {
+                                                        from origin: String, level: ReputationLevel = .legend,
+                                                        cargo forced: Cargo? = nil) -> DeliveryJob {
         let others = map.towns.filter { $0.id != origin }
         let destination = others.randomElement(using: &rng)!
         let exports = map.node(origin)?.exports ?? []
-        let local = Cargo.catalog.filter { exports.contains($0.name) }
-        let cargo = (!local.isEmpty && Double.random(in: 0...1, using: &rng) < 0.7 ? local : Cargo.catalog)
+        let allowed = Cargo.catalog.filter { $0.kind.requiredLevel <= level }
+        let local = allowed.filter { exports.contains($0.name) }
+        let cargo = forced ?? (!local.isEmpty && Double.random(in: 0...1, using: &rng) < 0.7 ? local : allowed)
             .randomElement(using: &rng)!
         let distance = map.route(from: origin, to: destination.id).map(map.length(of:)) ?? 10_000
         let pay = Int((distance / 1_000 * cargo.ratePerKm / 10).rounded()) * 10
@@ -131,11 +136,18 @@ public enum JobBoard {
     }
 
     public static func makeBoard<R: RandomNumberGenerator>(using rng: inout R, map: WorldMap = .standard,
-                                                          from origin: String) -> [DeliveryJob] {
+                                                          from origin: String, level: ReputationLevel = .legend,
+                                                          contract: Contract? = nil) -> [DeliveryJob] {
         var jobs: [DeliveryJob] = []
+        // The current contract's next load comes first.
+        if let contract {
+            var job = makeJob(using: &rng, map: map, from: origin, level: level, cargo: contract.cargo)
+            job.contractID = contract.id
+            jobs.append(job)
+        }
         var tries = 0
         while jobs.count < size {
-            let job = makeJob(using: &rng, map: map, from: origin)
+            let job = makeJob(using: &rng, map: map, from: origin, level: level)
             tries += 1
             // Keep the board varied: different cargo and, where possible, different destinations.
             let sameCargo = jobs.contains { $0.cargo == job.cargo }
@@ -157,6 +169,8 @@ public struct Payout: Equatable, Sendable {
     }
 
     public var lines: [Line]
+    /// Things to tell the player after the pay (reputation, contracts).
+    public var news: [String] = []
 
     public init(lines: [Line]) { self.lines = lines }
     /// Can be negative: a drive with fuel or tow costs and no pay (practice) costs money.
@@ -286,6 +300,11 @@ public struct CareerState: Codable, Equatable, Sendable {
     public var selectedHorn: String = Horn.air.rawValue
     /// Fastest speed reached in Turbo Mode, m/s (for the Top Speed leaderboard).
     public var bestTurboSpeed: Double = 0
+    /// Reputation points (see ReputationLevel).
+    public var reputation: Int = 0
+    /// The contract being worked on, and one on offer.
+    public var contract: Contract?
+    public var contractOffer: Contract?
     public static let homeTown = "millbrook"
 
     /// Dollars per litre to fill up at your own yard (truck stops are cheaper).
@@ -301,7 +320,7 @@ public struct CareerState: Codable, Equatable, Sendable {
         self.seed = seed
         currentTown = CareerState.homeTown
         var rng = SeededRandom(seed: seed)
-        jobBoard = JobBoard.makeBoard(using: &rng, from: CareerState.homeTown)
+        jobBoard = JobBoard.makeBoard(using: &rng, from: CareerState.homeTown, level: .rookie)
         ownedTrucks = [TruckSpec.starter.id]
         selectedTruck = TruckSpec.starter.id
         upgrades = [:]
@@ -316,6 +335,7 @@ public struct CareerState: Codable, Equatable, Sendable {
     enum CodingKeys: String, CodingKey {
         case money, jobsCompleted, kilometersDriven, totalEarned, jobBoard, seed, ownedTrucks, selectedTruck, upgrades, fuel, currentTown, drivers, candidates, achievements, visitedTowns, savedDrive
         case companyName, truckNames, ownedHorns, selectedHorn, bestTurboSpeed
+        case reputation, contract, contractOffer
     }
 
     public init(from decoder: Decoder) throws {
@@ -345,6 +365,10 @@ public struct CareerState: Codable, Equatable, Sendable {
         ownedHorns = try c.decodeIfPresent([String].self, forKey: .ownedHorns) ?? []
         selectedHorn = try c.decodeIfPresent(String.self, forKey: .selectedHorn) ?? Horn.air.rawValue
         bestTurboSpeed = try c.decodeIfPresent(Double.self, forKey: .bestTurboSpeed) ?? 0
+        // Saves from before reputation: credit the deliveries already made.
+        reputation = try c.decodeIfPresent(Int.self, forKey: .reputation) ?? jobsCompleted * 15
+        contract = try c.decodeIfPresent(Contract.self, forKey: .contract)
+        contractOffer = try c.decodeIfPresent(Contract.self, forKey: .contractOffer)
         visitedTowns = try c.decodeIfPresent([String].self, forKey: .visitedTowns)
             ?? Array(Set([CareerState.homeTown, currentTown])).sorted()
         // Jobs saved before the map (or from another town) are replaced with jobs from here.
@@ -465,7 +489,10 @@ public struct CareerState: Codable, Equatable, Sendable {
     public mutating func refreshBoard() {
         seed = seed &* 6_364_136_223_846_793_005 &+ 1
         var rng = SeededRandom(seed: seed)
-        jobBoard = JobBoard.makeBoard(using: &rng, from: currentTown)
+        jobBoard = JobBoard.makeBoard(using: &rng, from: currentTown, level: reputationLevel, contract: contract)
+        if contract == nil && contractOffer == nil {
+            contractOffer = CareerState.makeOffer(using: &rng, level: reputationLevel)
+        }
     }
 
     public var currentTownName: String { WorldMap.standard.node(currentTown)?.name ?? "Millbrook" }

@@ -32,6 +32,8 @@ enum Changelog {
             "Turbo Mode, a switch on the main menu: no speed limit, toward 200 mph, with your speed called out every 25 mph. Earn a bonus for your top speed on top of the normal pay. No police, but it burns fuel fast and crashes cut the bonus. Thanks to Reece for the idea!",
             "Weigh stations on the longer country roads: signal right and slow down to pull in, or get a $200 fine.",
             "Special cargo: livestock you can hear in the trailer (brake gently or they get scared), refrigerated loads with a humming cooling unit that spoil if you're late, oversize loads you must keep under 45 mph, and hazmat: the best pay, but one crash spills the load.",
+            "Reputation, from Rookie to Legend: deliver on time, without crashes and stop on the mark to climb. Higher reputation pays more and unlocks oversize loads, hazmat and contracts.",
+            "Company contracts: a client wants several loads delivered on time, for a big bonus at the end. Be late once and the contract is broken.",
             "Three new achievements: Oh Deer, Make Some Noise and Speed Demon. And a new Top Speed leaderboard.",
         ]),
         Version(number: "1.1", title: "Big Update", items: [
@@ -119,7 +121,6 @@ enum Changelog {
 
     static let comingSoon: [String] = [
         "Backing into the loading dock by ear.",
-        "Company contracts and reputation.",
         "A dispatcher with a real voice, CB radio chatter and a radio DJ.",
         "Hills, snow and ice, tire blowouts and detours.",
         "Truck wear, depots in other towns and bank loans.",

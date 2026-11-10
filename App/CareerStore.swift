@@ -67,12 +67,32 @@ final class CareerStore: ObservableObject {
     var money: Int { state.money }
     var jobs: [DeliveryJob] { state.jobBoard }
 
-    /// Pays the player for a drive and, for a delivery, swaps in a new job.
-    func record(_ payout: Payout, distance: Double, completing job: DeliveryJob?, trip: TripResult? = nil) {
+    /// Pays the player for a drive and, for a delivery, updates reputation and contracts and swaps in a new job.
+    /// Returns news for the player (reputation, contracts).
+    @discardableResult
+    func record(_ payout: Payout, distance: Double, completing job: DeliveryJob?, trip: TripResult? = nil) -> [String] {
         state.record(payout, distance: distance)
-        if let job { state.completeJob(job) }
+        var news: [String] = []
+        if let job {
+            if let summary = trip?.summary {
+                news = state.completeDelivery(job, summary: summary)
+            } else {
+                state.completeJob(job)
+            }
+        }
         save(trip: trip)
         if !isDemo { GameCenter.shared.submitScores(state) }
+        return news
+    }
+
+    func acceptContract() {
+        state.acceptContract()
+        save()
+    }
+
+    func abandonContract() {
+        state.abandonContract()
+        save()
     }
 
     /// Earns an achievement that isn't about the career itself (like finishing the tutorial).

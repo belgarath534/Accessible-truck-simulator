@@ -254,12 +254,15 @@ final class DrivingController: NSObject, ObservableObject {
         case .freeDrive:
             result = Payout.freeDrive(summary.stats)
             if let town = session.navigator?.lastTown { career.move(to: town) }
-        case let .job(job): result = Payout.delivery(job, summary: summary, weather: session.weather)
+        case let .job(job): result = career.state.deliveryPayout(job, summary: summary, weather: session.weather)
         }
-        payout = result
         let trip = TripResult(job: drive.job, summary: drive.job == nil ? nil : summary, stats: summary.stats)
-        if let result {
-            career.record(result, distance: summary.stats.distance, completing: drive.job, trip: trip)
+        if var result {
+            // Reputation and contract news are read out after the pay.
+            result.news = career.record(result, distance: summary.stats.distance, completing: drive.job, trip: trip)
+            payout = result
+        } else {
+            payout = nil
         }
         // A great delivery (no crashes, a good stop) from a player who knows the game: a good moment to ask for a
         // rating, once per version, when they're back at the main menu.

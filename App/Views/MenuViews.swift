@@ -59,7 +59,7 @@ struct MainMenuView: View {
                     if career.state.jobsCompleted > 0 {
                         Text("Jobs delivered: \(career.state.jobsCompleted)")
                     }
-                    Text("You're in \(career.state.currentTownName).")
+                    Text("You're in \(career.state.currentTownName). Reputation: \(career.state.reputationLevel.title).")
                     if let company = career.state.companyName {
                         Text(company).font(.headline).accessibilityAddTraits(.isHeader)
                     }
@@ -177,6 +177,7 @@ struct JobBoardView: View {
     @EnvironmentObject private var settings: AppSettings
     @EnvironmentObject private var career: CareerStore
     let start: (DeliveryJob) -> Void
+    @State private var confirmAbandon = false
 
     private var phrases: Phrases { Phrases(units: settings.units, electric: career.truck.isElectric) }
 
@@ -188,12 +189,42 @@ struct JobBoardView: View {
     var body: some View {
         List {
             Section {
+                let level = career.state.reputationLevel
+                Text("Reputation: \(level.title), \(career.state.reputation) points.")
+                    .font(.headline)
+                if let next = level.next {
+                    Text("\(next.threshold - career.state.reputation) more points to \(next.title). Deliver on time, without crashes, and stop on the mark to earn more.")
+                }
+                if level < .respected {
+                    Text(level < .reliable ? "Oversize loads and contracts open at Reliable. Hazmat opens at Respected."
+                                           : "Hazmat loads open at Respected.")
+                }
+            }
+            if let contract = career.state.contract {
+                Section {
+                    Text("\(contract.client): \(contract.cargoName.lowercased()), \(contract.done) of \(contract.total) delivered. Bonus when all are on time: \(Phrases.money(contract.bonus)).")
+                    Text("The contract job is first on the board. A late delivery breaks the contract.")
+                    Button("Give Up the Contract", role: .destructive) { confirmAbandon = true }
+                        .accessibilityHint("Costs 15 reputation points.")
+                } header: {
+                    Text("Your contract")
+                }
+            } else if let offer = career.state.contractOffer {
+                Section {
+                    Text("\(offer.client) wants \(offer.total) loads of \(offer.cargoName.lowercased()) delivered, each on time. Bonus: \(Phrases.money(offer.bonus)) on top of the pay.")
+                    Button("Accept the Contract") { career.acceptContract() }
+                        .accessibilityHint("Its first job goes to the top of the board. A late delivery breaks the contract and costs reputation.")
+                } header: {
+                    Text("Contract offer")
+                }
+            }
+            Section {
                 ForEach(career.jobs) { job in
                     Button {
                         start(job)
                     } label: {
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("\(job.cargo.name): \(Phrases.money(job.pay))").font(.headline)
+                            Text("\(job.contractID != nil ? "Contract: " : "")\(job.cargo.name): \(Phrases.money(job.pay))").font(.headline)
                             Text(phrases.job(job)).font(.subheadline)
                             Text(fuelText(job)).font(.subheadline)
                         }
@@ -224,6 +255,11 @@ struct JobBoardView: View {
             }
         }
         .navigationTitle("Job Board")
+        .confirmationDialog("Give up the contract with \(career.state.contract?.client ?? "this client")? You lose 15 reputation points and the bonus.",
+                            isPresented: $confirmAbandon, titleVisibility: .visible) {
+            Button("Give Up the Contract", role: .destructive) { career.abandonContract() }
+            Button("Keep It", role: .cancel) {}
+        }
     }
 }
 
