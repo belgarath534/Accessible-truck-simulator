@@ -742,14 +742,16 @@ final class AudioSynth {
         self.weather = weather
         guard hasWeatherRecordings, engine.isRunning else {
             // No recordings (or not started yet): the synthesized rain.
-            state.rain = weather == .storm ? 1 : (weather == .rain ? 0.6 : 0)
+            state.rain = weather == .storm ? 1 : (weather == .rain ? 0.6 : 0) // snow falls quietly
             return
         }
         state.rain = 0
         for (_, loop) in weatherLoops { loop.player.stop(); loop.player.volume = 0 }
         guard weather != .clear else { return }
         let rain = weather == .storm ? "weather_rain_storm" : "weather_rain_light"
-        for name in [rain, "weather_wipers", "weather_wet_tires"] {
+        // Snow falls quietly: just the wipers clearing the windshield.
+        let loops = weather == .snow ? ["weather_wipers"] : [rain, "weather_wipers", "weather_wet_tires"]
+        for name in loops {
             guard let loop = weatherLoops[name] else { continue }
             loop.player.scheduleBuffer(loop.buffer, at: nil, options: .loops)
             loop.player.play()

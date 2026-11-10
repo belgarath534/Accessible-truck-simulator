@@ -39,6 +39,7 @@ enum Changelog {
             "Five story missions, from The Medicine Run to The Legend's Load: each waits in its own town, opens with your reputation, and pays a big bonus when it's on time.",
             "Calls from your drivers: when a truck breaks down, send a tow or let them wait it out.",
             "Real hills: the engine strains on the climbs and gravity pulls you down the descents. Steep grades are called out ahead, the engine brake rumbles on the way down, and brakes ridden too hard get hot and fade. Runaway truck ramps on the mountain highway can save you.",
+            "Snow and ice in winter, by your phone's calendar: the most slippery roads in the game, and deliveries pay 30 percent extra. Buy snow chains in the Garage for much better grip.",
             "Three new achievements: Oh Deer, Make Some Noise and Speed Demon. And a new Top Speed leaderboard.",
         ]),
         Version(number: "1.1", title: "Big Update", items: [
@@ -125,7 +126,7 @@ enum Changelog {
     ]
 
     static let comingSoon: [String] = [
-        "Snow and ice, tire blowouts and detours.",
+        "Tire blowouts and detours.",
         "Truck wear, depots in other towns and bank loans.",
     ]
 

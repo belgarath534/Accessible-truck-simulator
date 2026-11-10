@@ -119,3 +119,26 @@ public extension DrivingSession {
     /// Pulling the truck out of the runaway ramp's gravel.
     static let runawayRampTow = 150
 }
+
+// MARK: - Snow chains
+
+public extension DrivingSession {
+    static let chainsGrip = 0.8
+    static let chainsBraking = 0.85
+    /// Top speed with chains on, m/s (50 km/h, about 31 mph).
+    static let chainsSpeed = 50 / 3.6
+}
+
+public extension CareerState {
+    static let chainsPrice = 600
+
+    /// Buys snow chains (they fit every truck).
+    @discardableResult
+    mutating func buyChains() -> PurchaseResult {
+        if hasChains { return .alreadyOwned }
+        guard money >= CareerState.chainsPrice else { return .notEnoughMoney(short: CareerState.chainsPrice - money) }
+        money -= CareerState.chainsPrice
+        hasChains = true
+        return .bought
+    }
+}

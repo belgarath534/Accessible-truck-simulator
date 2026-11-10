@@ -40,6 +40,8 @@ final class FeedbackCoordinator {
     var cargo: Cargo?
     /// Turbo Mode is on; set before start().
     var turbo = false
+    /// The player owns snow chains; set before start().
+    var chains = false
     /// Day or night; set before start().
     var timeOfDay: TimeOfDay = .day
 
@@ -136,6 +138,11 @@ final class FeedbackCoordinator {
         }
         if let name = truckNickname, drive != .tutorial { trip = "\(name) is ready to roll. " + trip }
         if let forecast = weather.announcement { trip += " " + forecast }
+        if weather == .snow {
+            trip += chains
+                ? " Your snow chains are on: much better grip, but your top speed is \(phrases.units.speed(DrivingSession.chainsSpeed)) \(phrases.units.speedUnitSpoken)."
+                : " You don't have snow chains. They're in the Garage for next time."
+        }
         if turbo { trip += " " + phrases.turboIntro }
         // The dispatcher calls in once the intro is done: a story briefing, or a word for the road.
         if case let .job(job) = drive {

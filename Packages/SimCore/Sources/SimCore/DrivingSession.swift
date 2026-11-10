@@ -358,12 +358,18 @@ public final class DrivingSession {
     public var range: Double { truck.fuelLiters / fuelPerMetre }
 
     /// Tyre grip in curves today: the truck's grip, less in the rain.
-    public var grip: Double { spec.steeringLatAccel * weather.grip }
+    public var grip: Double { spec.steeringLatAccel * roadGrip }
+    /// Snow chains are on (snow only): better grip and braking, but a 50 km/h top speed. Set before driving.
+    public var chainsOn = false
+    var chainsWork: Bool { chainsOn && weather == .snow }
+    /// Grip and braking for today's road, with chains.
+    var roadGrip: Double { chainsWork ? DrivingSession.chainsGrip : weather.grip }
+    var roadBraking: Double { chainsWork ? DrivingSession.chainsBraking : weather.braking }
 
     /// A curve with its suggested speed lowered for the weather.
     func forWeather(_ curve: UpcomingCurve?) -> UpcomingCurve? {
         guard var c = curve else { return nil }
-        c.advisorySpeed *= weather.grip.squareRoot()
+        c.advisorySpeed *= roadGrip.squareRoot()
         return c
     }
 
@@ -615,7 +621,7 @@ public final class DrivingSession {
         // Drive force.
         var driveForce = 0.0
         if running && !shifting {
-            let governed = !turbo && truck.speed >= spec.speedLimiter
+            let governed = (!turbo && truck.speed >= spec.speedLimiter) || (chainsWork && truck.speed >= DrivingSession.chainsSpeed)
             let throttle = governed ? 0 : input.throttle
             let torque = spec.torque(atRPM: max(truck.rpm, spec.idleRPM)) * throttle
             driveForce = torque * ratio * spec.drivetrainEfficiency / spec.wheelRadius
@@ -634,7 +640,7 @@ public final class DrivingSession {
         let aero = 0.5 * 1.2 * spec.dragArea * truck.speed * truck.speed
         let rolling = truck.speed > 0.01 ? spec.rollingResistance * mass * g : 0
         // Brake force is sized for the truck with a light load, so heavy cargo takes longer to stop.
-        let brakeDecel = min(spec.maxBrakeDecel, spec.maxBrakeDecel * spec.massKg * 1.5 / mass) * weather.braking * brakeFade
+        let brakeDecel = min(spec.maxBrakeDecel, spec.maxBrakeDecel * spec.massKg * 1.5 / mass) * roadBraking * brakeFade
         let brake = input.brake * brakeDecel * mass
 
         // Hills: gravity along the road (sin of the slope is close enough to the grade).

@@ -46,7 +46,7 @@ captions, driving buttons, Larger Text / Increase Contrast / Reduce Motion, iPad
 
 ## 1.2, Part 5: Wild Roads (in progress)
 - Real hills: the engine strains uphill, brakes overheat downhill, runaway truck ramps (done)
-- Snow and ice in winter, with chains
+- Snow and ice in winter, with chains (done)
 - Tire blowouts
 - Detours and road closures
 - Truck wear and servicing

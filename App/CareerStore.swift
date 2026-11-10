@@ -96,6 +96,12 @@ final class CareerStore: ObservableObject {
         save()
     }
 
+    func buyChains() -> CareerState.PurchaseResult {
+        let result = state.buyChains()
+        save()
+        return result
+    }
+
     func acceptContract() {
         state.acceptContract()
         save()

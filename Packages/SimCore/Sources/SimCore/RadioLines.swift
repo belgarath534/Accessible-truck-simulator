@@ -54,6 +54,7 @@ public enum RadioLines {
         case .clear: return RadioLine("dj_weather_clear", .dj, "Weather report: clear skies across the whole map. Perfect trucking weather. Enjoy it.")
         case .rain: return RadioLine("dj_weather_rain", .dj, "Weather report: rain moving through, and the roads are wet. Ease off the gas, folks.")
         case .storm: return RadioLine("dj_weather_storm", .dj, "Weather report: a storm is hitting hard. Thunder, lightning, the works. Slow down and stay safe out there.")
+        case .snow: return RadioLine("dj_weather_snow", .dj, "Weather report: snow across the map, and the roads are icy. Chains on if you've got them, and take it slow.")
         }
     }
 

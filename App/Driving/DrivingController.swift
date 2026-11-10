@@ -57,6 +57,7 @@ final class DrivingController: NSObject, ObservableObject {
         let newSession = DrivingController.makeSession(drive, settings, career.truck, fuel: career.fuelLiters,
                                                        town: resume?.origin ?? career.state.currentTown)
         if let resume { newSession.restore(resume.snapshot) }
+        newSession.chainsOn = career.state.hasChains
         session = newSession
         resumed = resume != nil
         touch = TouchInterpreter(mode: settings.steeringMode, areaWidth: 800)
@@ -104,7 +105,8 @@ final class DrivingController: NSObject, ObservableObject {
         // Weather for every drive except the tutorial (and screenshots).
         if settings.weather && drive != .tutorial && !ScreenshotMode.isOn {
             var rng = SystemRandomNumberGenerator()
-            session.weather = Weather.random(using: &rng)
+            // Snow some days in winter, by the player's own calendar.
+            session.weather = Weather.random(using: &rng, month: Calendar.current.component(.month, from: Date()))
         }
         return session
     }
@@ -138,6 +140,7 @@ final class DrivingController: NSObject, ObservableObject {
         feedback.weather = session.weather
         feedback.timeOfDay = session.timeOfDay
         feedback.turbo = session.turbo
+        feedback.chains = session.chainsOn
         feedback.cargo = drive.job?.cargo
         feedback.radioVoices = settings.radioVoices
         MusicPlayer.shared.weatherForDJ = session.weather
@@ -292,6 +295,7 @@ final class DrivingController: NSObject, ObservableObject {
         if finished == nil { closeOutUnfinished() }
         session = DrivingController.makeSession(drive, settings, career.truck, fuel: career.fuelLiters,
                                                 town: career.state.currentTown)
+        session.chainsOn = career.state.hasChains
         payout = nil
         cruiseTarget = nil
         steerPulse = nil

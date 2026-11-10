@@ -478,6 +478,18 @@ struct GarageView: View {
                 Text("Bank: \(Phrases.money(career.money))")
                 NavigationLink("Horn Shop") { HornShopView() }
                     .accessibilityHint("Your horn: \(career.state.horn.title). Train, ship and musical horns for every truck.")
+                if career.state.hasChains {
+                    Text("Snow chains: yours. They go on by themselves when it snows.")
+                } else {
+                    Button("Buy Snow Chains for \(Phrases.money(CareerState.chainsPrice))") {
+                        switch career.buyChains() {
+                        case .bought: announce("Snow chains bought. They fit every truck and go on by themselves when it snows: much better grip, but a top speed of \(phrases.units.speed(DrivingSession.chainsSpeed)) \(phrases.units.speedUnitSpoken).")
+                        case let .notEnoughMoney(short): announce("Not enough money. You need \(Phrases.money(short)) more.")
+                        case .alreadyOwned: break
+                        }
+                    }
+                    .accessibilityHint("For snowy winter days: much better grip and braking, but a top speed of \(phrases.units.speed(DrivingSession.chainsSpeed)) \(phrases.units.speedUnitSpoken).")
+                }
             }
             ForEach(TruckSpec.catalog, id: \.id) { truck in
                 Section {

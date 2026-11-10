@@ -226,7 +226,7 @@ public struct Payout: Equatable, Sendable {
         let base = job.pay
         var lines = [Line(label: "Delivery pay", amount: base)]
         if weather.payBonus > 0 {
-            lines.append(Line(label: weather == .storm ? "Storm bonus" : "Rain bonus",
+            lines.append(Line(label: weather == .storm ? "Storm bonus" : (weather == .snow ? "Snow bonus" : "Rain bonus"),
                               amount: Int((Double(base) * weather.payBonus).rounded())))
         }
         let stats = summary.stats
@@ -301,6 +301,8 @@ public struct CareerState: Codable, Equatable, Sendable {
     /// Horns bought at the horn shop (the air horn is free and not listed).
     public var ownedHorns: [String] = []
     public var selectedHorn: String = Horn.air.rawValue
+    /// Snow chains, for every truck.
+    public var hasChains = false
     /// Fastest speed reached in Turbo Mode, m/s (for the Top Speed leaderboard).
     public var bestTurboSpeed: Double = 0
     /// Reputation points (see ReputationLevel).
@@ -341,7 +343,7 @@ public struct CareerState: Codable, Equatable, Sendable {
     // Saves from before the garage existed have no truck fields: give them the starter truck.
     enum CodingKeys: String, CodingKey {
         case money, jobsCompleted, kilometersDriven, totalEarned, jobBoard, seed, ownedTrucks, selectedTruck, upgrades, fuel, currentTown, drivers, candidates, achievements, visitedTowns, savedDrive
-        case companyName, truckNames, ownedHorns, selectedHorn, bestTurboSpeed
+        case companyName, truckNames, ownedHorns, selectedHorn, bestTurboSpeed, hasChains
         case reputation, contract, contractOffer, storyProgress
     }
 
@@ -372,6 +374,7 @@ public struct CareerState: Codable, Equatable, Sendable {
         ownedHorns = try c.decodeIfPresent([String].self, forKey: .ownedHorns) ?? []
         selectedHorn = try c.decodeIfPresent(String.self, forKey: .selectedHorn) ?? Horn.air.rawValue
         bestTurboSpeed = try c.decodeIfPresent(Double.self, forKey: .bestTurboSpeed) ?? 0
+        hasChains = try c.decodeIfPresent(Bool.self, forKey: .hasChains) ?? false
         // Saves from before reputation: credit the deliveries already made.
         reputation = try c.decodeIfPresent(Int.self, forKey: .reputation) ?? jobsCompleted * 15
         contract = try c.decodeIfPresent(Contract.self, forKey: .contract)
