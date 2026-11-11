@@ -68,7 +68,7 @@ Player ideas first; a weekly-update rhythm.
 - A rival company (done)
 - Career stats page (done)
 - Daily delivery streak (done)
-- Send Feedback button
+- Send Feedback button (done)
 - Recorded radio voices (dispatcher, CB, DJ), when ElevenLabs credits are back
 - Later: bus driving (a separate mode; not for now)
 

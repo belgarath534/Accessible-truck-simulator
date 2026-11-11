@@ -121,6 +121,7 @@ struct MainMenuView: View {
                     NavigationLink("Career Stats") { CareerStatsView() }
                     NavigationLink("How to Drive") { ControlsHelpView() }
                     NavigationLink("Settings") { SettingsView() }
+                    NavigationLink("Send Feedback") { FeedbackView() }
                     NavigationLink("Credits") { CreditsView() }
                 }
             }

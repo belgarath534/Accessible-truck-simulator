@@ -21,6 +21,7 @@ enum Changelog {
             "A rival company: Speedy Freight is racing you for money every week. The Job Board tells you who's ahead, and the week's winner is announced the next Monday.",
             "Daily streak: your first delivery each day pays a bonus, bigger for every day in a row, up to $700.",
             "Career Stats: a new page on the main menu with your deliveries, money, distance, best streak, top Turbo speed and more.",
+            "Send Feedback: a new button on the main menu. Tell us about a bug or an idea, and your game version is filled in for you.",
         ]),
         Version(number: "1.2", title: "The Big Road Update", items: [
             "Save and Continue Later: pause a long drive and pick it up from the main menu, right where you left off.",
