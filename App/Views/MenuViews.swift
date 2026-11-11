@@ -118,6 +118,7 @@ struct MainMenuView: View {
                 Section {
                     NavigationLink("What's New") { WhatsNewView() }
                     NavigationLink("Achievements") { AchievementsView() }
+                    NavigationLink("Career Stats") { CareerStatsView() }
                     NavigationLink("How to Drive") { ControlsHelpView() }
                     NavigationLink("Settings") { SettingsView() }
                     NavigationLink("Credits") { CreditsView() }
@@ -209,6 +210,12 @@ struct JobBoardView: View {
                 }
             } header: {
                 Text("This week's challenge")
+            }
+            Section {
+                Text(career.state.raceStatus())
+                Text("Daily streak: the first delivery each day pays a bonus, and more for every day in a row, up to \(Phrases.money(CareerState.streakBonus(days: 7))). Your streak: \(career.state.streakDays) day\(career.state.streakDays == 1 ? "" : "s").")
+            } header: {
+                Text("Race with \(Rival.name)")
             }
             if let mission = career.state.nextStoryMission {
                 Section {

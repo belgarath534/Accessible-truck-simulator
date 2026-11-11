@@ -118,6 +118,7 @@ public extension CareerState {
         if let origin = job.origin, hasDepot(in: origin), !spilled {
             payout.lines.append(Payout.Line(label: "Depot bonus", amount: Int((Double(job.pay) * CareerState.depotPayBonus).rounded())))
         }
+        if let streak = streakLine() { payout.lines.append(streak) }
         // The bank takes its share last.
         if let loan = loanRepaymentLine(for: payout) { payout.lines.append(loan) }
         return payout
@@ -172,6 +173,11 @@ public extension CareerState {
                 news.append("\(mission.title) failed: it had to be there on time. Try it again from the Job Board.")
             }
         }
+
+        if summary.stats.crashes == 0 { cleanDeliveries += 1 }
+        if summary.stopRating == .perfect || summary.dockRating == .perfect { perfectStops += 1 }
+        news += recordStreak()
+        news += recordRace(earned: payout?.total ?? job.pay)
 
         reputation = max(0, reputation + change)
         news.insert("Reputation \(change >= 0 ? "up" : "down") \(abs(change)) points, to \(reputation).", at: 0)

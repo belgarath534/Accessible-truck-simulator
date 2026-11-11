@@ -337,6 +337,17 @@ public struct CareerState: Codable, Equatable, Sendable {
     public var weeklyCount = 0
     public var weeklyClaimed = false
     public var weeklyChallengesWon = 0
+    /// Daily streak: the last day with a delivery (yyyymmdd), days in a row, and the best ever.
+    public var lastDeliveryDay = 0
+    public var streakDays = 0
+    public var bestStreak = 0
+    /// The race with the rival company: this week's earnings, and weeks won.
+    public var weekEarnedWeek = 0
+    public var weekEarned = 0
+    public var rivalWins = 0
+    /// Career counters for the stats page.
+    public var cleanDeliveries = 0
+    public var perfectStops = 0
     /// What you still owe the bank, dollars.
     public var loanOwed = 0
     /// Each truck's condition (percent), by truck id; missing means 100.
@@ -385,6 +396,7 @@ public struct CareerState: Codable, Equatable, Sendable {
         case money, jobsCompleted, kilometersDriven, totalEarned, jobBoard, seed, ownedTrucks, selectedTruck, upgrades, fuel, currentTown, drivers, candidates, achievements, visitedTowns, savedDrive
         case companyName, truckNames, ownedHorns, selectedHorn, bestTurboSpeed, hasChains, truckCondition, depots, loanOwed
         case weeklyWeek, weeklyCount, weeklyClaimed, weeklyChallengesWon
+        case lastDeliveryDay, streakDays, bestStreak, weekEarnedWeek, weekEarned, rivalWins, cleanDeliveries, perfectStops
         case reputation, contract, contractOffer, storyProgress
     }
 
@@ -423,6 +435,14 @@ public struct CareerState: Codable, Equatable, Sendable {
         weeklyCount = try c.decodeIfPresent(Int.self, forKey: .weeklyCount) ?? 0
         weeklyClaimed = try c.decodeIfPresent(Bool.self, forKey: .weeklyClaimed) ?? false
         weeklyChallengesWon = try c.decodeIfPresent(Int.self, forKey: .weeklyChallengesWon) ?? 0
+        lastDeliveryDay = try c.decodeIfPresent(Int.self, forKey: .lastDeliveryDay) ?? 0
+        streakDays = try c.decodeIfPresent(Int.self, forKey: .streakDays) ?? 0
+        bestStreak = try c.decodeIfPresent(Int.self, forKey: .bestStreak) ?? 0
+        weekEarnedWeek = try c.decodeIfPresent(Int.self, forKey: .weekEarnedWeek) ?? 0
+        weekEarned = try c.decodeIfPresent(Int.self, forKey: .weekEarned) ?? 0
+        rivalWins = try c.decodeIfPresent(Int.self, forKey: .rivalWins) ?? 0
+        cleanDeliveries = try c.decodeIfPresent(Int.self, forKey: .cleanDeliveries) ?? 0
+        perfectStops = try c.decodeIfPresent(Int.self, forKey: .perfectStops) ?? 0
         // Saves from before reputation: credit the deliveries already made.
         reputation = try c.decodeIfPresent(Int.self, forKey: .reputation) ?? jobsCompleted * 15
         contract = try c.decodeIfPresent(Contract.self, forKey: .contract)

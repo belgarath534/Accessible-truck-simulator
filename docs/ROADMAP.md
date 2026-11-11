@@ -65,9 +65,9 @@ Player ideas first; a weekly-update rhythm.
 - A second tutorial for the 1.2 features
 - Your own music on the radio: Apple Music songs or imported files (done)
 - Holiday events (Halloween, Thanksgiving, Christmas, New Year) (done)
-- A rival company
-- Career stats page
-- Daily delivery streak
+- A rival company (done)
+- Career stats page (done)
+- Daily delivery streak (done)
 - Send Feedback button
 - Recorded radio voices (dispatcher, CB, DJ), when ElevenLabs credits are back
 - Later: bus driving (a separate mode; not for now)
