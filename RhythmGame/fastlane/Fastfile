@@ -1,0 +1,80 @@
+require "base64"
+
+default_platform(:ios)
+
+APP_ID = "com.beatbyear.BeatByEar"
+APP_NAME = "Beat by Ear"
+CERTS_REPO = "https://github.com/belgarath534/ios-certificates.git"
+NOTES = File.expand_path("../store/what_to_test.txt", __dir__)
+
+platform :ios do
+  desc "Build Beat by Ear, sign it with fastlane match (same certificates as the truck sim) and upload it to TestFlight"
+  lane :beta do
+    setup_ci
+
+    api_key = app_store_connect_api_key(
+      key_id: ENV.fetch("GOOD_KEY_ID"),
+      issuer_id: ENV.fetch("ASC_ISSUER_ID"),
+      key_filepath: ENV.fetch("ASC_KEY_PATH"),
+      duration: 1200,
+      in_house: false
+    )
+    Spaceship::ConnectAPI.token = Spaceship::ConnectAPI::Token.from(hash: api_key)
+
+    # The first time: register the bundle ID, so it can be picked when creating the app in App Store Connect.
+    if Spaceship::ConnectAPI::BundleId.find(APP_ID)
+      UI.message("Bundle ID #{APP_ID} is registered")
+    else
+      Spaceship::ConnectAPI::BundleId.create(name: APP_NAME, identifier: APP_ID, platform: "IOS")
+      UI.success("✅ Registered the bundle ID #{APP_ID}")
+    end
+
+    unless Spaceship::ConnectAPI::App.find(APP_ID)
+      UI.user_error!("The app isn't in App Store Connect yet. Create it: Apps, +, New App, iOS, name '#{APP_NAME}' " \
+                     "(or 'Beat by Ear: Audio Rhythm' if taken), bundle ID #{APP_ID}, SKU beatbyear. Then run this again.")
+    end
+
+    match(
+      type: "appstore",
+      app_identifier: APP_ID,
+      git_url: CERTS_REPO,
+      git_basic_authorization: Base64.strict_encode64("x-access-token:#{ENV.fetch('CLEAN_CERTS_TOKEN')}"),
+      api_key: api_key,
+      readonly: false
+    )
+    team_id = ENV.fetch("sigh_#{APP_ID}_appstore_team-id")
+    profile = ENV.fetch("sigh_#{APP_ID}_appstore_profile-name")
+    UI.success("✅ Signing ready (team #{team_id})")
+
+    build_number = latest_testflight_build_number(api_key: api_key, app_identifier: APP_ID, initial_build_number: 0).to_i + 1
+    UI.message("Build number #{build_number}")
+
+    build_app(
+      project: "BeatByEar.xcodeproj",
+      scheme: "BeatByEar",
+      configuration: "Release",
+      export_method: "app-store",
+      output_directory: "build",
+      xcargs: [
+        "CODE_SIGN_STYLE=Manual",
+        "DEVELOPMENT_TEAM=#{team_id}",
+        "CODE_SIGN_IDENTITY='Apple Distribution'",
+        "PROVISIONING_PROFILE_SPECIFIER='#{profile}'",
+        "CURRENT_PROJECT_VERSION=#{build_number}"
+      ].join(" "),
+      export_options: { provisioningProfiles: { APP_ID => profile } }
+    )
+    UI.success("✅ App built and signed")
+
+    upload_to_testflight(
+      api_key: api_key,
+      app_identifier: APP_ID,
+      changelog: File.read(NOTES).strip,
+      uses_non_exempt_encryption: false,
+      distribute_external: false,
+      skip_waiting_for_build_processing: false,
+      wait_processing_timeout_duration: 2700
+    )
+    UI.success("🚀 Beat by Ear is on TestFlight")
+  end
+end
