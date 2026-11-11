@@ -61,7 +61,7 @@ Player ideas first; a weekly-update rhythm.
 - Rest stops (light and optional): a tiredness warning on long drives, a nap at a truck stop for a small bonus
 - A bigger map: a sixth town and new roads
 - Manual gearbox option
-- "What's around me": a gesture that describes what's nearby
+- "What's around me": a gesture that describes what's nearby (done)
 - A second tutorial for the 1.2 features
 - Your own music on the radio: Apple Music songs or imported files (done)
 - Holiday events (Halloween, Thanksgiving, Christmas, New Year) (done)

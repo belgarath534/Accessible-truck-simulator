@@ -355,6 +355,8 @@ final class FeedbackCoordinator {
             speech.speak(phrases.towed(cost: cost, fuelCost: fuelCost), priority: .high)
         case let .dashboard(reading):
             speech.speak(phrases.dashboard(reading), priority: .high)
+        case let .aroundMe(s):
+            speech.speak(phrases.surroundings(s), priority: .high)
         case let .roadAhead(curve, remaining, timeLeft, truckStop):
             speech.speak(phrases.roadAhead(curve, remaining: remaining, timeLeft: timeLeft, truckStop: truckStop),
                          priority: .high)

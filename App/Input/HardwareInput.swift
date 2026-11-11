@@ -46,6 +46,7 @@ final class HardwareInput {
         case .deleteOrBackspace: return .cancelSignal
         case .keyI: return .speakDashboard
         case .keyG: return .speakRoadAhead
+        case .keyE: return .speakAroundMe
         case .keyN: return .toggleEngine
         case .keyH: return .horn
         case .escape: return .pause
@@ -73,6 +74,7 @@ final class HardwareInput {
         bind(pad.dpad.up, .toggleRadio)
         bind(pad.dpad.right, .nextSong)
         bind(pad.dpad.left, .previousSong)
+        bind(pad.dpad.down, .speakAroundMe)
     }
 
     /// Continuous controls, polled every frame.

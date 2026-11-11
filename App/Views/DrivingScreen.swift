@@ -259,6 +259,7 @@ struct DrivingButtons: View {
             Item(id: "Cancel Signal", hint: "Turn the signal off.") { c.perform(.cancelSignal) },
             Item(id: "Dashboard", hint: "Speed, gear, fuel and more.") { c.perform(.speakDashboard) },
             Item(id: "GPS", hint: "What's on the road ahead.") { c.perform(.speakRoadAhead) },
+            Item(id: "Around Me", hint: "Traffic, deer, hills and more near the truck.") { c.perform(.speakAroundMe) },
             Item(id: "Horn", hint: "Sound the horn.") { c.perform(.horn) },
             Item(id: "Pause", hint: "The pause menu.") { c.perform(.pause) },
         ]

@@ -242,6 +242,7 @@ public enum GestureMap {
         case .swipe(3, .up): return .toggleRadio
         case .swipe(3, .right): return .nextSong
         case .swipe(3, .left): return .previousSong
+        case .swipe(3, .down): return .speakAroundMe
         default: return nil
         }
     }
@@ -257,6 +258,7 @@ public enum GestureMap {
         Help("Three-finger double tap", "Start or stop the engine"),
         Help("Two-finger double tap", "Speak the dashboard: speed, gear, fuel and more"),
         Help("Three-finger tap", "GPS: what's on the road ahead"),
+        Help("Three-finger swipe down", "What's around me: traffic, deer, hills and more"),
         Help("Two-finger swipe left or right", "Turn signal left or right"),
         Help("Two-finger tap", "Cancel turn signal"),
         Help("Two-finger swipe up", "Horn"),

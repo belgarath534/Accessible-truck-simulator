@@ -35,6 +35,8 @@ public enum DrivingAction: Equatable, Sendable {
     case horn
     case speakDashboard
     case speakRoadAhead
+    /// What's around me: traffic, deer, hills, weigh stations, weather.
+    case speakAroundMe
     case pause
     /// Finish a delivery without backing into the dock.
     case skipDocking
@@ -183,6 +185,7 @@ public enum SimEvent: Equatable, Sendable {
     /// Turbo Mode: a new speed milestone (every 25 mph from 75 mph), m/s.
     case turboSpeed(Double)
     case dashboard(DashboardReading)
+    case aroundMe(Surroundings)
     case roadAhead(UpcomingCurve?, remaining: Double?, timeLeft: Double?, truckStop: Double?)
     /// Delivery deadline reminders (5 minutes and 1 minute left).
     case timeLeft(seconds: Double)

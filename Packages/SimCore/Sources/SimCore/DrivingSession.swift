@@ -322,6 +322,8 @@ public final class DrivingSession {
                 }
             }
             return events
+        case .speakAroundMe:
+            return [.aroundMe(surroundings)]
         case .skipDocking:
             guard docking != nil else { return [] }
             var events: [SimEvent] = []

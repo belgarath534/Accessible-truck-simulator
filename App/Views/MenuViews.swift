@@ -343,7 +343,7 @@ struct ControlsHelpView: View {
                 Text("Six places: Millbrook, your home yard; Cedar Falls in lumber country, up the mountain Highway 9; Ridgeport, a port town; Ironton, with its mines and steel mill; Bayview, with its farms; and Central Junction, where Interstate 40 meets the roads to Ridgeport and Ironton.")
                 Text("Interstate 40 is fast, with a 100 kilometer per hour limit and gentle curves. Country roads are 80 with more curves. Mountain roads are 60 with sharp curves. Towns are 50: you'll hear when you enter and leave them.")
                 Text("On a job, the GPS tells you each turn at 1 kilometer and again at 300 meters. Signal left or right before the junction to turn, or no signal to go straight. Take a wrong turn and the GPS recalculates a new route.")
-                Text("In Free Drive, the GPS lists the choices before each junction. The three-finger tap tells you what's ahead.")
+                Text("In Free Drive, the GPS lists the choices before each junction. The three-finger tap tells you what's ahead, and a three-finger swipe down tells you what's around you: traffic, deer, hills, weigh stations and the weather.")
                 Text("After a delivery you're in the destination town, and the Job Board shows jobs from there.")
             }
             Section("Traffic and lanes") {
@@ -365,8 +365,8 @@ struct ControlsHelpView: View {
                 Text("Fuel at truck stops costs less than filling up at your yard in the Garage. Fuel and tow costs come off your pay.")
             }
             Section("Keyboard and controller") {
-                Text("Keyboard: Up or W accelerate, Down or S brake, Left and Right or A and D steer. Left and right bracket for signals, I dashboard, G GPS, N engine, H horn, Escape pause, R radio on or off, comma and period for the previous or next song.")
-                Text("Controller: right trigger accelerate, left trigger brake, left stick steer, shoulder buttons for signals, A dashboard, X GPS, Y engine, B horn, Menu pause, D-pad up radio on or off, D-pad left and right to change songs.")
+                Text("Keyboard: Up or W accelerate, Down or S brake, Left and Right or A and D steer. Left and right bracket for signals, I dashboard, G GPS, E what's around me, N engine, H horn, Escape pause, R radio on or off, comma and period for the previous or next song.")
+                Text("Controller: right trigger accelerate, left trigger brake, left stick steer, shoulder buttons for signals, A dashboard, X GPS, Y engine, B horn, Menu pause, D-pad up radio on or off, D-pad left and right to change songs, D-pad down what's around me.")
             }
         }
         .navigationTitle("How to Drive")
