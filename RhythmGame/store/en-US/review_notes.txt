@@ -1,0 +1,9 @@
+Beat by Ear is an audio-first rhythm game designed for blind players using VoiceOver. No account or sign-in is needed, and the app collects no data.
+
+How to try it:
+1. Main menu, How to Play explains the game. Learn the Sounds plays each move's sound, and its Practice Pad lets you try the gestures.
+2. Play, pick First Steps, difficulty Easy.
+3. After the spoken intro, a song starts. Each soft bell is followed by a bar of cue sounds; in the next bar, repeat the same moves on the same beats. Easy starts with taps only.
+4. A two-finger tap stops the song. Results are shown and spoken at the end.
+
+The play screen is a single VoiceOver element marked "allows direct interaction", so touches go straight to the game while VoiceOver is on. All music and sounds are generated in the app. Headphones help, because left and right cues are panned.

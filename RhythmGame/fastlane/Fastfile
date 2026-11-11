@@ -5,7 +5,7 @@ default_platform(:ios)
 APP_ID = "com.beatbyear.BeatByEar"
 APP_NAME = "Beat by Ear"
 CERTS_REPO = "https://github.com/belgarath534/ios-certificates.git"
-NOTES = File.expand_path("../store/what_to_test.txt", __dir__)
+NOTES = File.expand_path("../store/en-US/testflight/what_to_test.txt", __dir__)
 
 platform :ios do
   desc "Build Beat by Ear, sign it with fastlane match (same certificates as the truck sim) and upload it to TestFlight"

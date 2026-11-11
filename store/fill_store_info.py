@@ -26,12 +26,15 @@ import jwt
 import requests
 
 API = "https://api.appstoreconnect.apple.com/v1"
-BUNDLE = "com.accessibletrucksim.TruckSim"
+# Other apps on the account (Beat by Ear) reuse this script with STORE_* settings; the defaults are the truck sim.
+BUNDLE = os.environ.get("STORE_BUNDLE", "com.accessibletrucksim.TruckSim")
 DD_BUNDLE = "com.dungeon.descent"
 REPO = "https://github.com/belgarath534/Accessible-truck-simulator"
 SUPPORT_URL = REPO + "/issues"
-PRIVACY_URL = REPO + "/blob/HEAD/docs/PRIVACY.md"
-TEXT = Path(__file__).parent / "en-US"
+PRIVACY_URL = os.environ.get("STORE_PRIVACY_URL", REPO + "/blob/HEAD/docs/PRIVACY.md")
+MARKETING_URL = os.environ.get("STORE_MARKETING_URL", REPO)
+TEXT = Path(os.environ.get("STORE_TEXT_DIR", Path(__file__).parent / "en-US"))
+ONLY_TESTFLIGHT = os.environ.get("STORE_ONLY_TESTFLIGHT") == "1"
 
 
 def text(name):
@@ -109,7 +112,7 @@ if not apps:
     print("Create it on appstoreconnect.apple.com (Apps, plus button, New App) and run this again.")
     sys.exit(0)
 APP = apps[0]["id"]
-print(f"Truck Sim app: {apps[0]['attributes'].get('name')} ({APP})")
+print(f"App: {apps[0]['attributes'].get('name')} ({APP})")
 
 dd_apps = call("GET", "/apps", params={"filter[bundleId]": DD_BUNDLE})["data"]
 DD = dd_apps[0]["id"] if dd_apps else None
@@ -150,7 +153,7 @@ if DD and not feedback_email:
 @part("TestFlight description and feedback email")
 def _():
     attrs = {"description": text("testflight/description.txt"), "privacyPolicyUrl": PRIVACY_URL,
-             "marketingUrl": REPO}
+             "marketingUrl": MARKETING_URL}
     if feedback_email:
         attrs["feedbackEmail"] = feedback_email
     locs = call("GET", f"/apps/{APP}/betaAppLocalizations")["data"]
@@ -214,6 +217,22 @@ def _():
             have.add(email)
             added += 1
     return f"group '{group['attributes']['name']}', {len(have)} tester(s), {added} added now"
+
+
+def summary():
+    print()
+    print("Done:")
+    for d in done:
+        print("  ✓", d)
+    if failed:
+        print("Could not do:")
+        for f in failed:
+            print("  ✗", f)
+
+
+if ONLY_TESTFLIGHT:
+    summary()
+    sys.exit(0)
 
 
 # ---------------------------------------------------------------- App Store listing
@@ -358,14 +377,7 @@ def _():
              "relationships": {"appStoreVersion": rel("appStoreVersions", v["id"])}}})
 
 
-print()
-print("Done:")
-for d in done:
-    print("  ✓", d)
-if failed:
-    print("Could not do:")
-    for f in failed:
-        print("  ✗", f)
+summary()
 print()
 print("Can't be done through Apple's API (do these on the website when you want to go public):")
 print("  - App Privacy answers (App Store Connect, App Privacy): choose 'Data Not Collected'")

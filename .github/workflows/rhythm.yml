@@ -102,6 +102,20 @@ jobs:
         working-directory: .
         run: ruby scripts/check_asc_key.rb
 
+      - name: Fill in TestFlight information (description, feedback email, review contact and notes, testers)
+        continue-on-error: true
+        working-directory: .
+        env:
+          STORE_BUNDLE: com.beatbyear.BeatByEar
+          STORE_TEXT_DIR: RhythmGame/store/en-US
+          STORE_PRIVACY_URL: https://github.com/belgarath534/Accessible-truck-simulator/blob/HEAD/RhythmGame/PRIVACY.md
+          STORE_MARKETING_URL: https://github.com/belgarath534/Accessible-truck-simulator/tree/HEAD/RhythmGame
+          STORE_ONLY_TESTFLIGHT: "1"
+        run: |
+          python3 -m pip install --quiet --break-system-packages pyjwt cryptography requests || python3 -m pip install --quiet pyjwt cryptography requests
+          APP_STORE_CONNECT_PRIVATE_KEY="@file:$ASC_KEY_PATH" APP_STORE_CONNECT_KEY_IDENTIFIER="$GOOD_KEY_ID" \
+          APP_STORE_CONNECT_ISSUER_ID="$ASC_ISSUER_ID" python3 store/fill_store_info.py
+
       - uses: maxim-lobanov/setup-xcode@v1
         with:
           xcode-version: latest-stable
