@@ -26,6 +26,7 @@ final class FlightSettings: ObservableObject {
     /// Speak through VoiceOver when it's on (otherwise the game's own voice).
     @Published var useVoiceOver: Bool { didSet { defaults.set(useVoiceOver, forKey: "useVoiceOver") } }
     @Published var seenHowToFly: Bool { didSet { defaults.set(seenHowToFly, forKey: "seenHowToFly") } }
+    @Published var tutorialDone: Bool { didSet { defaults.set(tutorialDone, forKey: "tutorialDone") } }
     @Published var menuMusic: Bool {
         didSet {
             defaults.set(menuMusic, forKey: "menuMusic")
@@ -43,6 +44,7 @@ final class FlightSettings: ObservableObject {
         bankTone = defaults.object(forKey: "bankTone") as? Bool ?? true
         useVoiceOver = defaults.object(forKey: "useVoiceOver") as? Bool ?? true
         seenHowToFly = defaults.bool(forKey: "seenHowToFly")
+        tutorialDone = defaults.bool(forKey: "tutorialDone")
         menuMusic = defaults.object(forKey: "menuMusic") as? Bool ?? true
         if let data = defaults.data(forKey: "logbook"), let saved = try? JSONDecoder().decode(Logbook.self, from: data) {
             logbook = saved

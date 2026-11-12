@@ -103,3 +103,30 @@ struct CreditsView: View {
         .navigationTitle("Credits")
     }
 }
+
+/// Ground School: what each part of the plane does, in plain words.
+struct GroundSchoolView: View {
+    var body: some View {
+        List {
+            Section("Parts of the plane") {
+                ForEach(GroundSchool.parts, id: \.self) { topic in
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(topic.title).font(.headline)
+                        Text(topic.text)
+                    }
+                    .accessibilityElement(children: .combine)
+                }
+            }
+            Section("Words pilots use") {
+                ForEach(GroundSchool.ideas, id: \.self) { topic in
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(topic.title).font(.headline)
+                        Text(topic.text)
+                    }
+                    .accessibilityElement(children: .combine)
+                }
+            }
+        }
+        .navigationTitle("Ground School")
+    }
+}

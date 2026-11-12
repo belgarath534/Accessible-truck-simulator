@@ -9,6 +9,12 @@ struct MenuView: View {
         NavigationStack {
             List {
                 Section {
+                    Button {
+                        flight = .tutorial
+                    } label: {
+                        Text(settings.tutorialDone ? "Tutorial: Your First Flight" : "Start Here: Your First Flight").font(.title2.bold())
+                    }
+                    .accessibilityHint("A guided flight for people who have never flown. The instructor explains every part of the plane, one step at a time.")
                     NavigationLink {
                         LessonsView { flight = $0 }
                     } label: {
@@ -22,9 +28,10 @@ struct MenuView: View {
                     }
                     .accessibilityHint("Pick a departure and a destination airport, or fly free.")
                 } footer: {
-                    Text(settings.seenHowToFly ? "" : "New pilot? Start with How to Fly, then Flight School lesson 1.")
+                    Text(settings.tutorialDone ? "" : "Never flown a plane? Start with Your First Flight. The instructor explains everything as you go.")
                 }
                 Section {
+                    NavigationLink("Ground School: Parts of the Plane") { GroundSchoolView() }
                     NavigationLink("How to Fly") { HowToFlyView() }
                     NavigationLink("Logbook") { LogbookView() }
                     NavigationLink("Settings") { SettingsView() }

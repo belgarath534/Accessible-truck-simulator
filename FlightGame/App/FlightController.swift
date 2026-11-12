@@ -11,6 +11,11 @@ struct FlightRequest: Identifiable {
     let goal: FlightGoal
     let lesson: Lesson?
     let briefing: String
+    var isTutorial = false
+
+    /// The guided first flight.
+    static let tutorial = FlightRequest(title: "Your First Flight", start: .runway("pine"), goal: .tutorial,
+                                        lesson: nil, briefing: "", isTutorial: true)
 }
 
 /// Runs one flight: the clock, controls, gestures, sound and speech.
@@ -39,12 +44,20 @@ final class FlightController: NSObject, ObservableObject {
     private var touchIDs: [ObjectIdentifier: Int] = [:]
     private var nextTouchID = 1
     private var lastStallSound = -10.0
+    /// The guided first flight's teacher (nil on other flights), and what the pilot did this frame.
+    private var tutorial: Tutorial?
+    private var recentActions: [FlightAction] = []
     weak var view: UIView?
+
+    /// The tutorial always flies with Easy assist.
+    private var assist: FlightAssist { request.isTutorial ? .easy : settings.assist }
 
     init(request: FlightRequest, settings: FlightSettings) {
         self.request = request
         self.settings = settings
-        session = FlightSession(start: request.start, goal: request.goal, assist: settings.assist)
+        session = FlightSession(start: request.start, goal: request.goal,
+                                assist: request.isTutorial ? .easy : settings.assist)
+        tutorial = request.isTutorial ? Tutorial() : nil
         reading = session.instruments
         super.init()
     }
@@ -64,7 +77,7 @@ final class FlightController: NSObject, ObservableObject {
         lastTime = 0
         UIApplication.shared.isIdleTimerDisabled = true
         heavy.prepare()
-        speech.say(request.briefing, priority: .high)
+        if !request.briefing.isEmpty { speech.say(request.briefing, priority: .high) }
     }
 
     func stop() {
@@ -102,7 +115,9 @@ final class FlightController: NSObject, ObservableObject {
     }
 
     func restart() {
-        session = FlightSession(start: request.start, goal: request.goal, assist: settings.assist)
+        session = FlightSession(start: request.start, goal: request.goal, assist: assist)
+        tutorial = request.isTutorial ? Tutorial() : nil
+        recentActions = []
         finished = nil
         isPaused = false
         audio.state.paused = false
@@ -110,7 +125,7 @@ final class FlightController: NSObject, ObservableObject {
         lastTime = 0
         accumulator = 0
         yoke.recenter()
-        speech.say(request.briefing, priority: .high)
+        if !request.briefing.isEmpty { speech.say(request.briefing, priority: .high) }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
             guard let v = self?.view else { return }
             UIAccessibility.post(notification: .screenChanged, argument: v)
@@ -145,9 +160,33 @@ final class FlightController: NSObject, ObservableObject {
             accumulator -= 1.0 / 60
         }
         for e in events { handle(event: e) }
+        runTutorial(dt: dt)
         updateSound()
         reading = session.instruments
         if let summary = session.summary { finish(summary) }
+    }
+
+    /// The teacher: says the next thing, and after a crash puts the plane back so you can try again.
+    private func runTutorial(dt: Double) {
+        guard tutorial != nil else { return }
+        if session.summary?.crash != nil {
+            let retry = tutorial!.retry()
+            session = FlightSession(start: retry.start, goal: .tutorial, assist: .easy)
+            if tutorial!.retryEngineRunning { session.startEngineNow() }
+            brake = false
+            yoke.recenter()
+            speech.say(retry.text, priority: .high)
+            recentActions = []
+            return
+        }
+        let lines = tutorial!.update(session: session, actions: recentActions, dt: dt)
+        recentActions = []
+        for line in lines { speech.say(line, priority: .normal) }
+        if tutorial!.isComplete {
+            settings.tutorialDone = true
+            speech.say(Tutorial.completionMessage, priority: .normal)
+            session.endFlight(message: Tutorial.completionMessage)
+        }
     }
 
     private func currentInput() -> FlightInput {
@@ -288,6 +327,7 @@ final class FlightController: NSObject, ObservableObject {
     /// From gestures, buttons, VoiceOver's magic tap.
     func perform(_ action: FlightAction) {
         guard !isPaused, finished == nil else { return }
+        if tutorial != nil { recentActions.append(action) }
         for e in session.perform(action) { handle(event: e) }
     }
 }

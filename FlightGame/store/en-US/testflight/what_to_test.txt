@@ -1,9 +1,8 @@
-Accessible Flight Simulator, first test build.
+Accessible Flight Simulator test build.
 
-Try:
-- How to Fly first, then Flight School lesson 1 (takeoff).
-- Hold the phone sideways like a yoke: tilt back to climb, forward to descend, turn it like a wheel to bank.
-- Lessons 2 to 4: turns, landing, and a cross-country flight from Pine Valley to Harbor City.
-- Listen for the centerline beeps on the runway, the climb tone, the beacon and the landing tones.
+New:
+- Your First Flight: a guided tutorial on the main menu for people who have never flown. The instructor explains the engine, throttle, takeoff, climbing, turning, flaps, stalls, navigation and the autopilot, one step at a time. Crash and you just try again.
+- Ground School: every part of the plane explained in plain words.
+- Menu music, and real propeller, wind and runway sounds.
 
-Tell us whether the tilt controls feel right, and whether the sounds tell you enough to fly.
+Tell us whether the instructor is clear, whether any step is confusing or too fast, and how the tilt controls feel.

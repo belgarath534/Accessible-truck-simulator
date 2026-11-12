@@ -10,6 +10,8 @@ public enum FlightGoal: Equatable, Sendable {
     case reachAltitude(feet: Double)
     /// Turn onto this heading and hold it.
     case turnTo(heading: Double)
+    /// The guided tutorial: it ends when the teacher says so.
+    case tutorial
 }
 
 /// Where a flight starts.
@@ -453,6 +455,8 @@ public final class FlightSession {
             if !onGround, Double(Units.feet(altitude)) >= feet - 30 {
                 complete("You've reached \(Int(feet)) feet. Takeoff lesson complete!", events: &events)
             }
+        case .tutorial:
+            break
         case let .turnTo(target):
             if !onGround, abs(Units.turn(from: heading, to: target)) < 6, abs(bank) < 8 {
                 headingHeld += 1.0 / 60
@@ -475,4 +479,16 @@ public final class FlightSession {
     }
 
     private func once(_ key: String) -> Bool { warned.insert(key).inserted }
+
+    /// The tutorial's teacher ends the flight.
+    public func endFlight(message: String) {
+        guard summary == nil else { return }
+        finish(completed: true, crash: nil, message: message)
+    }
+
+    /// Engine running at once, without the starter (tutorial retries).
+    public func startEngineNow() {
+        engine = .running
+        rpm = spec.idleRPM
+    }
 }
