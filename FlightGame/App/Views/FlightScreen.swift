@@ -31,12 +31,14 @@ struct FlightScreen: View {
             }
         }
         .onAppear {
+            MenuMusic.shared.fadeOut()
             OrientationLock.flying()
             controller.start()
         }
         .onDisappear {
             controller.stop()
             OrientationLock.menus()
+            MenuMusic.shared.play()
         }
         .statusBarHidden()
         .persistentSystemOverlays(.hidden)

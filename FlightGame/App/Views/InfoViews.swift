@@ -76,6 +76,7 @@ struct SettingsView: View {
                 Text("Assist changes take effect on your next flight.")
             }
             Section("Sounds") {
+                Toggle("Menu music", isOn: $settings.menuMusic)
                 Toggle("Climb and descent tone", isOn: $settings.varioTone)
                 Toggle("Bank tone", isOn: $settings.bankTone)
                 Toggle("Speak through VoiceOver", isOn: $settings.useVoiceOver)
@@ -93,6 +94,10 @@ struct CreditsView: View {
                 Text("Runway rumble: \"Background Rumble Noise\" by gryc. Licensed under Creative Commons Attribution 3.0. From OpenGameArt.org.")
                 Text("Wind: \"Short wind sound\" by remaxim, public domain (CC0). From OpenGameArt.org.")
                 Text("Every other sound, the beeps, tones and warnings, is made live by the game.")
+            }
+            Section("Music") {
+                Text("\"Blue Sky\" by Pro Sensory, public domain (CC0). From OpenGameArt.org.")
+                Text("\"Determined to Fly\" by OwlishMedia, from the animated short Cat's Sky, public domain (CC0). From OpenGameArt.org.")
             }
         }
         .navigationTitle("Credits")

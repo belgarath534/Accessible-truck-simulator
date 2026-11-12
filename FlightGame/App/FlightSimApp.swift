@@ -10,7 +10,10 @@ struct FlightSimApp: App {
         WindowGroup {
             MenuView()
                 .environmentObject(settings)
-                .onAppear { OrientationLock.menus() }
+                .onAppear {
+                    OrientationLock.menus()
+                    MenuMusic.shared.enabled = settings.menuMusic
+                }
         }
     }
 }
