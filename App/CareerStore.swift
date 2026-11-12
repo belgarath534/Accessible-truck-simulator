@@ -55,8 +55,7 @@ struct DuelTurn: Equatable {
     let intro: String
 }
 
-/// Where a finished duel turn leaves its result for the duel screen.
-@MainActor
+/// Where a finished duel turn leaves its result for the duel screen. Only used on the main thread.
 final class DuelResults {
     static let shared = DuelResults()
     struct Result { let time: Double; let crashes: Int; let delivered: Bool }
