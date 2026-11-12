@@ -1,16 +1,8 @@
-Version 1.2 test build.
+Version 1.3 test build.
 
 New:
-- What's New: a page on the main menu with every version and what it added, plus what's coming. It shows by itself once after you install an update.
-- After a great delivery (no crashes, a good stop, at least 3 deliveries done), back at the main menu, Apple's rating window may appear. Once per version at most, and Apple limits it further.
-- Drivers grow: after 20 deliveries a 1-star driver asks for a raise ($1,500) to become 2-star; after 50, a 2-star asks ($3,500) to become 3-star. Pay it in the Company screen and they're faster and earn more. Say Not Now and they ask again after 15 more deliveries; ignore it for 15 deliveries and they quit.
-- Save and Continue Later: in the pause menu. It saves the drive exactly where you are (place, fuel, weather, time left), and the main menu shows Continue Your Drive at the top. Starting a different drive asks before replacing it.
-- A welcome setup the first time you open the game (you'll see it once now too): pick speech, captions, steering, steering help, driving buttons, lane beeps, weather, traffic, menu direction and units. Run it again any time from Settings.
-- Menus are upright now. Driving is still sideways; the pause menu and results turn upright too. Prefer sideways menus? Settings, Screen, Menus.
-
-Fixes:
-- VoiceOver should no longer leave the driving screen in the middle of a drive: if focus leaves it, the game brings it back.
-- Vibration now comes back after you leave the game and return during a drive.
-- Junction warning: about 200 meters before each junction, if your turn signal doesn't match the GPS route, you hear it: "Signal left now to turn onto Highway 12", or "Your right signal is on, but the route goes straight", or "Wrong signal!". Missing a turn used to send you the long way round without much warning; that's what made a 4 mile trip suddenly 14 miles.
-
-Please tell us: Do you hear the junction warning in time to signal? Does the vibration keep working after you switch apps?
+- Duel Mode on the main menu: two to four players on one phone drive the same route. Fastest time wins; each crash adds 15 seconds.
+- Your own music on the truck radio: Settings, Truck radio (Apple Music songs or files from the Files app).
+- Tow truck jobs (buy the Tow Truck in the Garage), Weekly Challenges, the rival company and the daily streak on the Job Board.
+- What's around me: three-finger swipe down while driving.
+- Career Stats and Send Feedback on the main menu.
