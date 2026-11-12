@@ -1,0 +1,50 @@
+# Accessible Flight Simulator. The .xcodeproj is generated from this by XcodeGen (on GitHub's Mac runners).
+name: FlightSim
+options:
+  bundleIdPrefix: com.accessibleflightsim
+  deploymentTarget:
+    iOS: "17.0"
+packages:
+  FlightCore:
+    path: Packages/FlightCore
+targets:
+  FlightSim:
+    type: application
+    platform: iOS
+    sources:
+      - App
+    dependencies:
+      - package: FlightCore
+    info:
+      path: App/Info.plist
+      properties:
+        CFBundleDisplayName: Flight Sim
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        NSMotionUsageDescription: "Flight Sim uses the phone's motion so you can fly by tilting it like a yoke."
+        UILaunchScreen: {}
+        UIRequiresFullScreen: true
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationLandscapeRight
+          - UIInterfaceOrientationLandscapeLeft
+        UISupportedInterfaceOrientations~ipad:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeRight
+          - UIInterfaceOrientationLandscapeLeft
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+        ITSAppUsesNonExemptEncryption: false
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.accessibleflightsim.FlightSim
+        SWIFT_VERSION: "5.0"
+        TARGETED_DEVICE_FAMILY: "1,2"
+        CODE_SIGN_STYLE: Automatic
+        MARKETING_VERSION: "1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        # Sound settings are shared with the real-time audio thread on purpose (a slightly stale value is harmless).
+        OTHER_SWIFT_FLAGS: "-enforce-exclusivity=unchecked"
+    scheme: {}

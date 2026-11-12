@@ -2,9 +2,9 @@ name: Build
 
 on:
   push:
-    paths-ignore: ["RhythmGame/**", ".github/workflows/rhythm.yml"]
+    paths-ignore: ["RhythmGame/**", ".github/workflows/rhythm.yml", "FlightGame/**", ".github/workflows/flight.yml"]
   pull_request:
-    paths-ignore: ["RhythmGame/**", ".github/workflows/rhythm.yml"]
+    paths-ignore: ["RhythmGame/**", ".github/workflows/rhythm.yml", "FlightGame/**", ".github/workflows/flight.yml"]
   workflow_dispatch:
 
 jobs:

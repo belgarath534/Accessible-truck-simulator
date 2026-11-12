@@ -1,0 +1,9 @@
+Accessible Flight Simulator, first test build.
+
+Try:
+- How to Fly first, then Flight School lesson 1 (takeoff).
+- Hold the phone sideways like a yoke: tilt back to climb, forward to descend, turn it like a wheel to bank.
+- Lessons 2 to 4: turns, landing, and a cross-country flight from Pine Valley to Harbor City.
+- Listen for the centerline beeps on the runway, the climb tone, the beacon and the landing tones.
+
+Tell us whether the tilt controls feel right, and whether the sounds tell you enough to fly.

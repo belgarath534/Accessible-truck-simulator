@@ -1,0 +1,9 @@
+Accessible Flight Simulator is an audio-first flight game designed for blind players using VoiceOver. No account or sign-in is needed, and the app collects no data.
+
+How to try it:
+1. Main menu, Flight School, Lesson 1: Takeoff. The instructor explains each step out loud.
+2. Hold the phone sideways like a steering yoke. Three-finger double tap starts the engine; two-finger swipe up gives full throttle.
+3. Turn the phone like a wheel to stay on the runway centerline; at about 55 knots, tilt the top of the phone back toward you to lift off. Climb to 1,000 feet to finish.
+4. Two-finger swipe down pauses (Quit to Main Menu is there). If tilting isn't possible, Settings, Controls, Touch stick uses a finger on the left half of the screen instead.
+
+The cockpit is a single VoiceOver element marked "allows direct interaction", so touches go straight to the game while VoiceOver is on. The motion sensors are used only for tilt steering. All sound is generated in the app.
