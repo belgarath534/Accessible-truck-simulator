@@ -41,6 +41,13 @@ public struct FlightSummary: Equatable, Sendable {
     public var flightTime: Double
     public var distance: Double
     public var message: String
+
+    public init(completed: Bool, crash: CrashReason?, landing: LandingRating?, touchdownFPM: Int?, centrelineOffset: Double?,
+                landedAt: String?, flightTime: Double, distance: Double, message: String) {
+        self.completed = completed; self.crash = crash; self.landing = landing; self.touchdownFPM = touchdownFPM
+        self.centrelineOffset = centrelineOffset; self.landedAt = landedAt; self.flightTime = flightTime
+        self.distance = distance; self.message = message
+    }
 }
 
 /// The flight model. Simple on purpose: it should feel like flying and be fair to fly by ear.
