@@ -53,12 +53,13 @@ final class DrivingController: NSObject, ObservableObject {
         self.settings = settings
         self.career = career
         self.drive = drive
-        let resume = career.takePendingResume()
-        let newSession = DrivingController.makeSession(drive, settings, career.truck.worn(career.condition), fuel: career.fuelLiters,
-                                                       town: resume?.origin ?? career.state.currentTown)
+        // A duel never continues a saved drive, and everyone gets the same truck in new condition.
+        let resume = drive.isDuel ? nil : career.takePendingResume()
+        let newSession = DrivingController.makeSession(drive, settings, drive.isDuel ? career.truck : career.truck.worn(career.condition),
+                                                       fuel: career.fuelLiters, town: resume?.origin ?? career.state.currentTown)
         if let resume { newSession.restore(resume.snapshot) }
         newSession.chainsOn = career.state.hasChains
-        newSession.condition = career.condition
+        if !drive.isDuel { newSession.condition = career.condition }
         session = newSession
         resumed = resume != nil
         touch = TouchInterpreter(mode: settings.steeringMode, areaWidth: 800)
@@ -89,12 +90,18 @@ final class DrivingController: NSObject, ObservableObject {
             navigator = job.destination.flatMap {
                 Navigator(map: .standard, origin: job.origin ?? town, destination: $0, closed: job.closedRoad.map { [$0] } ?? [])
             }
+        case let .duel(turn):
+            navigator = turn.job.destination.flatMap { Navigator(map: .standard, origin: turn.job.origin ?? town, destination: $0) }
         }
+        // Duels: the same seed for every player, so the traffic and deer are the same; a full tank, no time limit.
+        var duelSeed: UInt64?
+        if case let .duel(turn) = drive { duelSeed = turn.seed }
         let session = DrivingSession(spec: truck, goal: drive.goal, cargoMassKg: drive.job?.cargo.massKg ?? 0,
-                                     timeLimit: drive.job?.timeLimit,
-                                     startingFuel: drive == .tutorial ? nil : fuel, // the tutorial is on the house
+                                     timeLimit: drive.isDuel ? nil : drive.job?.timeLimit,
+                                     startingFuel: drive == .tutorial || drive.isDuel ? nil : fuel, // the tutorial is on the house
                                      navigator: navigator,
-                                     assist: settings.assist)
+                                     assist: settings.assist,
+                                     seed: duelSeed ?? UInt64.random(in: 1...UInt64.max))
         // Traffic on the map; the practice loop stays quiet for learning.
         session.trafficEnabled = settings.traffic && navigator != nil
         // Day and night follow the player's clock; deer on the map's country and mountain roads.
@@ -103,7 +110,7 @@ final class DrivingController: NSObject, ObservableObject {
         // Turbo Mode on jobs and Free Drive only: never the tutorial or the practice loop.
         session.turbo = settings.turbo && navigator != nil && !ScreenshotMode.isOn
         session.cargoKind = drive.job?.cargo.kind ?? .standard
-        session.dockingEnabled = settings.docking && drive.job != nil && drive.job?.tow == nil && !ScreenshotMode.isOn
+        session.dockingEnabled = settings.docking && drive.job != nil && drive.job?.tow == nil && !drive.isDuel && !ScreenshotMode.isOn
         session.towPickupAt = drive.job?.tow?.pickupAt
         session.cbRadioEnabled = settings.radioVoices && navigator != nil && !ScreenshotMode.isOn
         session.blowoutsEnabled = navigator != nil && !ScreenshotMode.isOn
@@ -113,12 +120,13 @@ final class DrivingController: NSObject, ObservableObject {
             // Snow some days in winter, by the player's own calendar.
             session.weather = Holiday.weather(using: &rng, date: Date())
         }
+        if case let .duel(turn) = drive { session.weather = turn.weather }
         return session
     }
 
     /// Leaving or restarting a drive that didn't finish: keep the fuel level and charge any fuel or tow costs.
     private func closeOutUnfinished() {
-        guard drive != .tutorial else { return }
+        guard drive != .tutorial, !drive.isDuel else { return }
         career.saveFuel(session.truck.fuelLiters)
         let costs = Payout.expenses(session.stats)
         let trip = TripResult(job: nil, summary: nil, stats: session.stats)
@@ -225,13 +233,13 @@ final class DrivingController: NSObject, ObservableObject {
     /// Saves the drive where it is, to pick up later from the main menu. Nothing is paid or charged yet: that
     /// happens when the drive is finished.
     func saveForLater() {
-        guard finished == nil, drive != .tutorial else { return }
+        guard finished == nil, drive != .tutorial, !drive.isDuel else { return }
         let kind: SavedDrive.Kind
         switch drive {
         case .practice: kind = .practice
         case .freeDrive: kind = .freeDrive
         case .job: kind = .job
-        case .tutorial: return
+        case .tutorial, .duel: return
         }
         career.saveDrive(SavedDrive(kind: kind, job: drive.job, origin: origin, snapshot: session.snapshot))
         stop()
@@ -249,6 +257,10 @@ final class DrivingController: NSObject, ObservableObject {
 
     /// Leaving mid-drive: Free Drive still pays for the distance; an unfinished job pays nothing.
     func quit() {
+        // Giving up a duel turn: it counts, as not finished.
+        if drive.isDuel, finished == nil {
+            DuelResults.shared.last = .init(time: session.stats.drivingTime, crashes: session.stats.crashes, delivered: false)
+        }
         if finished == nil {
             if drive == .freeDrive && session.stats.distance > 0 {
                 settle(TripSummary(goalName: goal.name, stats: session.stats, stopError: 0))
@@ -262,6 +274,11 @@ final class DrivingController: NSObject, ObservableObject {
     private func settle(_ summary: TripSummary) {
         let result: Payout?
         if drive == .tutorial { payout = nil; return }
+        if drive.isDuel {
+            DuelResults.shared.last = .init(time: summary.stats.drivingTime, crashes: summary.stats.crashes, delivered: true)
+            payout = nil
+            return
+        }
         career.saveFuel(session.truck.fuelLiters)
         switch drive {
         case .tutorial: result = nil
@@ -270,6 +287,7 @@ final class DrivingController: NSObject, ObservableObject {
             result = Payout.freeDrive(summary.stats)
             if let town = session.navigator?.lastTown { career.move(to: town) }
         case let .job(job): result = career.state.deliveryPayout(job, summary: summary, weather: session.weather)
+        case .duel: result = nil
         }
         let trip = TripResult(job: drive.job, summary: drive.job == nil ? nil : summary, stats: summary.stats)
         if var result {

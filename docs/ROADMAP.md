@@ -55,6 +55,7 @@ captions, driving buttons, Larger Text / Increase Contrast / Reduce Motion, iPad
 
 ## 1.3: planned (November 2026)
 Player ideas first; a weekly-update rhythm.
+- Duel Mode: pass-and-play on one phone, same route and traffic for everyone, fastest time wins (done; a player's idea)
 - Weekly Challenges: a new challenge each week with a prize and a weekly leaderboard (done)
 - Tow truck jobs: answer calls from stranded drivers, hook up the car, bring it to the mechanic (done)
 - New trucks and trailers, including double trailers
@@ -70,6 +71,7 @@ Player ideas first; a weekly-update rhythm.
 - Daily delivery streak (done)
 - Send Feedback button (done)
 - Recorded radio voices (dispatcher, CB, DJ), when ElevenLabs credits are back
+- 1.4: Online Race with a room code through Game Center (each player gets a delivery, hear where the other truck is)
 - Later: bus driving (a separate mode; not for now)
 
 ## Windows version

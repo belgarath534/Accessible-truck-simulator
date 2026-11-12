@@ -14,6 +14,7 @@ enum Changelog {
     /// Newest first. Add to the top for each update.
     static let versions: [Version] = [
         Version(number: "1.3", title: "Weekly Update", items: [
+            "Duel Mode: two to four players on one phone, no internet needed. Pick a start, a cargo and a destination, then pass the phone. Everyone drives the same route with the same traffic and weather. Fastest time wins, and each crash adds 15 seconds. Thanks to Angela for the idea!",
             "Weekly Challenges: a new challenge every Monday, the same for every player, with a money prize. Find it at the top of the Job Board, and climb the new Weekly Challenges Won leaderboard.",
             "Tow truck jobs: buy the Tow Truck in the Garage and the Job Board fills with tow calls. Drive out to the stranded car, follow the beeps, stop right next to it to hook it up, and tow it to the mechanic or the owner's home. Crashes damage the customer's car.",
             "Your own music on the truck radio: pick songs from Apple Music, or add your own music files (MP3, M4A, WAV) from the Files app. Settings, Truck radio.",

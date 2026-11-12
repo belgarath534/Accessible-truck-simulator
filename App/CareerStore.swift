@@ -11,6 +11,8 @@ enum DriveMode: Equatable, Identifiable {
     case freeDrive
     /// A delivery from the job board.
     case job(DeliveryJob)
+    /// One player's turn in Duel Mode: no pay, nothing saved to the career.
+    case duel(DuelTurn)
 
     var id: String {
         switch self {
@@ -18,6 +20,7 @@ enum DriveMode: Equatable, Identifiable {
         case .practice: return "practice"
         case .freeDrive: return "free"
         case let .job(job): return job.id.uuidString
+        case let .duel(turn): return "duel-\(turn.seed)-\(turn.player)"
         }
     }
 
@@ -27,13 +30,37 @@ enum DriveMode: Equatable, Identifiable {
         case .practice: return .practice(on: .practiceLoop)
         case .freeDrive: return .freeDrive
         case let .job(job): return job.goal
+        case let .duel(turn): return turn.job.goal
         }
     }
 
+    /// The delivery for jobs and duels (both drive to a drop-off).
     var job: DeliveryJob? {
-        if case let .job(job) = self { return job }
-        return nil
+        switch self {
+        case let .job(job): return job
+        case let .duel(turn): return turn.job
+        default: return nil
+        }
     }
+
+    var isDuel: Bool { if case .duel = self { return true }; return false }
+}
+
+/// What a duel turn needs: the shared route, seed and weather, and whose turn it is.
+struct DuelTurn: Equatable {
+    let job: DeliveryJob
+    let seed: UInt64
+    let weather: Weather
+    let player: Int
+    let intro: String
+}
+
+/// Where a finished duel turn leaves its result for the duel screen.
+@MainActor
+final class DuelResults {
+    static let shared = DuelResults()
+    struct Result { let time: Double; let crashes: Int; let delivered: Bool }
+    var last: Result?
 }
 
 /// The player's saved career: money, finished jobs and the job board.

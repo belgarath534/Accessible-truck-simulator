@@ -104,6 +104,12 @@ struct MainMenuView: View {
                         Text("Garage").font(.title2)
                     }
                     .accessibilityHint("Buy trucks, hear their engines and choose which one to drive.")
+                    NavigationLink {
+                        DuelSetupView()
+                    } label: {
+                        Text("Duel Mode").font(.title2)
+                    }
+                    .accessibilityHint("Two to four players on one phone drive the same route. Fastest time wins. No internet needed.")
                     Button("Practice Drive") { start(.practice) }
                         .font(.title2)
                         .accessibilityHint("One lap of the country road, then stop at the drop-off. No pay.")

@@ -127,6 +127,8 @@ final class FeedbackCoordinator {
             trip = "Practice Drive: \(settings.units.distance(Road.practiceLoop.totalLength)) to the drop-off. Stop there to finish. Practice drives don't pay."
         case .freeDrive:
             trip = "Free Drive from \(freeDriveTown). Roam the map: at each junction you'll hear the choices; signal left or right to turn, or no signal to go straight. You earn \(Phrases.money(Int(Payout.freeDriveRatePerKm))) per kilometer. Pause and choose End Drive to get paid."
+        case let .duel(turn):
+            trip = turn.intro + " The clock starts when you start moving. Stop at the drop-off to finish."
         case let .job(job):
             trip = phrases.jobIntro(job) + " Stop at the drop-off to deliver."
             if let fuel = startingFuel,

@@ -63,7 +63,7 @@ struct DrivingScreen: View {
                     },
                     restart: controller.restart,
                     endFreeDrive: controller.endFreeDrive,
-                    saveForLater: controller.drive == .tutorial ? nil : {
+                    saveForLater: controller.drive == .tutorial || controller.drive.isDuel ? nil : {
                         controller.saveForLater()
                         onExit()
                     },
@@ -144,6 +144,10 @@ struct PauseMenuView: View {
                     Button("Abandon Job", role: .destructive, action: quit)
                         .buttonStyle(.bordered)
                         .accessibilityHint("Returns to the main menu. Unfinished jobs don't pay.")
+                case .duel:
+                    Button("Give Up This Turn", role: .destructive, action: quit)
+                        .buttonStyle(.bordered)
+                        .accessibilityHint("Ends your turn. It counts as not finished.")
                 case .practice:
                     Button("Restart from the Start", action: restart)
                         .buttonStyle(.bordered)
