@@ -12,7 +12,9 @@ targets:
     type: application
     platform: iOS
     sources:
-      - App
+      - path: App
+        excludes:
+          - "**/*.md"
     dependencies:
       - package: FlightCore
     info:
