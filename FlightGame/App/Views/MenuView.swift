@@ -28,6 +28,7 @@ struct MenuView: View {
                     NavigationLink("How to Fly") { HowToFlyView() }
                     NavigationLink("Logbook") { LogbookView() }
                     NavigationLink("Settings") { SettingsView() }
+                    NavigationLink("Credits") { CreditsView() }
                 }
             }
             .navigationTitle("Flight Sim")

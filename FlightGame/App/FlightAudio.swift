@@ -29,6 +29,10 @@ final class SoundState {
     var thumpSeconds: Float = 0
     var crashSeconds: Float = 0
     var flapSeconds: Float = 0
+    /// Recorded loops are playing, so the made-up engine, wind and rumble stay quiet.
+    var sampledEngine = false
+    var sampledWind = false
+    var sampledRumble = false
 }
 
 /// All the flight's sound, made live: no recordings needed.
@@ -36,6 +40,11 @@ final class FlightAudio {
     let state = SoundState()
     private let engine = AVAudioEngine()
     private var source: AVAudioSourceNode?
+    /// Recorded loops, each with its own speed (pitch) and volume.
+    private struct Layer { let player: AVAudioPlayerNode; let speed: AVAudioUnitVarispeed }
+    private var engineLayer: Layer?
+    private var windLayer: Layer?
+    private var rumbleLayer: Layer?
 
     init() {
         let session = AVAudioSession.sharedInstance()
@@ -55,10 +64,60 @@ final class FlightAudio {
         engine.attach(node)
         engine.connect(node, to: engine.mainMixerNode, format: format)
         engine.mainMixerNode.outputVolume = 0.9
+        engineLayer = loop("engine_prop")
+        windLayer = loop("wind_loop")
+        rumbleLayer = loop("runway_rumble")
+        state.sampledEngine = engineLayer != nil
+        state.sampledWind = windLayer != nil
+        state.sampledRumble = rumbleLayer != nil
     }
 
-    func start() { if !engine.isRunning { try? engine.start() } }
+    private func loop(_ name: String) -> Layer? {
+        guard let url = Bundle.main.url(forResource: name, withExtension: "wav"),
+              let file = try? AVAudioFile(forReading: url),
+              let buffer = AVAudioPCMBuffer(pcmFormat: file.processingFormat, frameCapacity: AVAudioFrameCount(file.length)),
+              (try? file.read(into: buffer)) != nil else { return nil }
+        let player = AVAudioPlayerNode(), speed = AVAudioUnitVarispeed()
+        engine.attach(player)
+        engine.attach(speed)
+        engine.connect(player, to: speed, format: buffer.format)
+        engine.connect(speed, to: engine.mainMixerNode, format: buffer.format)
+        player.volume = 0
+        player.scheduleBuffer(buffer, at: nil, options: .loops)
+        return Layer(player: player, speed: speed)
+    }
+
+    func start() {
+        if !engine.isRunning { try? engine.start() }
+        for layer in [engineLayer, windLayer, rumbleLayer].compactMap({ $0 }) where !layer.player.isPlaying {
+            layer.player.play()
+        }
+    }
+
     func stop() { engine.stop() }
+
+    /// Called every frame: the recorded loops follow the engine, the airspeed and the wheels.
+    func updateLayers() {
+        let s = state
+        let quiet = s.paused
+        if let e = engineLayer {
+            let running = s.engineOn && !quiet
+            let fraction = max(0, min(1.2, s.rpm / max(s.maxRPM, 1)))
+            e.speed.rate = 0.55 + 0.6 * fraction
+            let target: Float = running ? 0.35 + 0.5 * s.throttle : 0
+            e.player.volume += (target - e.player.volume) * 0.15
+        }
+        if let w = windLayer {
+            let target: Float = quiet ? 0 : min(0.7, powf(s.airspeed / 65, 2) * 0.7)
+            w.speed.rate = 0.7 + min(0.8, s.airspeed / 80)
+            w.player.volume += (target - w.player.volume) * 0.1
+        }
+        if let r = rumbleLayer {
+            let target: Float = (quiet || !s.onGround) ? 0 : min(0.8, s.airspeed / 30 * 0.8)
+            r.speed.rate = 0.8 + min(0.7, s.airspeed / 40)
+            r.player.volume += (target - r.player.volume) * 0.2
+        }
+    }
 }
 
 private struct Noise {
@@ -99,7 +158,9 @@ private final class Synth {
 
             // Engine: four cylinders firing twice a turn, a two-blade propeller beating the air.
             rpm += (s.rpm - rpm) * 0.0005
-            let targetAmp: Float = (s.engineOn || s.cranking) ? 0.16 + 0.22 * s.throttle : 0
+            // With the recorded propeller playing, the made-up engine only does the starter.
+            let synthEngine = !s.sampledEngine || (s.cranking && !s.engineOn)
+            let targetAmp: Float = synthEngine && (s.engineOn || s.cranking) ? 0.16 + 0.22 * s.throttle : 0
             engAmp += (targetAmp - engAmp) * 0.0004
             if engAmp > 0.0005 {
                 var f = max(rpm, 1) / 60 * 2
@@ -118,7 +179,7 @@ private final class Synth {
             }
 
             // Wind over the airframe.
-            let windTarget = min(0.3, powf(s.airspeed / 70, 2) * 0.3)
+            let windTarget = s.sampledWind ? 0 : min(0.3, powf(s.airspeed / 70, 2) * 0.3)
             wind += (windTarget - wind) * 0.0005
             if wind > 0.0005 {
                 let k = min(0.5, (300 + s.airspeed * 25) / sr * twoPi)
@@ -127,7 +188,7 @@ private final class Synth {
             }
 
             // Wheels on the runway.
-            let rumbleTarget: Float = s.onGround ? min(0.22, s.airspeed / 40 * 0.22) : 0
+            let rumbleTarget: Float = s.onGround && !s.sampledRumble ? min(0.22, s.airspeed / 40 * 0.22) : 0
             rumble += (rumbleTarget - rumble) * 0.001
             if rumble > 0.0005 {
                 lpRumble += (noise.next() - lpRumble) * 0.02

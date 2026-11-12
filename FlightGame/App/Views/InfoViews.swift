@@ -84,3 +84,17 @@ struct SettingsView: View {
         .navigationTitle("Settings")
     }
 }
+
+struct CreditsView: View {
+    var body: some View {
+        List {
+            Section("Sounds") {
+                Text("Propeller engine: \"Airplane Prop Loop\" by AntumDeluge, made from airplane prop noise by jakobthiesen. Licensed under Creative Commons Attribution 3.0. From OpenGameArt.org.")
+                Text("Runway rumble: \"Background Rumble Noise\" by gryc. Licensed under Creative Commons Attribution 3.0. From OpenGameArt.org.")
+                Text("Wind: \"Short wind sound\" by remaxim, public domain (CC0). From OpenGameArt.org.")
+                Text("Every other sound, the beeps, tones and warnings, is made live by the game.")
+            }
+        }
+        .navigationTitle("Credits")
+    }
+}

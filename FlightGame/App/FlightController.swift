@@ -80,6 +80,7 @@ final class FlightController: NSObject, ObservableObject {
         guard !isPaused, finished == nil else { return }
         isPaused = true
         audio.state.paused = true
+        audio.updateLayers()
         brake = false
         _ = reader.cancelAll()
         stick = nil
@@ -178,6 +179,7 @@ final class FlightController: NSObject, ObservableObject {
         st.bank = Float(session.bank)
         st.varioOn = settings.varioTone
         st.bankToneOn = settings.bankTone
+        st.maxRPM = Float(session.spec.maxRPM)
         st.stallWarning = !session.onGround && session.airspeed < session.stallSpeedNow * 1.12 && session.altitude > 3
         if let ap = session.approach {
             st.approachLateral = Float(ap.lateral)
@@ -192,6 +194,7 @@ final class FlightController: NSObject, ObservableObject {
         } else {
             st.beaconBearing = .nan
         }
+        audio.updateLayers()
     }
 
     private func handle(event e: FlightEvent) {
@@ -226,6 +229,7 @@ final class FlightController: NSObject, ObservableObject {
         settings.record(summary, lesson: summary.completed ? request.lesson?.id : nil)
         DispatchQueue.main.asyncAfter(deadline: .now() + 3) { [weak self] in
             self?.audio.state.paused = true
+            self?.audio.updateLayers()
         }
     }
 
