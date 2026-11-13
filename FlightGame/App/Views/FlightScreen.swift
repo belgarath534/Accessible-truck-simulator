@@ -19,7 +19,8 @@ struct FlightScreen: View {
                 .ignoresSafeArea()
                 .accessibilityHidden(controller.isPaused || controller.finished != nil)
             if let summary = controller.finished {
-                ResultsOverlay(summary: summary, retry: controller.restart) {
+                ResultsOverlay(summary: summary, pay: controller.pay,
+                               retry: controller.request.job == nil ? controller.restart : nil) {
                     controller.stop()
                     close()
                 }
@@ -124,7 +125,9 @@ struct PauseOverlay: View {
 
 struct ResultsOverlay: View {
     let summary: FlightSummary
-    let retry: () -> Void
+    var pay: FlightPay?
+    /// Nil for jobs: a job can't be flown twice.
+    let retry: (() -> Void)?
     let done: () -> Void
     @AccessibilityFocusState private var focused: Bool
 
@@ -144,7 +147,16 @@ struct ResultsOverlay: View {
                         Text(abs(off) < 3 ? "Right on the centerline." : "\(Units.feet(abs(off))) feet \(off > 0 ? "right" : "left") of the centerline.")
                     }
                     Text(String(format: "Flight time: %d minutes %d seconds.", Int(summary.flightTime) / 60, Int(summary.flightTime) % 60))
-                    Button(summary.completed ? "Fly It Again" : "Try Again", action: retry).buttonStyle(.borderedProminent)
+                    if let pay {
+                        ForEach(Array(pay.lines.enumerated()), id: \.offset) { _, line in
+                            Text("\(line.label): \(Phrases.money(line.amount))")
+                        }
+                        if pay.lines.count > 1 { Text("Total: \(Phrases.money(pay.total))").bold() }
+                        ForEach(pay.news, id: \.self) { Text($0).multilineTextAlignment(.center) }
+                    }
+                    if let retry {
+                        Button(summary.completed ? "Fly It Again" : "Try Again", action: retry).buttonStyle(.borderedProminent)
+                    }
                     Button("Main Menu", action: done).buttonStyle(.bordered)
                 }
                 .font(.title3)

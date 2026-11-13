@@ -36,6 +36,8 @@ final class FlightSettings: ObservableObject {
         }
     }
     @Published private(set) var logbook: Logbook
+    /// The pilot career: money, rank, job board and the plane's condition.
+    @Published private(set) var career: PilotCareer
 
     init() {
         controlMode = ControlMode(rawValue: defaults.string(forKey: "controlMode") ?? "") ?? .tilt
@@ -54,6 +56,43 @@ final class FlightSettings: ObservableObject {
         } else {
             logbook = Logbook()
         }
+        if let data = defaults.data(forKey: "career"), let saved = try? JSONDecoder().decode(PilotCareer.self, from: data) {
+            career = saved
+        } else {
+            career = PilotCareer()
+        }
+        if career.board.isEmpty { career.refreshBoard() }
+    }
+
+    private func saveCareer() {
+        if let data = try? JSONEncoder().encode(career) { defaults.set(data, forKey: "career") }
+    }
+
+    /// Settles a paid flight and returns what it earned.
+    func finishJob(_ job: FlightJob, summary: FlightSummary, comfort: Int) -> FlightPay {
+        var rng = SystemRandomNumberGenerator()
+        let pay = career.finish(job, summary: summary, comfort: comfort, using: &rng)
+        saveCareer()
+        return pay
+    }
+
+    /// Wear from a flight that wasn't a job.
+    func wearPlane(_ summary: FlightSummary) {
+        career.wear(summary)
+        saveCareer()
+    }
+
+    /// Returns false if there's nothing to fix or not enough money.
+    func repairPlane() -> Bool {
+        let done = career.repair()
+        saveCareer()
+        return done
+    }
+
+    func emergencyRepair() -> Bool {
+        let done = career.emergencyRepairIfStuck()
+        saveCareer()
+        return done
     }
 
     func record(_ summary: FlightSummary, lesson: Int?) {

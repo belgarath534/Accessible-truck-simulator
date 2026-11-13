@@ -31,6 +31,12 @@ struct HowToFlyView: View {
                 Text("Slow down before the airport: throttle about 30 percent, flaps 1 below 85 knots, and about 65 knots on the approach. Easy assist holds landing speed for you.")
                 Text("After touchdown: throttle idle, and hold one finger still on the screen to brake. Stop on the runway to finish.")
             }
+            Section("Pilot career") {
+                Text("Pilot Jobs are paid flights from the airport your plane is at. You're paid for landing at the destination, with a bonus for a soft landing.")
+                Text("With passengers aboard, fly smoothly: steep turns, fast climbs and drops, stalls and hard landings make the ride rough. A comfortable flight earns tips, and a rough one costs you a refund.")
+                Text("Paid flights raise your rank: Student Pilot, Private Pilot, Commercial Pilot, then Captain. Each rank unlocks better-paid flights.")
+                Text("Every flight wears your plane, and hard landings and crashes wear it a lot. A worn engine makes less power. The Mechanic on the main menu repairs it.")
+            }
             Section("Assists") {
                 Text("Easy: the wings level themselves, the nose eases back to level when you let go, the plane won't pull into a stall, and the throttle holds landing speed on approach. Standard: the wings level themselves. Off: you fly it all.")
                 Text("Autopilot: three-finger swipe up holds your height and heading. Move the controls firmly to take over.")
@@ -46,7 +52,15 @@ struct LogbookView: View {
 
     var body: some View {
         List {
-            ForEach(settings.logbook.lines, id: \.self) { Text($0) }
+            Section("Career") {
+                Text("Rank: \(settings.career.rank.title).")
+                Text("Paid flights: \(settings.career.flightsDone). Earned: \(Phrases.money(settings.career.totalEarned)).")
+                Text("Money: \(Phrases.money(settings.career.money)).")
+                if settings.career.bestComfort > 0 { Text("Best passenger comfort: \(settings.career.bestComfort) out of 100.") }
+            }
+            Section("Flying") {
+                ForEach(settings.logbook.lines, id: \.self) { Text($0) }
+            }
         }
         .navigationTitle("Logbook")
     }

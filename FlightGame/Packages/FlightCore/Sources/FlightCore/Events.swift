@@ -128,4 +128,5 @@ public enum FlightEvent: Equatable, Sendable {
     case instruments(InstrumentReading)
     case navigation(NavigationReading?)
     case goalComplete(String)
+    case passengersUneasy
 }

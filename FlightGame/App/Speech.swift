@@ -67,7 +67,7 @@ final class Speech: NSObject, AVAudioPlayerDelegate {
 
     private func speak(_ text: String, interrupt: Bool) {
         // A rough guess at how long it takes to say, so recordings don't talk over it.
-        spokenUntil = Date().addingTimeInterval(min(12, 0.5 + Double(text.count) * 0.055))
+        spokenUntil = Date().addingTimeInterval(min(30, 0.5 + Double(text.count) * 0.06))
         if useVoiceOver && UIAccessibility.isVoiceOverRunning {
             let attributed = NSAttributedString(string: text,
                                                 attributes: [.accessibilitySpeechQueueAnnouncement: !interrupt])

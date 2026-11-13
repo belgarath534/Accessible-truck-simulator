@@ -74,6 +74,24 @@ public enum Phrases {
         case let .instruments(r): return instruments(r)
         case let .navigation(n): return navigation(n)
         case let .goalComplete(message): return message
+        case .passengersUneasy: return "Your passengers are getting uneasy. Gentle turns, and easy on the climbs and descents."
         }
+    }
+
+    // MARK: Control tower
+
+    public static func towerTakeoff(_ a: Airport) -> String {
+        "\(a.name) tower. \(a.runwayName.capitalized), cleared for takeoff. Have a good flight."
+    }
+
+    public static func towerLanding(_ a: Airport) -> String {
+        "\(a.name) tower. \(a.runwayName.capitalized), cleared to land."
+    }
+
+    public static func money(_ amount: Int) -> String {
+        let f = NumberFormatter()
+        f.numberStyle = .decimal
+        f.locale = Locale(identifier: "en_US")
+        return (amount < 0 ? "minus $" : "$") + (f.string(from: NSNumber(value: abs(amount))) ?? "\(abs(amount))")
     }
 }

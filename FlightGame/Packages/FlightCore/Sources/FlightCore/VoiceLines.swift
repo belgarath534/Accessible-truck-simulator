@@ -8,6 +8,8 @@ public struct VoiceLine: Equatable, Sendable {
         case instructor
         /// The cockpit voice: callouts and warnings.
         case cockpit
+        /// The control tower, over the radio.
+        case tower
     }
     public let id: String
     public let speaker: Speaker
@@ -41,6 +43,11 @@ public enum VoiceLines {
         for p in stride(from: 0, through: 100, by: 10) { events.append(("throttle_\(p)", .throttle(percent: p))) }
         for f in 0...2 { events.append(("flaps_\(f)", .flaps(f))) }
         for feet in [1_000, 500, 200, 100, 50, 40, 30, 20, 10] { events.append(("callout_\(feet)", .altitudeCallout(feet: feet))) }
+        events.append(("passengers_uneasy", .passengersUneasy))
+        for a in World.airports {
+            lines.append(VoiceLine(id: "tower_takeoff_\(a.id)", speaker: .tower, text: Phrases.towerTakeoff(a)))
+            lines.append(VoiceLine(id: "tower_landing_\(a.id)", speaker: .tower, text: Phrases.towerLanding(a)))
+        }
         for (id, event) in events {
             if let text = Phrases.event(event) { lines.append(VoiceLine(id: id, speaker: .cockpit, text: text)) }
         }

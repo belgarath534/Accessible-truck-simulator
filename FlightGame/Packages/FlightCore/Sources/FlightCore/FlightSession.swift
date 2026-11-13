@@ -83,6 +83,15 @@ public final class FlightSession {
     public private(set) var autopilot: (altitude: Double, heading: Double)?
     /// Has been in the air this flight.
     public private(set) var hasFlown = false
+    /// Carrying passengers: the game tells you when the ride gets rough.
+    public var passengers = false
+    /// A worn engine makes less power (1 = like new). Set from the plane's condition.
+    public var powerFactor = 1.0
+    /// How rough the ride has been; see `comfort`.
+    public private(set) var discomfort = 0.0
+    /// 100 = silky smooth, 0 = everyone is sick.
+    public var comfort: Int { max(0, Int((100 - discomfort * 2).rounded())) }
+    private var warnedUneasy = false
 
     private var touchdown: (rating: LandingRating, fpm: Int, offset: Double, airport: String)?
     private var warned: Set<String> = []
@@ -244,7 +253,7 @@ public final class FlightSession {
             else { engine = .starting(remaining: remaining - dt) }
         }
         let running = engine == .running
-        let power = running ? throttle : 0
+        let power = running ? throttle * powerFactor : 0
         let targetRPM = running ? spec.idleRPM + (spec.maxRPM - spec.idleRPM) * throttle
                                 : (onGround ? 0 : min(spec.idleRPM, airspeed * 15)) // windmilling in the air
         rpm += (targetRPM - rpm) * min(1, dt * 2.5)
@@ -381,6 +390,15 @@ public final class FlightSession {
         heading = Units.heading(heading + turnRate * dt)
         altitude += verticalSpeed * dt
 
+        // The ride: steep banks, fast climbs and drops, and stalls are rough on whoever is in the back.
+        if abs(bank) > 30 { discomfort += (abs(bank) - 30) / 10 * dt }
+        if abs(verticalSpeed) > 6 { discomfort += (abs(verticalSpeed) - 6) / 2 * dt }
+        if stalled { discomfort += 5 * dt }
+        if passengers, !warnedUneasy, comfort < 70 {
+            warnedUneasy = true
+            events.append(.passengersUneasy)
+        }
+
         // Warnings.
         if !stalled, airspeed < vStall * 1.12, altitude > 10 {
             if once("stall\(Int(time / 4))") { events.append(.stallWarning) }
@@ -415,6 +433,7 @@ public final class FlightSession {
         if pitch < -5 { crash(.nosedIn, events: &events); return }
         if verticalSpeed < -4.2 || abs(bank) > 12 { crash(.hardLanding, events: &events); return }
         let rating = LandingRating.from(feetPerMinute: fpm)
+        discomfort += rating == .hard ? 8 : rating == .firm ? 3 : 0
         let offset = a.runwayCoordinates(x: x, y: y).across
         touchdown = (rating, fpm, offset, a.id)
         onGround = true

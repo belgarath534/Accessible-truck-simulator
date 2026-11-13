@@ -16,6 +16,12 @@ struct MenuView: View {
                     }
                     .accessibilityHint("A guided flight for people who have never flown. The instructor explains every part of the plane, one step at a time.")
                     NavigationLink {
+                        JobsView { flight = $0 }
+                    } label: {
+                        Text("Pilot Jobs").font(.title2.bold())
+                    }
+                    .accessibilityHint("Paid flights: carry passengers, cargo and mail between airports. You're a \(settings.career.rank.title) with \(Phrases.money(settings.career.money)).")
+                    NavigationLink {
                         LessonsView { flight = $0 }
                     } label: {
                         Text("Flight School").font(.title2.bold())
@@ -31,6 +37,8 @@ struct MenuView: View {
                     Text(settings.tutorialDone ? "" : "Never flown a plane? Start with Your First Flight. The instructor explains everything as you go.")
                 }
                 Section {
+                    NavigationLink("Mechanic") { MechanicView() }
+                        .accessibilityHint("Your plane's condition, \(settings.career.conditionPercent) percent, and repairs.")
                     NavigationLink("Ground School: Parts of the Plane") { GroundSchoolView() }
                     NavigationLink("How to Fly") { HowToFlyView() }
                     NavigationLink("Logbook") { LogbookView() }

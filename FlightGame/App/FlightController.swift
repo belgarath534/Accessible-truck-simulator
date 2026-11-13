@@ -12,6 +12,8 @@ struct FlightRequest: Identifiable {
     let lesson: Lesson?
     let briefing: String
     var isTutorial = false
+    /// A paid flight from the job board.
+    var job: FlightJob?
 
     /// The guided first flight.
     static let tutorial = FlightRequest(title: "Your First Flight", start: .runway("pine"), goal: .tutorial,
@@ -24,6 +26,8 @@ final class FlightController: NSObject, ObservableObject {
     @Published private(set) var finished: FlightSummary?
     /// For the on-screen instruments (sighted players and screenshots).
     @Published private(set) var reading: InstrumentReading
+    /// What a job flight earned (nil for other flights).
+    @Published private(set) var pay: FlightPay?
 
     let request: FlightRequest
     let settings: FlightSettings
@@ -60,6 +64,22 @@ final class FlightController: NSObject, ObservableObject {
         tutorial = request.isTutorial ? Tutorial() : nil
         reading = session.instruments
         super.init()
+        prepareSession()
+    }
+
+    /// Passengers aboard, and a worn engine is weaker (never in the tutorial or lessons).
+    private func prepareSession() {
+        session.passengers = request.job?.kind.carriesPeople ?? false
+        session.powerFactor = wearsPlane ? settings.career.powerFactor : 1
+    }
+
+    /// Jobs and your own planned flights wear the plane; lessons and the tutorial use the school's plane.
+    private var wearsPlane: Bool { !request.isTutorial && request.lesson == nil }
+
+    private func sayBriefing() {
+        guard !request.briefing.isEmpty else { return }
+        speech.say(request.briefing, priority: .high)
+        if let job = request.job, let from = World.airport(job.from) { speech.say(Phrases.towerTakeoff(from)) }
     }
 
     // MARK: Lifecycle
@@ -78,7 +98,7 @@ final class FlightController: NSObject, ObservableObject {
         lastTime = 0
         UIApplication.shared.isIdleTimerDisabled = true
         heavy.prepare()
-        if !request.briefing.isEmpty { speech.say(request.briefing, priority: .high) }
+        sayBriefing()
     }
 
     func stop() {
@@ -123,6 +143,8 @@ final class FlightController: NSObject, ObservableObject {
         session = FlightSession(start: request.start, goal: request.goal, assist: assist)
         tutorial = request.isTutorial ? Tutorial() : nil
         recentActions = []
+        prepareSession()
+        pay = nil
         finished = nil
         isPaused = false
         audio.state.paused = false
@@ -130,7 +152,7 @@ final class FlightController: NSObject, ObservableObject {
         lastTime = 0
         accumulator = 0
         yoke.recenter()
-        if !request.briefing.isEmpty { speech.say(request.briefing, priority: .high) }
+        sayBriefing()
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
             guard let v = self?.view else { return }
             UIAccessibility.post(notification: .screenChanged, argument: v)
@@ -258,6 +280,11 @@ final class FlightController: NSObject, ObservableObject {
         default:
             break
         }
+        // On a job, the tower clears you to land as you line up.
+        if case .approachCaptured = e, let job = request.job, let to = World.airport(job.to),
+           session.guideAirport.id == to.id {
+            speech.say(Phrases.towerLanding(to))
+        }
         guard let text = Phrases.event(e) else { return }
         let urgent: Bool
         switch e {
@@ -271,6 +298,13 @@ final class FlightController: NSObject, ObservableObject {
         finished = summary
         audio.state.stallWarning = false
         settings.record(summary, lesson: summary.completed ? request.lesson?.id : nil)
+        if let job = request.job {
+            let earned = settings.finishJob(job, summary: summary, comfort: session.comfort)
+            pay = earned
+            speech.say(earned.spoken)
+        } else if wearsPlane {
+            settings.wearPlane(summary)
+        }
         DispatchQueue.main.asyncAfter(deadline: .now() + 3) { [weak self] in
             self?.audio.state.paused = true
             self?.audio.updateLayers()

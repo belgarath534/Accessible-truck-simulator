@@ -1,9 +1,10 @@
 Accessible Flight Simulator test build.
 
 New:
-- Recorded voices: Joe is your flight instructor (the tutorial and lesson briefings) and Kristin is the cockpit voice (height callouts, throttle, flaps and warnings). Instrument and navigation readouts still use VoiceOver. Switch in Settings.
-- Your First Flight: a guided tutorial on the main menu for people who have never flown. The instructor explains the engine, throttle, takeoff, climbing, turning, flaps, stalls, navigation and the autopilot, one step at a time. Crash and you just try again.
-- Ground School: every part of the plane explained in plain words.
-- Menu music, and real propeller, wind and runway sounds.
+- Pilot Jobs: paid flights with mail, cargo and passengers between airports. Earn money and rise from Student Pilot to Captain.
+- Passenger comfort: fly smoothly for tips; a rough ride costs you.
+- The Mechanic: hard landings and crashes wear your plane, a worn engine is weaker, and repairs cost money.
+- The control tower clears you for takeoff and landing over the radio.
+- Recorded voices: Joe is your flight instructor and Kristin is the cockpit voice.
 
-Tell us whether the instructor is clear, whether any step is confusing or too fast, and how the tilt controls feel.
+Tell us whether the jobs feel fair, whether the pay and repair costs make sense, and how the tilt controls feel.
