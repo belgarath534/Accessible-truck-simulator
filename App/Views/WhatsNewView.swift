@@ -13,6 +13,9 @@ enum Changelog {
 
     /// Newest first. Add to the top for each update.
     static let versions: [Version] = [
+        Version(number: "1.4", title: "Voices on the Radio", items: [
+            "Real voices on the radio: the dispatcher, the Big Rig Radio DJ, and Big Mike and Smooth Rider on the CB now speak with recorded voices instead of the game's voice. Turn them off in Settings if you prefer.",
+        ]),
         Version(number: "1.3", title: "Weekly Update", items: [
             "Duel Mode: two to four players on one phone, no internet needed. Pick a start, a cargo and a destination, then pass the phone. Everyone drives the same route with the same traffic and weather. Fastest time wins, and each crash adds 15 seconds. Thanks to Angela for the idea!",
             "Weekly Challenges: a new challenge every Monday, the same for every player, with a money prize. Find it at the top of the Job Board, and climb the new Weekly Challenges Won leaderboard.",

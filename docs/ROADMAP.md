@@ -70,8 +70,11 @@ Player ideas first; a weekly-update rhythm.
 - Career stats page (done)
 - Daily delivery streak (done)
 - Send Feedback button (done)
-- Recorded radio voices (dispatcher, CB, DJ), when ElevenLabs credits are back
-- 1.4: Online Race with a room code through Game Center (each player gets a delivery, hear where the other truck is)
+- Released November 2026.
+
+## 1.4: in progress
+- Recorded radio voices (dispatcher, CB, DJ), made with Piper's free public-domain voices (done)
+- Online Race with a room code through Game Center (each player gets a delivery, hear where the other truck is)
 - Later: bus driving (a separate mode; not for now)
 
 ## Windows version

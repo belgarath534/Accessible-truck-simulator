@@ -1,8 +1,6 @@
-Version 1.3 test build.
+Version 1.4 test build.
 
 New:
-- Duel Mode on the main menu: two to four players on one phone drive the same route. Fastest time wins; each crash adds 15 seconds.
-- Your own music on the truck radio: Settings, Truck radio (Apple Music songs or files from the Files app).
-- Tow truck jobs (buy the Tow Truck in the Garage), Weekly Challenges, the rival company and the daily streak on the Job Board.
-- What's around me: three-finger swipe down while driving.
-- Career Stats and Send Feedback on the main menu.
+- Real voices on the radio: the dispatcher at the start of a job, CB chatter from Big Mike and Smooth Rider while you drive, and the Big Rig Radio DJ between songs.
+
+Tell us whether the voices are clear over the engine, and whether any line sounds wrong.

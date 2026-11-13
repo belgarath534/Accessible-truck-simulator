@@ -481,6 +481,9 @@ struct CreditsView: View {
             Section("Music") {
                 Text("Menu theme and radio songs were made for Accessible Truck Sim with ElevenLabs Music.")
             }
+            Section("Voices") {
+                Text("The dispatcher, the radio DJ and the CB truckers speak with Piper, an open-source voice maker, using the public-domain voices Kristin and Joe.")
+            }
             Section("Sound") {
                 Text("Engine, starter, shutdown and air brake sounds were made with ElevenLabs Sound Effects. Road noise, rumble strips, lane guidance beeps and indicator clicks are generated live in the game.")
             }
