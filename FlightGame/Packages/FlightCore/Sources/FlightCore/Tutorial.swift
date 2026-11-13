@@ -20,6 +20,8 @@ public struct Tutorial: Sendable {
 
     public var isComplete: Bool { step == .done }
 
+    public static let retryText = "That was a crash, and that's fine. This is how pilots learn in simulators. Let's try again."
+
     public static let completionMessage = "Tutorial complete! You started the engine, took off, climbed, turned, used the flaps and the autopilot. Next: Flight School lesson 3 teaches landing. Everything you learned is in Ground School and How to Fly on the main menu."
 
     /// What the teacher says when a step begins.
@@ -63,7 +65,7 @@ public struct Tutorial: Sendable {
     }
 
     /// A short nudge when a step is taking a while.
-    static func reminder(_ step: Step) -> String {
+    public static func reminder(_ step: Step) -> String {
         switch step {
         case .engine: return "Tap twice with three fingers to start the engine."
         case .throttleUp: return "Swipe up once with one finger."
@@ -167,7 +169,7 @@ public struct Tutorial: Sendable {
             step = .flapsDown
         }
         announced = false
-        let text = "That was a crash, and that's fine. This is how pilots learn in simulators. Let's try again."
+        let text = Self.retryText
         return (ground ? .runway("pine") : .air(x: 2_000, y: 3_000, altitude: 760, heading: 90, speed: 50, throttle: 0.65, flaps: 0), text)
     }
 

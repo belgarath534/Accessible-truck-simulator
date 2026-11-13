@@ -67,6 +67,7 @@ final class FlightController: NSObject, ObservableObject {
     func start() {
         guard link == nil else { return }
         speech.useVoiceOver = settings.useVoiceOver
+        speech.recordedVoices = settings.recordedVoices
         yoke.rangeDegrees = settings.tiltRange
         yoke.invertPitch = settings.invertPitch
         if settings.controlMode == .tilt { yoke.start() }
@@ -97,6 +98,8 @@ final class FlightController: NSObject, ObservableObject {
         brake = false
         _ = reader.cancelAll()
         stick = nil
+        // Nothing keeps talking over the pause menu.
+        speech.stop()
         if !UIAccessibility.isVoiceOverRunning { speech.say("Paused.", priority: .high) }
     }
 
@@ -108,6 +111,8 @@ final class FlightController: NSObject, ObservableObject {
         accumulator = 0
         yoke.recenter()
         speech.say("Resumed. Hold the phone level for a moment.", priority: .high)
+        // In the tutorial, the instructor repeats what to do.
+        if let step = tutorial?.step, !Tutorial.reminder(step).isEmpty { speech.say(Tutorial.reminder(step)) }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
             guard let v = self?.view else { return }
             UIAccessibility.post(notification: .screenChanged, argument: v)

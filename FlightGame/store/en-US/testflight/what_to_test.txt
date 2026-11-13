@@ -1,6 +1,7 @@
 Accessible Flight Simulator test build.
 
 New:
+- Recorded voices: Joe is your flight instructor (the tutorial and lesson briefings) and Kristin is the cockpit voice (height callouts, throttle, flaps and warnings). Instrument and navigation readouts still use VoiceOver. Switch in Settings.
 - Your First Flight: a guided tutorial on the main menu for people who have never flown. The instructor explains the engine, throttle, takeoff, climbing, turning, flaps, stalls, navigation and the autopilot, one step at a time. Crash and you just try again.
 - Ground School: every part of the plane explained in plain words.
 - Menu music, and real propeller, wind and runway sounds.

@@ -26,6 +26,8 @@ final class FlightSettings: ObservableObject {
     /// Speak through VoiceOver when it's on (otherwise the game's own voice).
     @Published var useVoiceOver: Bool { didSet { defaults.set(useVoiceOver, forKey: "useVoiceOver") } }
     @Published var seenHowToFly: Bool { didSet { defaults.set(seenHowToFly, forKey: "seenHowToFly") } }
+    /// The instructor's and the cockpit's recorded voices (off: VoiceOver or the system voice says everything).
+    @Published var recordedVoices: Bool { didSet { defaults.set(recordedVoices, forKey: "recordedVoices") } }
     @Published var tutorialDone: Bool { didSet { defaults.set(tutorialDone, forKey: "tutorialDone") } }
     @Published var menuMusic: Bool {
         didSet {
@@ -45,6 +47,7 @@ final class FlightSettings: ObservableObject {
         useVoiceOver = defaults.object(forKey: "useVoiceOver") as? Bool ?? true
         seenHowToFly = defaults.bool(forKey: "seenHowToFly")
         tutorialDone = defaults.bool(forKey: "tutorialDone")
+        recordedVoices = defaults.object(forKey: "recordedVoices") as? Bool ?? true
         menuMusic = defaults.object(forKey: "menuMusic") as? Bool ?? true
         if let data = defaults.data(forKey: "logbook"), let saved = try? JSONDecoder().decode(Logbook.self, from: data) {
             logbook = saved
