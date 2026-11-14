@@ -121,7 +121,7 @@ final class FeedbackCoordinator {
         }
         var trip: String
         switch drive {
-        case .tutorial:
+        case .tutorial, .advancedTutorial:
             trip = "Tutorial."
         case .practice:
             trip = "Practice Drive: \(settings.units.distance(Road.practiceLoop.totalLength)) to the drop-off. Stop there to finish. Practice drives don't pay."
@@ -138,7 +138,7 @@ final class FeedbackCoordinator {
                     : " Warning: you may not have enough fuel. Listen for truck stops and fill up on the way."
             }
         }
-        if let name = truckNickname, drive != .tutorial { trip = "\(name) is ready to roll. " + trip }
+        if let name = truckNickname, !drive.isTutorial { trip = "\(name) is ready to roll. " + trip }
         if let forecast = weather.announcement { trip += " " + forecast }
         if weather == .snow {
             trip += chains
@@ -146,7 +146,7 @@ final class FeedbackCoordinator {
                 : " You don't have snow chains. They're in the Garage for next time."
         }
         if turbo { trip += " " + phrases.turboIntro }
-        if drive != .tutorial, let holiday = Holiday.on(Date()) { trip += " " + holiday.greeting }
+        if !drive.isTutorial, let holiday = Holiday.on(Date()) { trip += " " + holiday.greeting }
         // The dispatcher calls in once the intro is done: a story briefing, or a word for the road.
         if case let .job(job) = drive {
             if let mission = StoryMission.withID(job.storyID) {
@@ -156,7 +156,7 @@ final class FeedbackCoordinator {
             }
             if weather == .storm { radio(RadioLines.dispatchStorm) }
         }
-        if drive != .tutorial && drive != .practice, let time = timeOfDay.announcement { trip += " " + time }
+        if !drive.isTutorial && drive != .practice, let time = timeOfDay.announcement { trip += " " + time }
         speech.speak(
             "\(trip) Engine off. \(controls) Three-finger double tap starts the engine. Two-finger double tap reads the dashboard. Two-finger swipe down pauses.",
             priority: .high

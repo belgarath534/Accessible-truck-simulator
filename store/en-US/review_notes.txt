@@ -8,7 +8,6 @@ How to try it:
 
 The driving screen is a single VoiceOver element marked "allows direct interaction", so touches go straight to the game while VoiceOver is on. The game speaks for itself while you drive. All sound is generated live in the app. Headphones give the best experience, because lane guidance and rumble strips are panned left and right.
 
-New in 1.3:
-- Duel Mode (main menu): two to four players take turns on one device and drive the same route; the fastest time wins. No network is used.
-- Settings, Truck radio lets the player choose songs from their Apple Music library or import audio files from the Files app. The music library permission is only requested if the player picks Apple Music; the game works fully without it.
-- Send Feedback (main menu) opens the game's public GitHub issues page in the browser with the game version filled in.
+New in 1.4:
+- Online Race (main menu) uses Game Center real-time matchmaking. One player chooses Create a Race and gets a four-digit room code; the other chooses Join a Race and enters it; the code is used as the Game Center player group. Both then drive the same route at the same time. To review without a second device, use Practice: Race Robo Rick, which plays the same race against a computer driver offline.
+- Settings, Truck radio still lets players choose their own Apple Music songs or audio files; the music library permission is only requested if the player picks Apple Music.

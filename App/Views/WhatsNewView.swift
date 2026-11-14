@@ -13,8 +13,15 @@ enum Changelog {
 
     /// Newest first. Add to the top for each update.
     static let versions: [Version] = [
-        Version(number: "1.4", title: "Voices on the Radio", items: [
-            "Real voices on the radio: the dispatcher, the Big Rig Radio DJ, and Big Mike and Smooth Rider on the CB now speak with recorded voices instead of the game's voice. Turn them off in Settings if you prefer.",
+        Version(number: "1.4", title: "Race Your Friends", items: [
+            "Online Race: race a friend over the internet. One of you creates a race and gets a four-number room code, the other joins with it, and you both drive the same route at the same time. The game tells you who's ahead, and when the other truck is near you can hear it, pass it, or bump into it. Fastest time wins. Needs Game Center.",
+            "Practice races against Robo Rick, at easy, normal or hard, with no internet needed.",
+            "Real voices on the radio: the dispatcher, the Big Rig Radio DJ, and Big Mike and Smooth Rider on the CB now speak with recorded voices. Turn them off in Settings if you prefer.",
+            "Silver Lake: a sixth town, up in the mountains, by Highway 21 from Cedar Falls or Ridge Road from Ridgeport. It ships spring water and maple syrup, and you can hear the river.",
+            "The Road Train: two trailers, double the cargo and 60 percent more pay, but heavy, long and slow to stop. And the Silver Arrow, a sleek highway truck that sips fuel.",
+            "Manual gearbox: shift yourself with three-finger swipes right and left (X and Z on a keyboard, stick clicks on a controller). Songs move to four-finger swipes. Settings, Manual gearbox.",
+            "Rest stops: on long drives you get tired, and later start to drift. Stop at a truck stop for a quick nap and a well-rested bonus on your next delivery. Settings, Tiredness and naps.",
+            "Advanced Tutorial on the main menu: a guided drive for the newer features, including truck stops and the engine brake on a steep hill.",
         ]),
         Version(number: "1.3", title: "Weekly Update", items: [
             "Duel Mode: two to four players on one phone, no internet needed. Pick a start, a cargo and a destination, then pass the phone. Everyone drives the same route with the same traffic and weather. Fastest time wins, and each crash adds 15 seconds. Thanks to Angela for the idea!",

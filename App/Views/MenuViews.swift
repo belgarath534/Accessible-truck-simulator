@@ -18,7 +18,7 @@ struct MainMenuView: View {
 
     /// Starts a drive; if there's a saved drive, asks before replacing it (the tutorial never replaces it).
     private func start(_ mode: DriveMode) {
-        if career.savedDrive != nil && mode != .tutorial {
+        if career.savedDrive != nil && !mode.isTutorial {
             replacingSaved = mode
         } else {
             drive = mode
@@ -120,6 +120,9 @@ struct MainMenuView: View {
                         .font(.title2)
                         .accessibilityHint("One lap of the country road, then stop at the drop-off. No pay.")
                     if settings.tutorialDone {
+                        Button("Advanced Tutorial: Newer Features") { drive = .advancedTutorial }
+                            .font(.title2)
+                            .accessibilityHint("A guided drive for the newer features: what's around me, truck stops and naps, and the engine brake on a steep hill, plus a quick tour of everything else that's new.")
                         Button("Tutorial") { drive = .tutorial }
                             .font(.title2)
                             .accessibilityHint("The guided first drive again: every control, one step at a time.")

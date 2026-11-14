@@ -1,12 +1,10 @@
-Duel Mode, your own music and more!
+Race your friends online!
 
-• Duel Mode: two to four players on one phone, no internet needed. Pick a start, a cargo and a destination, then pass the phone. Everyone drives the same route with the same traffic and weather. Fastest time wins, and each crash adds 15 seconds. Thanks to Angela for the idea!
-• Your own music on the truck radio: pick songs from Apple Music, or add your own music files from the Files app. Settings, Truck radio.
-• Tow truck jobs: buy the Tow Truck in the Garage and answer calls from stranded drivers. Follow the beeps to the car, hook it up and tow it in.
-• Weekly Challenges: a new challenge every Monday, the same for every player, with a money prize and a new leaderboard.
-• A rival company: Speedy Freight races you for money every week. The Job Board tells you who's ahead.
-• Daily streak: your first delivery each day pays a bonus, bigger for every day in a row.
-• What's around me: swipe down with three fingers while driving to hear the traffic near you, deer, hills, the next weigh station and the weather.
-• Holiday events: pumpkins for Halloween, turkeys and pies for Thanksgiving, presents, Christmas trees and snow for Christmas, and fireworks for New Year. Holiday loads pay extra.
-• Career Stats: a new page with your deliveries, money, distance, best streak and more.
-• Send Feedback: a new button on the main menu for bugs and ideas.
+• Online Race: race a friend over the internet. One of you creates a race and gets a four-number room code, the other joins with it, and you both drive the same route at the same time. The game tells you who's ahead, and when the other truck is near you can hear it, pass it, or bump into it. Fastest time wins. Needs Game Center.
+• Practice races against Robo Rick, at easy, normal or hard, with no internet needed.
+• Real voices on the radio: the dispatcher, the Big Rig Radio DJ and the CB truckers now speak with recorded voices.
+• Silver Lake: a sixth town up in the mountains, with spring water and maple syrup to haul.
+• The Road Train: two trailers, double the cargo and 60 percent more pay. And the Silver Arrow, a sleek highway truck that sips fuel.
+• Manual gearbox: shift yourself with three-finger swipes. Songs move to four-finger swipes.
+• Rest stops: on long drives you get tired. Stop at a truck stop for a quick nap and a well-rested bonus.
+• Advanced Tutorial: a guided drive for the newer features.

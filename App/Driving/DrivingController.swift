@@ -31,7 +31,7 @@ final class DrivingController: NSObject, ObservableObject {
     private let hardware = HardwareInput()
     private let feedback: FeedbackCoordinator
     /// The guided first drive's teacher (nil for other drives).
-    private var tutorial: Tutorial?
+    private var tutorial: GuidedLesson?
     /// Gestures since the last frame, for the tutorial.
     private var recentActions: [DrivingAction] = []
     /// This drive was continued from a save.
@@ -75,8 +75,12 @@ final class DrivingController: NSObject, ObservableObject {
         hardware.onAction = { [weak self] action in self?.perform(action) }
     }
 
-    private func makeTutorial() -> Tutorial? {
-        drive == .tutorial ? Tutorial(mode: settings.steeringMode, units: settings.units) : nil
+    private func makeTutorial() -> GuidedLesson? {
+        switch drive {
+        case .tutorial: return Tutorial(mode: settings.steeringMode, units: settings.units)
+        case .advancedTutorial: return AdvancedTutorial(units: settings.units)
+        default: return nil
+        }
     }
 
     private static func makeSession(_ drive: DriveMode, _ settings: AppSettings, _ truck: TruckSpec,
@@ -84,7 +88,7 @@ final class DrivingController: NSObject, ObservableObject {
         // Jobs and Free Drive happen on the map; Practice Drive stays on the practice loop.
         let navigator: Navigator?
         switch drive {
-        case .practice, .tutorial: navigator = nil
+        case .practice, .tutorial, .advancedTutorial: navigator = nil
         case .freeDrive: navigator = Navigator(map: .standard, origin: town, destination: nil)
         case let .job(job):
             navigator = job.destination.flatMap {
@@ -96,9 +100,10 @@ final class DrivingController: NSObject, ObservableObject {
         // Duels: the same seed for every player, so the traffic and deer are the same; a full tank, no time limit.
         var duelSeed: UInt64?
         if case let .duel(turn) = drive { duelSeed = turn.seed }
-        let session = DrivingSession(spec: truck, goal: drive.goal, cargoMassKg: drive.job?.cargo.massKg ?? 0,
+        let session = DrivingSession(spec: truck, road: drive == .advancedTutorial ? .advancedLesson : .practiceLoop,
+                                     goal: drive.goal, cargoMassKg: drive.job?.cargo.massKg ?? 0,
                                      timeLimit: drive.isDuel ? nil : drive.job?.timeLimit,
-                                     startingFuel: drive == .tutorial || drive.isDuel ? nil : fuel, // the tutorial is on the house
+                                     startingFuel: drive.isTutorial || drive.isDuel ? nil : fuel, // the tutorial is on the house
                                      navigator: navigator,
                                      assist: settings.assist,
                                      seed: duelSeed ?? UInt64.random(in: 1...UInt64.max))
@@ -108,7 +113,7 @@ final class DrivingController: NSObject, ObservableObject {
         session.timeOfDay = ScreenshotMode.isOn ? .day : TimeOfDay(hour: Calendar.current.component(.hour, from: Date()))
         session.wildlifeEnabled = settings.wildlife && navigator != nil && !ScreenshotMode.isOn
         // Manual gearbox everywhere except the tutorial, which teaches the basics.
-        session.manualGearbox = settings.manualGearbox && drive != .tutorial
+        session.manualGearbox = settings.manualGearbox && !drive.isTutorial
         // Tiredness on real drives only: not the tutorial, the practice loop, duels or races.
         session.restEnabled = settings.tiredness && navigator != nil && !drive.isDuel && !ScreenshotMode.isOn
         // Turbo Mode on jobs and Free Drive only: never the tutorial or the practice loop.
@@ -119,7 +124,7 @@ final class DrivingController: NSObject, ObservableObject {
         session.cbRadioEnabled = settings.radioVoices && navigator != nil && !ScreenshotMode.isOn
         session.blowoutsEnabled = navigator != nil && !ScreenshotMode.isOn
         // Weather for every drive except the tutorial (and screenshots).
-        if settings.weather && drive != .tutorial && !ScreenshotMode.isOn {
+        if settings.weather && !drive.isTutorial && !ScreenshotMode.isOn {
             var rng = SystemRandomNumberGenerator()
             // Snow some days in winter, by the player's own calendar.
             session.weather = Holiday.weather(using: &rng, date: Date())
@@ -130,7 +135,7 @@ final class DrivingController: NSObject, ObservableObject {
 
     /// Leaving or restarting a drive that didn't finish: keep the fuel level and charge any fuel or tow costs.
     private func closeOutUnfinished() {
-        guard drive != .tutorial, !drive.isDuel else { return }
+        guard !drive.isTutorial, !drive.isDuel else { return }
         career.saveFuel(session.truck.fuelLiters)
         let costs = Payout.expenses(session.stats)
         let trip = TripResult(job: nil, summary: nil, stats: session.stats)
@@ -237,13 +242,13 @@ final class DrivingController: NSObject, ObservableObject {
     /// Saves the drive where it is, to pick up later from the main menu. Nothing is paid or charged yet: that
     /// happens when the drive is finished.
     func saveForLater() {
-        guard finished == nil, drive != .tutorial, !drive.isDuel else { return }
+        guard finished == nil, !drive.isTutorial, !drive.isDuel else { return }
         let kind: SavedDrive.Kind
         switch drive {
         case .practice: kind = .practice
         case .freeDrive: kind = .freeDrive
         case .job: kind = .job
-        case .tutorial, .duel: return
+        case .tutorial, .advancedTutorial, .duel: return
         }
         career.saveDrive(SavedDrive(kind: kind, job: drive.job, origin: origin, snapshot: session.snapshot))
         stop()
@@ -311,7 +316,7 @@ final class DrivingController: NSObject, ObservableObject {
 
     private func settle(_ summary: TripSummary) {
         let result: Payout?
-        if drive == .tutorial { payout = nil; return }
+        if drive.isTutorial { payout = nil; return }
         if drive.isDuel {
             DuelResults.shared.last = .init(time: summary.stats.drivingTime, crashes: summary.stats.crashes, delivered: true)
             payout = nil
@@ -319,7 +324,7 @@ final class DrivingController: NSObject, ObservableObject {
         }
         career.saveFuel(session.truck.fuelLiters)
         switch drive {
-        case .tutorial: result = nil
+        case .tutorial, .advancedTutorial: result = nil
         case .practice: result = Payout.practice(summary.stats)
         case .freeDrive:
             result = Payout.freeDrive(summary.stats)
@@ -585,9 +590,11 @@ final class DrivingController: NSObject, ObservableObject {
         guard tutorial.isComplete else { return }
         if tutorialFinishedAt == nil {
             tutorialFinishedAt = now
-            settings.tutorialDone = true
-            career.unlock(.tutorial)
-            announceAchievements()
+            if drive == .tutorial {
+                settings.tutorialDone = true
+                career.unlock(.tutorial)
+                announceAchievements()
+            }
         }
         // Let the closing words play before the results screen takes VoiceOver's focus.
         if let at = tutorialFinishedAt, now - at > 9 {

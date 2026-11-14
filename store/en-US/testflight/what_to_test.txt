@@ -1,6 +1,11 @@
 Version 1.4 test build.
 
 New:
-- Real voices on the radio: the dispatcher at the start of a job, CB chatter from Big Mike and Smooth Rider while you drive, and the Big Rig Radio DJ between songs.
+- Online Race (main menu): create a race for a room code, or join one. Try a practice race against Robo Rick first; online needs two devices with Game Center.
+- Recorded radio voices: dispatcher, DJ and CB truckers.
+- Silver Lake, a sixth town (Highway 21 from Cedar Falls).
+- The Road Train (double trailers) and the Silver Arrow in the Garage.
+- Manual gearbox and Tiredness and naps in Settings.
+- Advanced Tutorial on the main menu.
 
-Tell us whether the voices are clear over the engine, and whether any line sounds wrong.
+Tell us how the race announcements sound, whether the other truck feels right on the road, and whether shifting by swipes works for you.

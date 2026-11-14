@@ -44,9 +44,10 @@ struct DrivingScreen: View {
                     payout: controller.payout,
                     balance: controller.career.money,
                     isFreeDrive: controller.drive == .freeDrive,
-                    isTutorial: controller.drive == .tutorial,
+                    isTutorial: controller.drive.isTutorial,
+                    isAdvancedTutorial: controller.drive == .advancedTutorial,
                     units: controller.settings.units,
-                    driveAgain: controller.drive.job == nil && controller.drive != .tutorial ? controller.restart : nil,
+                    driveAgain: controller.drive.job == nil && !controller.drive.isTutorial ? controller.restart : nil,
                     quit: {
                         controller.stop()
                         onExit()
@@ -63,7 +64,7 @@ struct DrivingScreen: View {
                     },
                     restart: controller.restart,
                     endFreeDrive: controller.endFreeDrive,
-                    saveForLater: controller.drive == .tutorial || controller.drive.isDuel ? nil : {
+                    saveForLater: controller.drive.isTutorial || controller.drive.isDuel ? nil : {
                         controller.saveForLater()
                         onExit()
                     },
@@ -152,7 +153,7 @@ struct PauseMenuView: View {
                 case .practice:
                     Button("Restart from the Start", action: restart)
                         .buttonStyle(.bordered)
-                case .tutorial:
+                case .tutorial, .advancedTutorial:
                     Button("Start the Tutorial Over", action: restart)
                         .buttonStyle(.bordered)
                 }
@@ -178,6 +179,7 @@ struct TripCompleteView: View {
     let balance: Int
     let isFreeDrive: Bool
     var isTutorial = false
+    var isAdvancedTutorial = false
     let units: UnitSystem
     let driveAgain: (() -> Void)?
     let quit: () -> Void
@@ -194,7 +196,9 @@ struct TripCompleteView: View {
                         Text(isTutorial ? "Tutorial Complete!" : isFreeDrive ? "Drive Ended" : "Delivered!")
                             .font(.largeTitle.bold())
                         if isTutorial {
-                            Text("You've learned the engine, pedals, steering, the dashboard, GPS, signals, curves, the horn and stopping. Take a job from the Job Board to start earning money, or try a Practice Drive. The controls are always in How to Drive on the main menu.")
+                            Text(isAdvancedTutorial
+                                 ? "You've learned what's around me, pulling into a truck stop, and the engine brake on a steep hill. Duel Mode and Online Race are on the main menu, the Road Train is in the Garage, and the manual gearbox and Tiredness and naps are in Settings."
+                                 : "You've learned the engine, pedals, steering, the dashboard, GPS, signals, curves, the horn and stopping. Take a job from the Job Board to start earning money, or try a Practice Drive. The controls are always in How to Drive on the main menu.")
                                 .font(.body)
                                 .multilineTextAlignment(.center)
                         } else {

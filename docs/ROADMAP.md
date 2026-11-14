@@ -53,17 +53,17 @@ captions, driving buttons, Larger Text / Increase Contrast / Reduce Motion, iPad
 - Depots in other towns (done)
 - Bank loans (done)
 
-## 1.3: planned (November 2026)
+## 1.3: released (November 2026)
 Player ideas first; a weekly-update rhythm.
 - Duel Mode: pass-and-play on one phone, same route and traffic for everyone, fastest time wins (done; a player's idea)
 - Weekly Challenges: a new challenge each week with a prize and a weekly leaderboard (done)
 - Tow truck jobs: answer calls from stranded drivers, hook up the car, bring it to the mechanic (done)
-- New trucks and trailers, including double trailers
-- Rest stops (light and optional): a tiredness warning on long drives, a nap at a truck stop for a small bonus
-- A bigger map: a sixth town and new roads
-- Manual gearbox option
+- New trucks and trailers, including double trailers (moved to 1.4, done)
+- Rest stops (light and optional): a tiredness warning on long drives, a nap at a truck stop for a small bonus (moved to 1.4, done)
+- A bigger map: a sixth town and new roads (moved to 1.4, done)
+- Manual gearbox option (moved to 1.4, done)
 - "What's around me": a gesture that describes what's nearby (done)
-- A second tutorial for the 1.2 features
+- A second tutorial for the 1.2 features (moved to 1.4, done)
 - Your own music on the radio: Apple Music songs or imported files (done)
 - Holiday events (Halloween, Thanksgiving, Christmas, New Year) (done)
 - A rival company (done)
@@ -72,9 +72,17 @@ Player ideas first; a weekly-update rhythm.
 - Send Feedback button (done)
 - Released November 2026.
 
-## 1.4: in progress
+## 1.4: Race Your Friends (November 2026)
+- Online Race with a room code through Game Center, plus practice races against a bot (done)
 - Recorded radio voices (dispatcher, CB, DJ), made with Piper's free public-domain voices (done)
-- Online Race with a room code through Game Center (each player gets a delivery, hear where the other truck is)
+- Silver Lake, a sixth town (done)
+- The Road Train with double trailers, and the Silver Arrow (done)
+- Manual gearbox option (done)
+- Light rest stops: tiredness and naps (done)
+- Advanced Tutorial for the newer features (done)
+
+## Next
+Ideas from players and from us, decided together.
 - Later: bus driving (a separate mode; not for now)
 
 ## Windows version

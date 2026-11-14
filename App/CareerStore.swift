@@ -5,6 +5,8 @@ import SimCore
 enum DriveMode: Equatable, Identifiable {
     /// The guided first drive: one skill at a time on the practice loop.
     case tutorial
+    /// The second tutorial, for newer features (truck stops, the engine brake, what's around me).
+    case advancedTutorial
     /// One lap, no pay: for learning.
     case practice
     /// Endless loop, small pay per kilometre.
@@ -17,6 +19,7 @@ enum DriveMode: Equatable, Identifiable {
     var id: String {
         switch self {
         case .tutorial: return "tutorial"
+        case .advancedTutorial: return "advanced_tutorial"
         case .practice: return "practice"
         case .freeDrive: return "free"
         case let .job(job): return job.id.uuidString
@@ -26,7 +29,7 @@ enum DriveMode: Equatable, Identifiable {
 
     var goal: TripGoal {
         switch self {
-        case .tutorial: return .freeDrive // ends when the tutorial does, not at a drop-off
+        case .tutorial, .advancedTutorial: return .freeDrive // ends when the tutorial does, not at a drop-off
         case .practice: return .practice(on: .practiceLoop)
         case .freeDrive: return .freeDrive
         case let .job(job): return job.goal
@@ -42,6 +45,9 @@ enum DriveMode: Equatable, Identifiable {
         default: return nil
         }
     }
+
+    /// Either tutorial: no pay, a free tank, nothing saved.
+    var isTutorial: Bool { self == .tutorial || self == .advancedTutorial }
 
     var isDuel: Bool { if case .duel = self { return true }; return false }
 }
