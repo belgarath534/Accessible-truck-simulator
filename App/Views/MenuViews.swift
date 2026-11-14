@@ -352,7 +352,7 @@ struct ControlsHelpView: View {
                 Text("Free Drive pays a little for every kilometer. Pause and choose End Drive and Get Paid, or Quit to Main Menu, which also pays. Each crash costs a repair fee.")
             }
             Section("The map and GPS") {
-                Text("Six places: Millbrook, your home yard; Cedar Falls in lumber country, up the mountain Highway 9; Ridgeport, a port town; Ironton, with its mines and steel mill; Bayview, with its farms; and Central Junction, where Interstate 40 meets the roads to Ridgeport and Ironton.")
+                Text("Seven places: Millbrook, your home yard; Cedar Falls in lumber country, up the mountain Highway 9; Ridgeport, a port town; Ironton, with its mines and steel mill; Bayview, with its farms; Silver Lake, a lake town in the mountains, up Highway 21 from Cedar Falls or Ridge Road from Ridgeport; and Central Junction, where Interstate 40 meets the roads to Ridgeport and Ironton.")
                 Text("Interstate 40 is fast, with a 100 kilometer per hour limit and gentle curves. Country roads are 80 with more curves. Mountain roads are 60 with sharp curves. Towns are 50: you'll hear when you enter and leave them.")
                 Text("On a job, the GPS tells you each turn at 1 kilometer and again at 300 meters. Signal left or right before the junction to turn, or no signal to go straight. Take a wrong turn and the GPS recalculates a new route.")
                 Text("In Free Drive, the GPS lists the choices before each junction. The three-finger tap tells you what's ahead, and a three-finger swipe down tells you what's around you: traffic, deer, hills, weigh stations and the weather.")

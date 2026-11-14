@@ -495,7 +495,8 @@ final class AudioSynth {
     private var hasWeatherRecordings: Bool { weatherLoops.count == 4 }
     // Living world: looping ambience (towns, night, dawn, construction) that fades in and out, and one-shot effects.
     static let ambienceNames = ["amb_night", "amb_dawn", "amb_construction", "amb_town_millbrook", "amb_town_cedar_falls",
-                                "amb_town_ridgeport", "amb_town_ironton", "amb_town_bayview", "amb_reefer"]
+                                "amb_town_ridgeport", "amb_town_ironton", "amb_town_bayview", "amb_town_silver_lake",
+                                "amb_reefer"]
     static let effectNames = ["fx_deer", "fx_toll", "fx_cattle", "fx_chickens"]
     private var ambienceLoops: [String: (player: AVAudioPlayerNode, buffer: AVAudioPCMBuffer)] = [:]
     private var ambienceLevel: [String: Float] = [:]

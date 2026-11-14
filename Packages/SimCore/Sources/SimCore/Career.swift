@@ -51,6 +51,8 @@ public struct Cargo: Codable, Equatable, Hashable, Sendable {
         Cargo(name: "Medical supplies", massKg: 3_000, ratePerKm: 165, fragile: true, urgent: true),
         Cargo(name: "Canned goods", massKg: 12_000, ratePerKm: 115),
         Cargo(name: "Fresh produce", massKg: 10_000, ratePerKm: 140, urgent: true, kind: .refrigerated),
+        Cargo(name: "Spring water", massKg: 20_000, ratePerKm: 125),
+        Cargo(name: "Maple syrup", massKg: 9_000, ratePerKm: 145, fragile: true),
         // Special cargo
         Cargo(name: "Cattle", massKg: 16_000, ratePerKm: 175, kind: .livestock),
         Cargo(name: "Chickens", massKg: 7_000, ratePerKm: 150, kind: .livestock),

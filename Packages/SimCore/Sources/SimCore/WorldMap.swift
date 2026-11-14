@@ -311,6 +311,9 @@ public extension WorldMap {
             MapNode(id: "ironton", name: "Ironton", x: 13, y: -6, isTown: true, exports: ["Steel beams", "Gravel", "Wind turbine blade"]),
             MapNode(id: "bayview", name: "Bayview", x: 19, y: 1, isTown: true,
                     exports: ["Fresh produce", "Frozen food", "Medical supplies", "Cattle", "Chickens"]),
+            // 1.4: a lake town up in the mountains, reached from Cedar Falls or Ridgeport.
+            MapNode(id: "silver_lake", name: "Silver Lake", x: 8, y: 14, isTown: true,
+                    exports: ["Spring water", "Maple syrup", "Lumber", "Fishing boat"]),
         ]
         func edge(_ name: String, _ a: String, _ b: String, _ style: RoadStyle, _ km: Double, _ seed: UInt64) -> MapEdge {
             MapEdge(name: name, a: a, b: b, style: style, road: Road.generate(length: km * 1_000, style: style, seed: seed))
@@ -324,6 +327,8 @@ public extension WorldMap {
             edge("Interstate 40", "central_junction", "bayview", .interstate, 6.5, 16),
             edge("Lakeshore Road", "cedar_falls", "ridgeport", .country, 9, 17),
             edge("Coast Highway", "ridgeport", "bayview", .country, 8, 18),
+            edge("Highway 21", "cedar_falls", "silver_lake", .mountain, 7.5, 19),
+            edge("Ridge Road", "ridgeport", "silver_lake", .country, 8.5, 20),
         ]
         return WorldMap(nodes: nodes, edges: edges)
     }()

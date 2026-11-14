@@ -60,3 +60,20 @@ final class RestTests: XCTestCase {
         XCTAssertNil(stats.naps)
     }
 }
+
+final class SilverLakeTests: XCTestCase {
+    func testSilverLakeIsOnTheMapAndReachableFromEveryTown() {
+        let map = WorldMap.standard
+        XCTAssertEqual(map.towns.count, 6)
+        XCTAssertEqual(map.node("silver_lake")?.name, "Silver Lake")
+        for town in map.towns where town.id != "silver_lake" {
+            XCTAssertNotNil(map.route(from: town.id, to: "silver_lake"), town.name)
+            XCTAssertNotNil(Navigator(map: map, origin: "silver_lake", destination: town.id), town.name)
+        }
+        XCTAssertEqual(map.outgoing(from: "silver_lake").count, 2, "two roads in")
+        // Its own cargo shows up on its job board.
+        var rng = SeededRandom(seed: 9)
+        let jobs = (0..<30).map { _ in JobBoard.makeJob(using: &rng, from: "silver_lake") }
+        XCTAssertTrue(jobs.contains { $0.cargo.name == "Spring water" || $0.cargo.name == "Maple syrup" })
+    }
+}

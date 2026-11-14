@@ -26,3 +26,8 @@ Old Reliable uses the four `engine_idle`...`engine_high` loops; the Volt (electr
 deeper as Big Mike). Kristin's voice data is public domain (LibriVox) and Joe's is CC0. To regenerate after changing
 a line: export the lines to JSON, download the two voice models from huggingface.co/rhasspy/piper-voices, and run
 the script. Without a file, the game's own voice reads the line.
+
+## Silver Lake
+
+`amb_town_silver_lake.wav`: a river and birds, mixed from "Park ambiences" by Thimras (opengameart.org/content/park-ambiences, CC0),
+crossfaded into an 11-second loop.
