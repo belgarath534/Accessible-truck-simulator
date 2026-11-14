@@ -357,6 +357,13 @@ final class FeedbackCoordinator {
             speech.speak(phrases.towed(cost: cost, fuelCost: fuelCost), priority: .high)
         case let .dashboard(reading):
             speech.speak(phrases.dashboard(reading), priority: .high)
+        case .gettingTired:
+            speech.speak("You're getting tired. Pull into the next truck stop for a quick nap: signal right as you pass it, and stop.", priority: .normal)
+        case .drowsy:
+            speech.speak("Your eyes are closing. Stay awake, and find a truck stop!", priority: .high)
+            haptics.tap(intensity: 0.8, sharpness: 0.3)
+        case .napped:
+            speech.speak("You take a quick nap while the tank fills. Feeling fresh! Your next delivery pays a well-rested bonus.", priority: .high)
         case .bumpedRival:
             break   // the crash that comes with it says it all
         case let .aroundMe(s):

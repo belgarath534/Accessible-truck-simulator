@@ -188,6 +188,10 @@ public enum SimEvent: Equatable, Sendable {
     case aroundMe(Surroundings)
     /// Online Race: you bumped into the other player's truck.
     case bumpedRival
+    /// Rest stops: getting tired after a long time at the wheel, nodding off, and a nap at a truck stop.
+    case gettingTired
+    case drowsy
+    case napped
     case roadAhead(UpcomingCurve?, remaining: Double?, timeLeft: Double?, truckStop: Double?)
     /// Delivery deadline reminders (5 minutes and 1 minute left).
     case timeLeft(seconds: Double)

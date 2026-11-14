@@ -64,3 +64,36 @@ public extension DrivingSession {
     /// Loads heavier than this (kg) are checked for crash damage at the scale.
     static let heavyLoadKg = 20_000.0
 }
+
+// MARK: - Rest stops (light): long stretches at the wheel make the driver tired; a truck stop fixes it.
+
+public enum Rest {
+    /// Driving time before the "getting tired" warning, seconds.
+    public static let tiredAfter = 18.0 * 60
+    /// After this the driver starts nodding off: small drifts now and then.
+    public static let drowsyAfter = 28.0 * 60
+    /// A nap only happens if you've been driving at least this long.
+    public static let napWorthwhile = 8.0 * 60
+    /// Paid with the next delivery after a nap.
+    public static let bonus = 100
+}
+
+extension DrivingSession {
+    func stepTiredness(dt: Double, events: inout [SimEvent]) {
+        guard restEnabled else { return }
+        if truck.speed > 1 { awakeTime += dt }
+        if awakeTime >= Rest.tiredAfter && !warnedTired {
+            warnedTired = true
+            events.append(.gettingTired)
+        }
+        if awakeTime < Rest.tiredAfter { warnedTired = false }
+        guard awakeTime >= Rest.drowsyAfter, truck.speed > 8 else { return }
+        nextDrowsy -= dt
+        if nextDrowsy <= 0 {
+            nextDrowsy = Double.random(in: 45...80, using: &rng)
+            // Eyes closing for a moment: the truck wanders toward the edge.
+            truck.lateralVelocity += (Bool.random(using: &rng) ? 1 : -1) * 0.7
+            events.append(.drowsy)
+        }
+    }
+}

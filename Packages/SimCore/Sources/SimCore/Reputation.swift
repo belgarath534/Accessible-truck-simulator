@@ -119,6 +119,7 @@ public extension CareerState {
             payout.lines.append(Payout.Line(label: "Depot bonus", amount: Int((Double(job.pay) * CareerState.depotPayBonus).rounded())))
         }
         if let streak = streakLine() { payout.lines.append(streak) }
+        if (summary.stats.naps ?? 0) > 0 { payout.lines.append(Payout.Line(label: "Well-rested driver bonus", amount: Rest.bonus)) }
         // The bank takes its share last.
         if let loan = loanRepaymentLine(for: payout) { payout.lines.append(loan) }
         return payout

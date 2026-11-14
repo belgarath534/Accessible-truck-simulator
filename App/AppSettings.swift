@@ -31,6 +31,8 @@ final class AppSettings: ObservableObject {
     }
     @Published var traffic: Bool { didSet { defaults.set(traffic, forKey: "traffic") } }
     @Published var wildlife: Bool { didSet { defaults.set(wildlife, forKey: "wildlife") } }
+    /// Rest stops: getting tired on long drives, and naps at truck stops.
+    @Published var tiredness: Bool { didSet { defaults.set(tiredness, forKey: "tiredness") } }
     @Published var turbo: Bool { didSet { defaults.set(turbo, forKey: "turbo") } }
     @Published var docking: Bool { didSet { defaults.set(docking, forKey: "docking") } }
     @Published var radioVoices: Bool { didSet { defaults.set(radioVoices, forKey: "radioVoices") } }
@@ -73,6 +75,7 @@ final class AppSettings: ObservableObject {
         MusicPlayer.shared.source = source
         traffic = d.object(forKey: "traffic") as? Bool ?? false
         wildlife = d.object(forKey: "wildlife") as? Bool ?? true
+        tiredness = d.object(forKey: "tiredness") as? Bool ?? true
         turbo = d.object(forKey: "turbo") as? Bool ?? false
         docking = d.object(forKey: "docking") as? Bool ?? true
         radioVoices = d.object(forKey: "radioVoices") as? Bool ?? true

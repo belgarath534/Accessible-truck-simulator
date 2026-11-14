@@ -107,6 +107,8 @@ final class DrivingController: NSObject, ObservableObject {
         // Day and night follow the player's clock; deer on the map's country and mountain roads.
         session.timeOfDay = ScreenshotMode.isOn ? .day : TimeOfDay(hour: Calendar.current.component(.hour, from: Date()))
         session.wildlifeEnabled = settings.wildlife && navigator != nil && !ScreenshotMode.isOn
+        // Tiredness on real drives only: not the tutorial, the practice loop, duels or races.
+        session.restEnabled = settings.tiredness && navigator != nil && !drive.isDuel && !ScreenshotMode.isOn
         // Turbo Mode on jobs and Free Drive only: never the tutorial or the practice loop.
         session.turbo = settings.turbo && navigator != nil && !ScreenshotMode.isOn
         session.cargoKind = drive.job?.cargo.kind ?? .standard

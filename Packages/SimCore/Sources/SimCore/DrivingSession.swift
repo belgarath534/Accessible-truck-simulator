@@ -170,6 +170,12 @@ public final class DrivingSession {
     /// Traffic on the road (off unless the app turns it on).
     public var trafficEnabled = false
     public internal(set) var traffic: [TrafficVehicle] = []
+    /// Rest stops: tiredness on long drives, naps at truck stops.
+    public var restEnabled = false
+    /// Seconds of driving since the start or the last nap.
+    public internal(set) var awakeTime = 0.0
+    var warnedTired = false
+    var nextDrowsy = 20.0
     /// Online Race: the other player's truck, updated by the app. Placed on your road when it's near.
     public var rival: RivalState?
     /// After bumping into the other truck it's left out for a few seconds, so one bump is one crash.
@@ -510,6 +516,7 @@ public final class DrivingSession {
             if truck.speed > 5 && chase == nil { events.append(.cbChatter) }
         }
         stepDeer(dt: dt, events: &events)
+        stepTiredness(dt: dt, events: &events)
         placeRival()
         stepTraffic(dt: dt, events: &events)
         checkPolice(dt: dt, events: &events)
@@ -1085,6 +1092,12 @@ public final class DrivingSession {
             }
             if truck.speed < 0.3 && past > -150 && past < 300 {
                 truckStopState = .refueling(index: index, liters: 0)
+                // A quick nap while the tank fills, if the driver has been at the wheel a while.
+                if restEnabled && awakeTime >= Rest.napWorthwhile {
+                    awakeTime = 0
+                    stats.naps = (stats.naps ?? 0) + 1
+                    events.append(.napped)
+                }
                 events.append(.refuelStarted)
             } else if past >= 300 {
                 truckStopState = .driving

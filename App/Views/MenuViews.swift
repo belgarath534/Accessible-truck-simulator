@@ -415,6 +415,8 @@ struct SettingsView: View {
                     .accessibilityHint("After stopping at a delivery's drop-off, back the trailer into the dock by ear for a bonus.")
                 Toggle("Deer on the road", isOn: $settings.wildlife)
                     .accessibilityHint("Deer sometimes step onto country and mountain roads, more at night. Honk to scare them off, or slow down.")
+                Toggle("Tiredness and naps", isOn: $settings.tiredness)
+                    .accessibilityHint("On long drives you get tired, and later start to drift. Stop at a truck stop for a quick nap and a well-rested bonus on your next delivery.")
                 Toggle("Weather", isOn: $settings.weather)
                     .accessibilityHint("Rain and storms on some drives: slippery roads, rain sounds and a pay bonus. Off means clear skies every time.")
                 Toggle("Lane guidance beeps", isOn: $settings.laneGuidanceTone)

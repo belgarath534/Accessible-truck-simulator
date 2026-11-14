@@ -38,6 +38,8 @@ public struct TripStats: Codable, Equatable, Sendable {
     public var fuelBoughtLiters: Double = 0
     public var fuelCost: Int = 0
     public var tows: Int = 0
+    /// Naps taken at truck stops (nil in old saves).
+    public var naps: Int?
     public var towCost: Int = 0
     public var tickets: Int = 0
     public var ticketCost: Int = 0
