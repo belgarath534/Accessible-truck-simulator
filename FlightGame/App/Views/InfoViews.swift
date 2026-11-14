@@ -94,7 +94,7 @@ struct SettingsView: View {
                 Toggle("Climb and descent tone", isOn: $settings.varioTone)
                 Toggle("Bank tone", isOn: $settings.bankTone)
                 Toggle("Recorded voices", isOn: $settings.recordedVoices)
-                Toggle("Speak through VoiceOver", isOn: $settings.useVoiceOver)
+                Toggle("With recorded voices off, speak through VoiceOver", isOn: $settings.useVoiceOver)
             }
         }
         .navigationTitle("Settings")
@@ -111,7 +111,7 @@ struct CreditsView: View {
                 Text("Every other sound, the beeps, tones and warnings, is made live by the game.")
             }
             Section("Voices") {
-                Text("The flight instructor and the cockpit voice speak with Piper, an open-source voice maker, using the voices Joe (CC0) and Kristin (public domain).")
+                Text("The flight instructor, the cockpit callouts and the control tower speak with Piper, an open-source voice maker, using the voice Joe (CC0).")
             }
             Section("Music") {
                 Text("\"Blue Sky\" by Pro Sensory, public domain (CC0). From OpenGameArt.org.")

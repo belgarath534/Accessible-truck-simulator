@@ -3,7 +3,7 @@ Usage: make_voices.py <flight_lines.json> <voices dir> <out dir>
 The JSON comes from the DumpVoice test (DUMP_PATH=... swift test). Voice models: huggingface.co/rhasspy/piper-voices."""
 import json, subprocess, sys, os
 lines, voices, out = json.load(open(sys.argv[1])), sys.argv[2], sys.argv[3]
-CAST = {"instructor": ("joe", 1.0), "cockpit": ("kristin", 0.95), "tower": ("joe", 0.92)}   # voice, speed (bigger = slower)
+CAST = {"instructor": ("joe", 1.0), "cockpit": ("joe", 0.95), "tower": ("joe", 0.92)}   # voice, speed (bigger = slower)
 # The tower talks over the radio: a narrow, slightly crunchy sound.
 RADIO = "highpass=f=450,lowpass=f=2800,acompressor=threshold=-22dB:ratio=6,"
 SAY = {"1000": "one thousand", "500": "five hundred", "200": "two hundred", "100": "one hundred"}

@@ -12,8 +12,8 @@ final class FlightTouchView: UIView {
         isMultipleTouchEnabled = true
         backgroundColor = .clear
         isAccessibilityElement = true
+        // Short on purpose: VoiceOver reads this when the flight starts, right before the instructor speaks.
         accessibilityLabel = "Cockpit"
-        accessibilityHint = "Touches go directly to the game. Two-finger swipe down to pause."
         accessibilityTraits = .allowsDirectInteraction
     }
 

@@ -51,6 +51,8 @@ final class FlightController: NSObject, ObservableObject {
     /// The guided first flight's teacher (nil on other flights), and what the pilot did this frame.
     private var tutorial: Tutorial?
     private var recentActions: [FlightAction] = []
+    /// The instructor waits until this time before his first words.
+    private var quietUntil: CFTimeInterval = 0
     weak var view: UIView?
 
     /// The tutorial always flies with Easy assist.
@@ -98,7 +100,12 @@ final class FlightController: NSObject, ObservableObject {
         lastTime = 0
         UIApplication.shared.isIdleTimerDisabled = true
         heavy.prepare()
-        sayBriefing()
+        // A moment for VoiceOver to say "Cockpit" before anyone starts talking.
+        quietUntil = CACurrentMediaTime() + 1.8
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.8) { [weak self] in
+            guard let self, self.link != nil else { return }
+            self.sayBriefing()
+        }
     }
 
     func stop() {
@@ -195,7 +202,7 @@ final class FlightController: NSObject, ObservableObject {
 
     /// The teacher: says the next thing, and after a crash puts the plane back so you can try again.
     private func runTutorial(dt: Double) {
-        guard tutorial != nil else { return }
+        guard tutorial != nil, CACurrentMediaTime() >= quietUntil else { return }
         if session.summary?.crash != nil {
             let retry = tutorial!.retry()
             session = FlightSession(start: retry.start, goal: .tutorial, assist: .easy)
@@ -279,6 +286,14 @@ final class FlightController: NSObject, ObservableObject {
             if session.time - lastStallSound > 4 { lastStallSound = session.time; light.impactOccurred() }
         default:
             break
+        }
+        // In the tutorial only the instructor talks: he confirms each step himself. You still get what you
+        // ask for (instruments, navigation) and anything that explains why something didn't work.
+        if tutorial != nil {
+            switch e {
+            case .instruments, .navigation, .crashed, .flapsTooFast, .engineNotRunning, .autopilotNeedsAir: break
+            default: return
+            }
         }
         // On a job, the tower clears you to land as you line up.
         if case .approachCaptured = e, let job = request.job, let to = World.airport(job.to),

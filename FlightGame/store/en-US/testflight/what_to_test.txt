@@ -5,6 +5,6 @@ New:
 - Passenger comfort: fly smoothly for tips; a rough ride costs you.
 - The Mechanic: hard landings and crashes wear your plane, a worn engine is weaker, and repairs cost money.
 - The control tower clears you for takeoff and landing over the radio.
-- Recorded voices: Joe is your flight instructor and Kristin is the cockpit voice.
+- One recorded voice, Joe: the instructor, the cockpit callouts and the tower. Nothing talks over anything else now, and in the tutorial only the instructor speaks.
 
 Tell us whether the jobs feel fair, whether the pay and repair costs make sense, and how the tilt controls feel.
