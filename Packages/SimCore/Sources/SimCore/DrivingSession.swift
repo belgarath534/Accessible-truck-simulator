@@ -170,6 +170,12 @@ public final class DrivingSession {
     /// Traffic on the road (off unless the app turns it on).
     public var trafficEnabled = false
     public internal(set) var traffic: [TrafficVehicle] = []
+    /// Online Race: the other player's truck, updated by the app. Placed on your road when it's near.
+    public var rival: RivalState?
+    /// After bumping into the other truck it's left out for a few seconds, so one bump is one crash.
+    var rivalGhostUntil = -1.0
+    /// The other truck's id in `traffic`.
+    public static let rivalID = -1
     var nextVehicleID = 0
     var oncomingTimer = 12.0
     var slowTimer = 40.0
@@ -504,6 +510,7 @@ public final class DrivingSession {
             if truck.speed > 5 && chase == nil { events.append(.cbChatter) }
         }
         stepDeer(dt: dt, events: &events)
+        placeRival()
         stepTraffic(dt: dt, events: &events)
         checkPolice(dt: dt, events: &events)
         checkTruckStops(dt: dt, input: input, events: &events)
@@ -1236,14 +1243,14 @@ extension DrivingSession {
     static let truckLength = 16.0
 
     func stepTraffic(dt: Double, events: inout [SimEvent]) {
-        guard trafficEnabled else { return }
+        guard trafficEnabled || rival != nil else { return }
         let pos = truck.position
         let roadAhead = road.loops ? Double.infinity : road.totalLength - pos
         let limit = road.speedLimit
 
         // Spawning: oncoming traffic on two-way roads, and now and then a slower vehicle ahead.
         oncomingTimer -= dt
-        if oncomingTimer <= 0 {
+        if trafficEnabled, oncomingTimer <= 0 {
             oncomingTimer = Double.random(in: 25...70, using: &rng) * timeOfDay.trafficFactor
             if !road.leftLaneSameDirection && roadAhead > 800 {
                 nextVehicleID += 1
@@ -1253,7 +1260,7 @@ extension DrivingSession {
             }
         }
         slowTimer -= dt
-        if slowTimer <= 0 {
+        if trafficEnabled, slowTimer <= 0 {
             let hasSlowAhead = traffic.contains { !$0.oncoming && $0.position > pos }
             if !hasSlowAhead && roadAhead > 900 && truck.speed > 5 {
                 nextVehicleID += 1
@@ -1280,6 +1287,10 @@ extension DrivingSession {
             let lateralOverlap = abs(y - v.lane) < 1.25 + v.halfWidth
             let front = traffic[i].position - v.length / 2, back = traffic[i].position + v.length / 2
             if lateralOverlap && front < pos && back > pos - DrivingSession.truckLength {
+                if v.id == DrivingSession.rivalID {
+                    rivalGhostUntil = time + 6
+                    events.append(.bumpedRival)
+                }
                 events.append(.crashed(.collision(headOn: v.oncoming, vehicle: v.kind)))
                 remove.insert(v.id)
                 recover()
@@ -1309,6 +1320,17 @@ extension DrivingSession {
             }
         }
         if !remove.isEmpty { traffic.removeAll { remove.contains($0.id) } }
+    }
+
+    /// Puts the other player's truck on your road, where it is along the route, when it's within earshot.
+    func placeRival() {
+        traffic.removeAll { $0.id == DrivingSession.rivalID }
+        guard trafficEnabled || rival != nil, let r = rival, !r.finished, !r.quit, time >= rivalGhostUntil,
+              let mine = remaining else { return }
+        let gap = mine - r.remaining
+        guard abs(gap) < 900 else { return }
+        traffic.append(TrafficVehicle(id: DrivingSession.rivalID, kind: .truck, oncoming: false, lane: r.lateral,
+                                      position: truck.position + gap, speed: r.speed))
     }
 
     private func randomKind() -> VehicleKind {

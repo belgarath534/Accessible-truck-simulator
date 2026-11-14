@@ -186,6 +186,8 @@ public enum SimEvent: Equatable, Sendable {
     case turboSpeed(Double)
     case dashboard(DashboardReading)
     case aroundMe(Surroundings)
+    /// Online Race: you bumped into the other player's truck.
+    case bumpedRival
     case roadAhead(UpcomingCurve?, remaining: Double?, timeLeft: Double?, truckStop: Double?)
     /// Delivery deadline reminders (5 minutes and 1 minute left).
     case timeLeft(seconds: Double)

@@ -104,7 +104,7 @@ public struct DeliveryJob: Codable, Equatable, Hashable, Identifiable, Sendable 
 }
 
 /// Small deterministic random generator, so the job board can be tested and reproduced.
-public struct SeededRandom: RandomNumberGenerator {
+public struct SeededRandom: RandomNumberGenerator, Sendable {
     private var state: UInt64
     public init(seed: UInt64) { state = seed &+ 0x9E37_79B9_7F4A_7C15 }
     public mutating func next() -> UInt64 {
