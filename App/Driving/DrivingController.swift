@@ -255,8 +255,42 @@ final class DrivingController: NSObject, ObservableObject {
         feedback.speech.speak(text, priority: .high)
     }
 
+    // MARK: Online Race
+
+    private var raceAnnouncer: RaceAnnouncer?
+    private var raceSendTimer = 0.0
+
+    private var raceRival: String? {
+        if case let .duel(turn) = drive { return turn.raceRival }
+        return nil
+    }
+
+    private var myRaceState: RivalState {
+        RivalState(remaining: max(0, session.remaining ?? 0), lateral: session.truck.lateralOffset,
+                   speed: session.truck.speed, crashes: session.stats.crashes,
+                   drivingTime: session.stats.drivingTime, finished: session.summary != nil)
+    }
+
+    /// Each frame of an Online Race: the other truck onto the road, our state out, and news about them.
+    private func updateRace(dt: Double) {
+        guard let name = raceRival, let link = RaceLink.current else { return }
+        if raceAnnouncer == nil { raceAnnouncer = RaceAnnouncer(rivalName: name, units: settings.units) }
+        link.tickBot(dt: dt, started: session.stats.drivingTime > 0)
+        session.rival = link.rival
+        raceSendTimer += dt
+        if raceSendTimer >= 0.25 || session.summary != nil {
+            raceSendTimer = 0
+            link.send(myRaceState)
+        }
+        guard session.summary == nil, let rival = link.rival else { return }
+        for line in raceAnnouncer!.update(myRemaining: myRaceState.remaining, rival: rival, time: session.stats.drivingTime) {
+            feedback.speech.speak(line, priority: .normal)
+        }
+    }
+
     /// Leaving mid-drive: Free Drive still pays for the distance; an unfinished job pays nothing.
     func quit() {
+        if raceRival != nil, finished == nil { RaceLink.current?.sendQuit() }
         // Giving up a duel turn: it counts, as not finished.
         if drive.isDuel, finished == nil {
             DuelResults.shared.last = .init(time: session.stats.drivingTime, crashes: session.stats.crashes, delivered: false)
@@ -451,6 +485,7 @@ final class DrivingController: NSObject, ObservableObject {
         feedback.update(session: session)
         view?.setNeedsDisplay()
         updateTutorial(dt: dt, now: now)
+        updateRace(dt: dt)
         if let summary = session.summary {
             settle(summary)
             if let payout { feedback.announcePayout(payout) }

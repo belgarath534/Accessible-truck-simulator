@@ -337,6 +337,8 @@ public struct CareerState: Codable, Equatable, Sendable {
     public var weeklyCount = 0
     public var weeklyClaimed = false
     public var weeklyChallengesWon = 0
+    /// Online races won.
+    public var racesWon = 0
     /// Daily streak: the last day with a delivery (yyyymmdd), days in a row, and the best ever.
     public var lastDeliveryDay = 0
     public var streakDays = 0
@@ -397,6 +399,7 @@ public struct CareerState: Codable, Equatable, Sendable {
         case companyName, truckNames, ownedHorns, selectedHorn, bestTurboSpeed, hasChains, truckCondition, depots, loanOwed
         case weeklyWeek, weeklyCount, weeklyClaimed, weeklyChallengesWon
         case lastDeliveryDay, streakDays, bestStreak, weekEarnedWeek, weekEarned, rivalWins, cleanDeliveries, perfectStops
+        case racesWon
         case reputation, contract, contractOffer, storyProgress
     }
 
@@ -441,6 +444,7 @@ public struct CareerState: Codable, Equatable, Sendable {
         weekEarnedWeek = try c.decodeIfPresent(Int.self, forKey: .weekEarnedWeek) ?? 0
         weekEarned = try c.decodeIfPresent(Int.self, forKey: .weekEarned) ?? 0
         rivalWins = try c.decodeIfPresent(Int.self, forKey: .rivalWins) ?? 0
+        racesWon = try c.decodeIfPresent(Int.self, forKey: .racesWon) ?? 0
         cleanDeliveries = try c.decodeIfPresent(Int.self, forKey: .cleanDeliveries) ?? 0
         perfectStops = try c.decodeIfPresent(Int.self, forKey: .perfectStops) ?? 0
         // Saves from before reputation: credit the deliveries already made.

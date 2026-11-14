@@ -144,10 +144,11 @@ struct PauseMenuView: View {
                     Button("Abandon Job", role: .destructive, action: quit)
                         .buttonStyle(.bordered)
                         .accessibilityHint("Returns to the main menu. Unfinished jobs don't pay.")
-                case .duel:
-                    Button("Give Up This Turn", role: .destructive, action: quit)
+                case let .duel(turn):
+                    Button(turn.raceRival == nil ? "Give Up This Turn" : "Leave the Race", role: .destructive, action: quit)
                         .buttonStyle(.bordered)
-                        .accessibilityHint("Ends your turn. It counts as not finished.")
+                        .accessibilityHint(turn.raceRival == nil ? "Ends your turn. It counts as not finished."
+                                                                 : "You lose the race, and the other player is told you left.")
                 case .practice:
                     Button("Restart from the Start", action: restart)
                         .buttonStyle(.bordered)

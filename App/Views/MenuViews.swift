@@ -105,6 +105,12 @@ struct MainMenuView: View {
                     }
                     .accessibilityHint("Buy trucks, hear their engines and choose which one to drive.")
                     NavigationLink {
+                        RaceMenuView()
+                    } label: {
+                        Text("Online Race").font(.title2)
+                    }
+                    .accessibilityHint("Race a friend over the internet with a room code, or practice against a computer driver.")
+                    NavigationLink {
                         DuelSetupView()
                     } label: {
                         Text("Duel Mode").font(.title2)

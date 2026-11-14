@@ -118,6 +118,7 @@ public extension CareerState {
             "Story missions finished: \(storyProgress) of \(StoryMission.all.count).",
             "Weekly challenges won: \(weeklyChallengesWon). Weeks you beat \(Rival.name): \(rivalWins).",
             "Best daily streak: \(bestStreak) day\(bestStreak == 1 ? "" : "s").",
+            "Online races won: \(racesWon).",
             "Towns visited: \(visitedTowns.count) of \(WorldMap.standard.towns.count).",
         ]
         if mph > 0 { lines.append("Top speed in Turbo Mode: \(Int(mph.rounded())) miles per hour.") }

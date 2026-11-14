@@ -53,6 +53,8 @@ struct DuelTurn: Equatable {
     let weather: Weather
     let player: Int
     let intro: String
+    /// Online Race: the other player's name (nil for Duel Mode).
+    var raceRival: String? = nil
 }
 
 /// Where a finished duel turn leaves its result for the duel screen. Only used on the main thread.
@@ -183,6 +185,11 @@ final class CareerStore: ObservableObject {
     /// The selected truck without upgrades (used as the key for per-truck saves).
     var baseTruck: TruckSpec { TruckSpec.withID(state.selectedTruck) }
     var fuelLiters: Double { state.fuelLiters(for: baseTruck) }
+
+    func recordRaceWin() {
+        state.racesWon += 1
+        save()
+    }
 
     func saveFuel(_ liters: Double) {
         state.setFuel(liters, for: baseTruck)
