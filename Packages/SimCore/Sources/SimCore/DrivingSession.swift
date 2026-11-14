@@ -231,7 +231,8 @@ public final class DrivingSession {
         self.navigator = navigator
         self.road = navigator?.road ?? road
         self.goal = goal
-        self.cargoMassKg = cargoMassKg
+        // A road train carries a full load in each trailer.
+        self.cargoMassKg = cargoMassKg * Double(max(1, spec.trailers))
         self.timeLimit = timeLimit
         self.assist = assist
         self.truck = TruckState(fuelLiters: min(spec.fuelCapacityLiters, max(0, startingFuel ?? spec.fuelCapacityLiters)))
@@ -1332,7 +1333,7 @@ extension DrivingSession {
             }
             let lateralOverlap = abs(y - v.lane) < 1.25 + v.halfWidth
             let front = traffic[i].position - v.length / 2, back = traffic[i].position + v.length / 2
-            if lateralOverlap && front < pos && back > pos - DrivingSession.truckLength {
+            if lateralOverlap && front < pos && back > pos - spec.length {
                 if v.id == DrivingSession.rivalID {
                     rivalGhostUntil = time + 6
                     events.append(.bumpedRival)

@@ -3,6 +3,8 @@ import Foundation
 /// Static description of a truck model. Upgrades will later act as multipliers on these values,
 /// so players see "Engine level 3" and never have to think about gear ratios.
 public struct TruckSpec: Equatable, Sendable {
+    /// Trailers pulled: 2 for a road train (double the cargo, more pay, longer and heavier).
+    public var trailers = 1
     public struct TorquePoint: Equatable, Sendable {
         public var rpm: Double
         public var torque: Double // Newton-metres
@@ -417,12 +419,51 @@ public extension TruckSpec {
         return t
     }()
 
+    /// A sleek, efficient highway truck: cheap to run, quiet and quick on the interstate.
+    static let silverArrow: TruckSpec = {
+        var t = TruckSpec.starter
+        t.name = "Silver Arrow"
+        t.id = "silver_arrow"
+        t.price = 30_000
+        t.summary = "A sleek, aerodynamic highway truck. The lowest fuel bill of any diesel and quick on the interstate, but a small tank, and it's not built for heavy mountain work. A smooth, quiet six."
+        t.massKg = 16_000
+        t.dragArea = TruckSpec.starter.dragArea * 0.75
+        t.fuelEfficiency = 0.65
+        // A small tank: the cheapest to fill, but the Long Hauler still goes furthest.
+        t.fuelCapacityLiters = 450
+        t.speedLimiter = 105 / 3.6
+        t.steeringLatAccel = 3.2
+        t.sound = EngineSound(pitch: 0.95, roughness: 0.1, turbo: 0.6, bark: 0.1, lope: 0.05)
+        t.sound.loopFile = "engine_loop_highway_star"
+        return t
+    }()
+
+    /// A road train: two trailers. Double the cargo and 60 percent more pay, but heavier, slower to stop,
+    /// wider in curves and ten metres longer to pass with.
+    static let roadTrain: TruckSpec = {
+        var t = TruckSpec.ironBull
+        t.name = "Road Train"
+        t.id = "road_train"
+        t.price = 52_000
+        t.summary = "Two trailers behind a big V8: double the cargo and 60 percent more pay on every job. But it's heavy, slow to stop, wide in curves, and 26 meters long, so give yourself room to pass."
+        t.trailers = 2
+        t.massKg = 24_000
+        t.maxBrakeDecel = 4.4
+        t.steeringLatAccel = 2.5
+        t.fuelCapacityLiters = 1_000
+        t.speedLimiter = 90 / 3.6
+        t.sound = EngineSound(pitch: 0.66, roughness: 0.45, turbo: 0.75, bark: 0.85, lope: 0.45)
+        t.sound.loopFile = "engine_loop_iron_bull"
+        return t
+    }()
+
     /// Every truck in the garage, cheapest first.
     static let catalog: [TruckSpec] = [{
         var t = TruckSpec.starter
         t.summary = "Your first truck. Steady six-cylinder with a little turbo: nothing fancy, never lets you down."
         return t
-    }(), .farmRunner, .workhorse, .cityHauler, .mountainGoat, .roadKing, .highwayStar, .longHauler, .ironBull, .volt, .titan]
+    }(), .farmRunner, .workhorse, .cityHauler, .mountainGoat, .roadKing, .highwayStar, .longHauler, .silverArrow, .ironBull,
+       .volt, .roadTrain, .titan]
 
     /// Every truck you can own: the freight trucks, plus special vehicles like the tow truck.
     static var allTrucks: [TruckSpec] { catalog + [.towTruck] }
@@ -432,6 +473,12 @@ public extension TruckSpec {
         let watts = torqueCurve.map { $0.torque * $0.rpm * 2 * .pi / 60 }.max() ?? 0
         return Int((watts / 745.7 / 10).rounded()) * 10
     }
+
+    /// Extra pay for the second trailer's load.
+    static let secondTrailerPay = 0.6
+
+    /// Metres from the cab to the back of the last trailer.
+    var length: Double { trailers > 1 ? 26 : 16 }
 
     static func withID(_ id: String) -> TruckSpec {
         allTrucks.first { $0.id == id } ?? .starter

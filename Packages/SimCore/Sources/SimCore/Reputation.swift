@@ -103,6 +103,11 @@ public extension CareerState {
         var payout = Payout.delivery(job, summary: summary, weather: weather)
         let spilled = job.cargo.kind == .hazmat && summary.stats.hazmatSpilled
         let level = reputationLevel
+        // Road train: the second trailer's load pays too.
+        if truck.trailers > 1, !spilled {
+            payout.lines.insert(Payout.Line(label: "Second trailer", amount: Int((Double(job.pay) * TruckSpec.secondTrailerPay).rounded())),
+                                at: min(1, payout.lines.count))
+        }
         if level.payBonus > 0 && !spilled {
             let insertAt = payout.lines.firstIndex { $0.amount < 0 && $0.label.hasPrefix("Fuel") } ?? payout.lines.endIndex
             payout.lines.insert(Payout.Line(label: "\(level.title) reputation bonus",

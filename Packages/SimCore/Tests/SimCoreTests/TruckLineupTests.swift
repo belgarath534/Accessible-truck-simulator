@@ -20,7 +20,7 @@ final class TruckLineupTests: XCTestCase {
 
     func testCatalogIsOrderedDistinctAndAllDrivable() {
         let trucks = TruckSpec.catalog
-        XCTAssertEqual(trucks.count, 11)
+        XCTAssertEqual(trucks.count, 13)
         XCTAssertEqual(Set(trucks.map(\.id)).count, trucks.count)
         XCTAssertEqual(Set(trucks.map(\.name)).count, trucks.count)
         XCTAssertEqual(trucks.map(\.price), trucks.map(\.price).sorted())

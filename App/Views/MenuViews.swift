@@ -197,12 +197,15 @@ struct JobBoardView: View {
 
     private func fuelText(_ job: DeliveryJob) -> String {
         phrases.fuelCheck(fuelLiters: career.fuelLiters, capacity: career.truck.fuelCapacityLiters, distance: job.distance,
-                          cargoKg: job.cargo.massKg, efficiency: career.truck.fuelEfficiency)
+                          cargoKg: job.cargo.massKg * Double(career.truck.trailers), efficiency: career.truck.fuelEfficiency)
     }
 
     var body: some View {
         List {
             Section {
+                if career.truck.trailers > 1 {
+                    Text("You're driving the Road Train: two trailers, so every job carries double the cargo and pays 60 percent more.")
+                }
                 let level = career.state.reputationLevel
                 Text("Reputation: \(level.title), \(career.state.reputation) points.")
                     .font(.headline)
