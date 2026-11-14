@@ -37,6 +37,8 @@ public enum DrivingAction: Equatable, Sendable {
     case speakRoadAhead
     /// What's around me: traffic, deer, hills, weigh stations, weather.
     case speakAroundMe
+    /// Manual gearbox.
+    case shiftUp, shiftDown
     case pause
     /// Finish a delivery without backing into the dock.
     case skipDocking
@@ -189,6 +191,10 @@ public enum SimEvent: Equatable, Sendable {
     /// Online Race: you bumped into the other player's truck.
     case bumpedRival
     /// Rest stops: getting tired after a long time at the wheel, nodding off, and a nap at a truck stop.
+    /// Manual gearbox: the engine hit its limit (shift up), it's struggling (shift down), or that gear would over-rev.
+    case revLimiter
+    case lugging
+    case gearRefused
     case gettingTired
     case drowsy
     case napped

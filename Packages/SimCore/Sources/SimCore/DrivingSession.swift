@@ -170,6 +170,9 @@ public final class DrivingSession {
     /// Traffic on the road (off unless the app turns it on).
     public var trafficEnabled = false
     public internal(set) var traffic: [TrafficVehicle] = []
+    /// Manual gearbox: you shift with gestures, keys or buttons.
+    public var manualGearbox = false
+    var lastGearHint = -100.0
     /// Rest stops: tiredness on long drives, naps at truck stops.
     public var restEnabled = false
     /// Seconds of driving since the start or the last nap.
@@ -336,6 +339,8 @@ public final class DrivingSession {
             return events
         case .speakAroundMe:
             return [.aroundMe(surroundings)]
+        case .shiftUp, .shiftDown:
+            return manualShift(up: action == .shiftUp)
         case .skipDocking:
             guard docking != nil else { return [] }
             var events: [SimEvent] = []
@@ -602,6 +607,17 @@ public final class DrivingSession {
         }
     }
 
+    /// Shifts one gear, unless that would over-rev the engine.
+    func manualShift(up: Bool) -> [SimEvent] {
+        guard manualGearbox, truck.engine == .running, spec.gearRatios.count > 1, truck.shiftTimer <= 0 else { return [] }
+        let target = truck.gearIndex + (up ? 1 : -1)
+        guard spec.gearRatios.indices.contains(target) else { return [] }
+        if !up && wheelRPM(speed: truck.speed) * overallRatio(target) > spec.maxRPM * 1.02 { return [.gearRefused] }
+        truck.gearIndex = target
+        truck.shiftTimer = spec.shiftSeconds
+        return [.gearChanged(gear: target + 1, up: up)]
+    }
+
     private func overallRatio(_ gearIndex: Int) -> Double {
         spec.gearRatios[gearIndex] * spec.finalDrive
     }
@@ -616,8 +632,8 @@ public final class DrivingSession {
         let running = truck.engine == .running
         let wheelRPM = wheelRPM(speed: truck.speed)
 
-        // Automatic gearbox.
-        if running && truck.shiftTimer <= 0 {
+        // Automatic gearbox (the manual one only shifts when you ask).
+        if running && !manualGearbox && truck.shiftTimer <= 0 {
             let rpmInGear = wheelRPM * overallRatio(truck.gearIndex)
             if rpmInGear > spec.shiftUpRPM && truck.gearIndex < spec.gearRatios.count - 1 {
                 truck.gearIndex += 1
@@ -655,7 +671,24 @@ public final class DrivingSession {
         var driveForce = 0.0
         if running && !shifting {
             let governed = (!turbo && truck.speed >= spec.speedLimiter) || (chainsWork && truck.speed >= DrivingSession.chainsSpeed)
-            let throttle = governed ? 0 : input.throttle
+            // Manual: at the rev limiter the engine cuts out until you shift up or ease off.
+            let limiter = manualGearbox && lockedRPM >= spec.maxRPM * 0.98
+            var throttle = governed || limiter ? 0 : input.throttle
+            if manualGearbox {
+                if limiter && input.throttle > 0.3 && time - lastGearHint > 4 {
+                    lastGearHint = time
+                    events.append(.revLimiter)
+                }
+                // Too high a gear for the speed: the engine bogs down.
+                let lugging = truck.gearIndex > 0 && lockedRPM < spec.idleRPM * 0.85 && input.throttle > 0.3
+                if lugging {
+                    throttle *= 0.35
+                    if time - lastGearHint > 6 {
+                        lastGearHint = time
+                        events.append(.lugging)
+                    }
+                }
+            }
             let torque = spec.torque(atRPM: max(truck.rpm, spec.idleRPM)) * throttle
             driveForce = torque * ratio * spec.drivetrainEfficiency / spec.wheelRadius
             if turbo { driveForce = max(driveForce, DrivingSession.turboPowerW * throttle / max(truck.speed, 4)) }

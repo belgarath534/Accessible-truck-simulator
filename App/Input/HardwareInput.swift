@@ -47,6 +47,8 @@ final class HardwareInput {
         case .keyI: return .speakDashboard
         case .keyG: return .speakRoadAhead
         case .keyE: return .speakAroundMe
+        case .keyX: return .shiftUp
+        case .keyZ: return .shiftDown
         case .keyN: return .toggleEngine
         case .keyH: return .horn
         case .escape: return .pause
@@ -75,6 +77,8 @@ final class HardwareInput {
         bind(pad.dpad.right, .nextSong)
         bind(pad.dpad.left, .previousSong)
         bind(pad.dpad.down, .speakAroundMe)
+        if let right = pad.rightThumbstickButton { bind(right, .shiftUp) }
+        if let left = pad.leftThumbstickButton { bind(left, .shiftDown) }
     }
 
     /// Continuous controls, polled every frame.

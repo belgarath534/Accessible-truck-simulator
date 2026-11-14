@@ -377,8 +377,8 @@ struct ControlsHelpView: View {
                 Text("Fuel at truck stops costs less than filling up at your yard in the Garage. Fuel and tow costs come off your pay.")
             }
             Section("Keyboard and controller") {
-                Text("Keyboard: Up or W accelerate, Down or S brake, Left and Right or A and D steer. Left and right bracket for signals, I dashboard, G GPS, E what's around me, N engine, H horn, Escape pause, R radio on or off, comma and period for the previous or next song.")
-                Text("Controller: right trigger accelerate, left trigger brake, left stick steer, shoulder buttons for signals, A dashboard, X GPS, Y engine, B horn, Menu pause, D-pad up radio on or off, D-pad left and right to change songs, D-pad down what's around me.")
+                Text("Keyboard: Up or W accelerate, Down or S brake, Left and Right or A and D steer. Left and right bracket for signals, I dashboard, G GPS, E what's around me, N engine, H horn, Escape pause, R radio on or off, comma and period for the previous or next song, X and Z to shift up and down with the manual gearbox.")
+                Text("Controller: right trigger accelerate, left trigger brake, left stick steer, shoulder buttons for signals, A dashboard, X GPS, Y engine, B horn, Menu pause, D-pad up radio on or off, D-pad left and right to change songs, D-pad down what's around me, right and left stick clicks to shift up and down with the manual gearbox.")
             }
         }
         .navigationTitle("How to Drive")
@@ -421,6 +421,8 @@ struct SettingsView: View {
                     .accessibilityHint("Rain and storms on some drives: slippery roads, rain sounds and a pay bonus. Off means clear skies every time.")
                 Toggle("Lane guidance beeps", isOn: $settings.laneGuidanceTone)
                 Toggle("Call out speed", isOn: $settings.announceSpeed)
+                Toggle("Manual gearbox", isOn: $settings.manualGearbox)
+                    .accessibilityHint("Shift yourself: three-finger swipe right to shift up, left to shift down. X and Z on a keyboard, stick clicks on a controller. Songs move to four-finger swipes.")
                 Toggle("Announce gear changes", isOn: $settings.announceGears)
                 Picker("Speech", selection: $settings.speechOutput) {
                     Text("Game voice").tag(SpeechOutput.gameVoice)

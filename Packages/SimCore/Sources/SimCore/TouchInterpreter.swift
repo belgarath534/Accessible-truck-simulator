@@ -243,6 +243,9 @@ public enum GestureMap {
         case .swipe(3, .right): return .nextSong
         case .swipe(3, .left): return .previousSong
         case .swipe(3, .down): return .speakAroundMe
+        // Songs on four fingers too, so they still work when three-finger swipes shift gears.
+        case .swipe(4, .right): return .nextSong
+        case .swipe(4, .left): return .previousSong
         default: return nil
         }
     }
@@ -264,6 +267,7 @@ public enum GestureMap {
         Help("Two-finger swipe up", "Horn"),
         Help("Two-finger swipe down", "Pause menu"),
         Help("Three-finger swipe up", "Radio on or off"),
-        Help("Three-finger swipe left or right", "Previous or next song on the radio"),
+        Help("Three-finger swipe left or right", "Previous or next song on the radio. With the manual gearbox: shift down or up"),
+        Help("Four-finger swipe left or right", "Previous or next song on the radio, also with the manual gearbox"),
     ]
 }

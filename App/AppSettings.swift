@@ -15,6 +15,8 @@ final class AppSettings: ObservableObject {
     @Published var laneGuidanceTone: Bool { didSet { defaults.set(laneGuidanceTone, forKey: "laneGuidanceTone") } }
     @Published var announceSpeed: Bool { didSet { defaults.set(announceSpeed, forKey: "announceSpeed") } }
     @Published var announceGears: Bool { didSet { defaults.set(announceGears, forKey: "announceGears") } }
+    /// Shift gears yourself: three-finger swipe right and left (X and Z on a keyboard, stick clicks on a controller).
+    @Published var manualGearbox: Bool { didSet { defaults.set(manualGearbox, forKey: "manualGearbox") } }
     @Published var speechOutput: SpeechOutput { didSet { defaults.set(speechOutput.rawValue, forKey: "speechOutput") } }
     @Published var haptics: Bool { didSet { defaults.set(haptics, forKey: "haptics") } }
     @Published var volume: Double { didSet { defaults.set(volume, forKey: "volume") } }
@@ -64,6 +66,7 @@ final class AppSettings: ObservableObject {
         laneGuidanceTone = d.object(forKey: "laneGuidanceTone") as? Bool ?? true
         announceSpeed = d.object(forKey: "announceSpeed") as? Bool ?? true
         announceGears = d.bool(forKey: "announceGears")
+        manualGearbox = d.bool(forKey: "manualGearbox")
         speechOutput = SpeechOutput(rawValue: d.string(forKey: "speechOutput") ?? "") ?? .gameVoice
         haptics = d.object(forKey: "haptics") as? Bool ?? true
         volume = d.object(forKey: "volume") as? Double ?? 0.8

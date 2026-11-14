@@ -107,6 +107,8 @@ final class DrivingController: NSObject, ObservableObject {
         // Day and night follow the player's clock; deer on the map's country and mountain roads.
         session.timeOfDay = ScreenshotMode.isOn ? .day : TimeOfDay(hour: Calendar.current.component(.hour, from: Date()))
         session.wildlifeEnabled = settings.wildlife && navigator != nil && !ScreenshotMode.isOn
+        // Manual gearbox everywhere except the tutorial, which teaches the basics.
+        session.manualGearbox = settings.manualGearbox && drive != .tutorial
         // Tiredness on real drives only: not the tutorial, the practice loop, duels or races.
         session.restEnabled = settings.tiredness && navigator != nil && !drive.isDuel && !ScreenshotMode.isOn
         // Turbo Mode on jobs and Free Drive only: never the tutorial or the practice loop.
@@ -458,6 +460,9 @@ final class DrivingController: NSObject, ObservableObject {
         lastTime = now
 
         for gesture in touch.update(time: now) {
+            // Manual gearbox: the three-finger swipes left and right become the gear lever.
+            if settings.manualGearbox, gesture == .swipe(fingers: 3, direction: .right) { perform(.shiftUp); continue }
+            if settings.manualGearbox, gesture == .swipe(fingers: 3, direction: .left) { perform(.shiftDown); continue }
             if let action = GestureMap.action(for: gesture) { perform(action) }
         }
         guard !isPaused, finished == nil else { return }

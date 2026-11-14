@@ -182,7 +182,10 @@ final class FeedbackCoordinator {
             speech.speak("The engine is off. Three-finger double tap to start it.", priority: .high)
         case let .gearChanged(gear, _):
             audio.gearShift()
-            if settings.announceGears { speech.speak("Gear \(gear)", priority: .low) }
+            // With the manual gearbox you need to know the gear you picked.
+            if settings.announceGears || settings.manualGearbox {
+                speech.speak("Gear \(gear)", priority: settings.manualGearbox ? .high : .low)
+            }
         case let .signalChanged(state):
             speech.speak(phrases.signal(state), priority: .high)
             haptics.tap(intensity: 0.4, sharpness: 0.8)
@@ -357,6 +360,13 @@ final class FeedbackCoordinator {
             speech.speak(phrases.towed(cost: cost, fuelCost: fuelCost), priority: .high)
         case let .dashboard(reading):
             speech.speak(phrases.dashboard(reading), priority: .high)
+        case .revLimiter:
+            speech.speak("Shift up!", priority: .high)
+            haptics.tap(intensity: 0.6, sharpness: 0.8)
+        case .lugging:
+            speech.speak("The engine is struggling. Shift down.", priority: .high)
+        case .gearRefused:
+            speech.speak("Too fast for that gear.", priority: .high)
         case .gettingTired:
             speech.speak("You're getting tired. Pull into the next truck stop for a quick nap: signal right as you pass it, and stop.", priority: .normal)
         case .drowsy:
